@@ -112,7 +112,7 @@ class RoomHubMixin(object):
   def _room_timeout_cb(self, frame, n):
     """Scheduled callback to resend frame on timeout"""
     key = (frame.dst, frame.payload.response.mid)
-    if key not in self.room_cbs:
+    if key not in self._room_cbs:
       # response has been received
       return
     if n == 0:

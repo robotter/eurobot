@@ -186,7 +186,8 @@ class Match(object):
     if a is None:
       pl_goto = room.asserv_goto_xy(x, y)
     else:
-      pl_goto = room.asserv_goto_xya(x, y, a)
+      #TODO handle a
+      pl_goto = room.asserv_goto_xy(x, y)
 
     status_l = []  # nonlocal is not available :(
     def cb_status(frame):
@@ -198,16 +199,17 @@ class Match(object):
       if len(status_l):
         # check returned asserv status
         r = status_l.pop()
-        if r.arrived_xy and (a is None or r.arrived_a):
+        if r.params.arrived_xy and (a is None or r.params.arrived_a):
           return
         else:
           hub.send_room(addrs.prop, room.asserv_status(), cb_status)
 
       # stop when r3d2 detects something close
-      if hub.r3d2_objects[0] is not None and hub.r3d2_objects[0][0] < self.r3d2_avoid_distance:
-        print "opponent detected at %r" % hub.r3d2_objects[0]
-        hub.send_room(addrs.prop, room.asserv_activate(False))
-        while hub.r3d2_objects[0] is not None and hub.r3d2_objects[0][0] < self.r3d2_avoid_distance:
+      if hub.r3d2_objects[0] is not None and hub.r3d2_objects[0][1] < self.r3d2_avoid_distance:
+        print "opponent detected at %r" % (hub.r3d2_objects[0],)
+        pl_pos = hub.send_room_wait(addrs.prop, room.asserv_get_position())
+        hub.send_room_wait(addrs.prop, room.asserv_goto_xy(pl_pos.params.x, pl_pos.params.y))
+        while hub.r3d2_objects[0] is not None and hub.r3d2_objects[0][1] < self.r3d2_avoid_distance:
           hub.run_one()
         print "opponent moved away"
         hub.send_room_wait(addrs.prop, pl_goto)
@@ -237,6 +239,7 @@ class Match(object):
     hub = self.hub
 
     self.goto_xya(1.500 - 0.120 - 0.500, 2.000 - 0.250, kx=True)
+    print "wait for end of match"
     while True:
       hub.run_one()
 
