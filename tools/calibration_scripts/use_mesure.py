@@ -1,16 +1,18 @@
 import re
 import numpy
+import sys
 from numpy      import dot as dot
 from copy       import deepcopy
 
-f = open('./mesures.csv', 'r')
+f = open(sys.argv[1], 'r')
 E = []
 S = []
 for line in f.readlines():
-    groups = re.search('([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*)', line).groups()
-    mesure = map(float, groups)
-    E.append(mesure[:3])
-    S.append(mesure[3:])
+	m = re.search('([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*), *([0-9.-]*)', line)
+	groups = m.groups()
+	mesure = map(float, groups)
+	E.append(mesure[:3])
+	S.append(mesure[3:])
 
 E = numpy.array(E).T
 E = E*pow(2, 14)
@@ -71,5 +73,6 @@ double hrobot_adnsMatrix_23[18] = {
 };
 """ % tuple(M.reshape((1,18))[0])
 
+print dot(M,(S.T)[1].T), (E.T)[1].T
 
 f.close()

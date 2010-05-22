@@ -52,7 +52,7 @@ void motor_line_calibration(int);
 void angle_calibration(int);
 void angle_na_calibration(int);
 void motor_angle_na_calibration(int);
-void setmotors_course(double,int);
+void setmotors_course(double,double);
 void setmotors_rotation(int);
 void safe_key_pressed(void* dummy);
 
@@ -296,7 +296,7 @@ int main(void)
   }
 
   //-----------------------------------------------------------------------------
-  // ADNS LINE CALIBRATION
+  // ADNS AUTO LINE CALIBRATION
   //-----------------------------------------------------------------------------
   if( c=='r')
   {
@@ -311,13 +311,39 @@ int main(void)
       default : cal_name = 'A'; robot_angle = 0; break;
     }
 
-    for(i=0;i<20;i++)
+    int dir;
+    adns6010_encoders_t adns;
+    adns6010_encoders_get_value(&adns_zero);
+    for(i=0;i<200;i++)
     {
-      setmotors_course(robot_angle, 1);
-      wait_ms(1000);
-      setmotors_course(robot_angle, -1);
-      wait_ms(1000);
-      adns6010_encoders_get_value(&adns_zero);
+      dir = (i%2)?1:-1;
+        
+      setmotors_course(robot_angle, 0.7*dir);
+
+      int32_t dv;
+      int32_t s=0;
+      uint8_t cnt = 0;
+      while(1)
+      {
+        adns6010_encoders_get_value(&adns);
+        
+        s=0;
+        for(k=0;k<6;k++)
+        {
+          dv = adns.vectors[k] - adns_zero.vectors[k];
+          s += dv*dv;
+        }
+        
+        if( s < 2.0 )
+          cnt++;
+        else
+          cnt=0;
+
+        if(cnt > 254)
+          break;
+
+        adns_zero = adns;
+      }
     }
   }
 
@@ -520,11 +546,11 @@ int main(void)
   return 0;
 }
 
-void setmotors_course(double angle, int advance)
+void setmotors_course(double angle, double advance)
 {
   DEBUG(0,"SETMOTORS_COURSE angle=%3.3f advance=%d",angle,advance);
-  cs_vx = 900*advance*cos(angle) + 800*sin(angle);
-  cs_vy = 900*advance*sin(angle) - 800*cos(angle);
+  cs_vx = 400*advance*cos(angle) + 1000*sin(angle);
+  cs_vy = 400*advance*sin(angle) - 1000*cos(angle);
   cs_omega = 0;
   DEBUG(0,"SETMOTORS_COURSE vx=%ld vy=%ld omega=%ld",cs_vx,cs_vy,cs_omega);
 }

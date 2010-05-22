@@ -25,11 +25,27 @@
 
 #include <aversive.h>
 #include <aversive/error.h>
+#include <actuators.h>
 
 typedef struct
 {
+  // structure used to communicate with the scanner
+  actuators_t *actuator;
 
+  // current ax12 position
+  int16_t current_ax12_position;
 
+  // ax12 increment between 2 call of scanner_updatette
+  uint16_t scanner_speed;
+
+  // rotation direction
+  uint8_t scanner_direction;
+
+  // scanner scanner minimum position
+  int16_t scanner_minPosition;
+  
+  // scanner scanner maximum position
+  int16_t scanner_maxPosition;
 }scanner_t;
 
 /** */

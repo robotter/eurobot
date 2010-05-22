@@ -1,4 +1,5 @@
 #include <aversive.h>
+#include <aversive/error.h>
 #include <compat/twi.h>
 
 #include "i2cs.h"
@@ -82,6 +83,7 @@ SIGNAL(SIG_2WIRE_SERIAL)
         I2C_NACK();
         break;
       }
+
       if( i2cs_send_size > sizeof(i2cs_send_buf) )
         i2cs_send_size = sizeof(i2cs_send_buf);
       ptr = i2cs_send_buf;

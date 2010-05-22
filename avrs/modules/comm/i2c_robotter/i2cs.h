@@ -1,3 +1,6 @@
+#ifndef I2CS_H
+#define I2CS_H
+
 #include <aversive.h>
 
 #define I2C_SLAVE
@@ -40,3 +43,4 @@ extern volatile uint8_t i2cs_send_size;
  */
 void i2cs_init(uint8_t slave_addr);
 
+#endif//I2CS_H

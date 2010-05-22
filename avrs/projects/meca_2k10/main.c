@@ -12,8 +12,10 @@
 #include "ax12_user.h"
 
 #include "sys.h"
+#include "adc.h"
 #include "actuators.h"
 #include "led.h"
+#include "switches.h"
 #include "logging.h"
 #include "cli.h"
 #include "settings.h"
@@ -41,6 +43,8 @@ void safe_key_pressed(void*);
 void paddock_setAX12EEPROMs(void);
 void paddock_AX12manual(void);
 void paddock_actuatorsManual(void);
+void paddock_testGP2(void);
+void paddock_testSwitches(void);
 
 int main(void)
 {
@@ -120,7 +124,12 @@ int main(void)
 
   uint8_t c;
 
-  NOTICE(0,"Strike 'x' to reboot / 'e' AX12 EEPROM load / 'm' AX12 manual control / 'a' actuators manual control");
+  NOTICE(0,"Strike 'x' to reboot / 'e' AX12 EEPROM load / 'm' AX12 manual control / 'a' actuators manual control / 't' robot color / 'g' GP2");
+
+  actuators_clamp_close(&actuators, CT_LEFT); 
+  actuators_clamp_close(&actuators, CT_RIGHT);
+  actuators_clamp_raise(&actuators, CT_LEFT);
+  actuators_clamp_raise(&actuators, CT_RIGHT);
 
   led_off(1);
 
@@ -139,6 +148,12 @@ int main(void)
 
     if(c == 'a')
       paddock_actuatorsManual();
+    
+    if(c == 't')
+      paddock_testSwitches();  
+  
+    if(c == 'g')
+      paddock_testGP2();
   }
 
   while(1) nop();
@@ -263,6 +278,53 @@ void paddock_AX12manual(void)
   
 }
 
+void paddock_testSwitches(void)
+{
+  uint8_t c;
+    
+  NOTICE(0, "'a' aux switch / 'c' color switch");
+  while(1)
+  {
+    c = cli_getkey();
+    switch(c)
+    {
+      case 'c':
+        if(switches_getRobotColor() == SWITCH_BLUE)
+          NOTICE(0, "BLUE ROBOT");
+        else
+          NOTICE(0, "YELLOW_ROBOT");
+        break;
+
+      case 'a':
+        if(switches_getAuxState() == 1 )
+          NOTICE(0, "AUX SWITCH open");
+        else
+          NOTICE(0, "AUX SWITCH closed");
+        break;
+
+      default : break;
+    }
+  }
+}
+
+void paddock_testGP2(void)
+{
+  uint8_t c;
+
+  NOTICE(0, "'v' gp2 value");
+
+  while(1)
+  {
+    c = cli_getkey();
+    switch(c)
+    {
+      case 'v': NOTICE(0, "GP2 value : %4u", adc_get_value(ADC_REF_AVCC | MUX_ADC0));
+        break;
+      default : break;
+    }
+  
+  }
+}
 
 void safe_key_pressed(void* dummy)
 {

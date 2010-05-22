@@ -38,6 +38,8 @@
 #define SO_CLAMP_IS_RAISED            0x25
 #define SO_CLAMP_IS_LOWERED           0x26
 
+#define SO_GET_ROBOT_COLOR            0x40
+
 #define SO_GET_TIME                   0x53
 
 typedef uint8_t stratcommOrder_t;

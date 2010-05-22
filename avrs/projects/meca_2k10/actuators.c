@@ -161,7 +161,12 @@ void actuators_ax12_init(actuators_t* m)
   actuators_ax12_check(m, SETTING_AX12_ID_RIGHT_CLAMP_A);
   actuators_ax12_check(m, SETTING_AX12_ID_RIGHT_CLAMP_B);
   actuators_ax12_check(m, SETTING_AX12_ID_SCANNER);
-
+  
+  // XXX hack to get ax12 id on the chain XXX
+  /*for (uint8_t it = 0; it<= 0xFD; it ++)
+  {
+    actuators_ax12_check(m, it);
+  }*/
   return;
 }
 
@@ -184,9 +189,11 @@ uint8_t actuators_ax12_check(actuators_t* m, uint8_t id)
   uint16_t mn = 0;
   ax12_user_read_int(&ax12, id, AA_MODEL_NUMBER_L, &mn);
 
-  if(mn != SETTING_AX12_MODEL_NUMBER)
+  //if(mn != SETTING_AX12_MODEL_NUMBER)
+  if(mn == SETTING_AX12_MODEL_NUMBER)
   {
-    WARNING(ACTUATORS_ERROR, "AX12 ID=0x%02x not responding", id); 
+    //WARNING(ACTUATORS_ERROR, "AX12 ID=0x%02x not responding", id); 
+    NOTICE(0, "AX12 ID=0x%02x responds", id);
     return 0;
   }
 

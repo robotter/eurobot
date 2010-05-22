@@ -23,6 +23,7 @@
   */
 
 #include <aversive.h>
+#include <aversive/error.h>
 #include <stdint.h>
 
 #include "adns6010_spi.h"

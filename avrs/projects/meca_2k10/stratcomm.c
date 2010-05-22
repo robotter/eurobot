@@ -31,6 +31,7 @@
 #include "settings.h"
 #include "led.h"
 #include "actuators.h"
+#include "switches.h"
 
 extern actuators_t actuators;
 
@@ -261,6 +262,16 @@ void stratcomm_doOrder(stratcomm_t* sc,
       b = actuators_clamp_isLowered(&actuators,n);
 
       // push payload
+      stratcomm_pushReturnPayload(sc, PACK_UINT8(b), sizeof(uint8_t));
+
+      break;
+
+    //---------------------------------------------------------
+    // get robot color order
+    case SO_GET_ROBOT_COLOR:
+      DEBUG(0,"new order GET_ROBOT_COLOR received");
+
+      b = switches_getRobotColor();
       stratcomm_pushReturnPayload(sc, PACK_UINT8(b), sizeof(uint8_t));
 
       break;

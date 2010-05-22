@@ -72,7 +72,7 @@ uint8_t AX12_checksum(AX12_Packet *packet)
   
 	for (i=0; i<packet->nparams; i++)
 		checksum += packet->params[i];
-  
+
 	return ~checksum;
 }
 

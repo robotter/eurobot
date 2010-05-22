@@ -56,6 +56,7 @@ void sys_init(void)
 
   NOTICE(0,"Initializing scanner");
   scanner_init(&scanner);
+  scanner_setActuator(&scanner, &actuators);
 }
 
 void sys_update(void* dummy)
@@ -76,7 +77,7 @@ void sys_update(void* dummy)
   stratcomm_update(&stratcomm);
 
   // update scanner
-  scanner_update(&scanner);
+  // XXX scanner_update(&scanner);
 
   // compute CPU usage
   dt = timer3_get();
