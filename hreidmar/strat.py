@@ -120,12 +120,12 @@ class Match(object):
       led_it = leds_sequence_iter(['---1', '---0'])
       while not self.starting_cord_plugged():
         next(led_it)
-        time.sleep(0.5)
+        self.hub.run_one(0.5)
     print "waiting for starting cord..."
     led_set(3, 0)
     led_set(4, 1)
     while self.starting_cord_plugged():
-      time.sleep(0.1)
+      self.hub.run_one(0.1)
       color2 = self.get_color()
       if color2 != self.color:
         self.color = color2
