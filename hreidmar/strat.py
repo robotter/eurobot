@@ -229,10 +229,11 @@ class Match(object):
       self.kx = 1
       x0, y0, a0 = (1.500 - 0.120, 2.000 - 0.150, pi/2)
     #hub.send_room_wait(addrs.prop, room.asserv_set_position(x0, y0, a0))
-    try:
-      hub.send_room_wait(addrs.pmi, room.pmi_go())
-    except Exception as e:
-      print "no response to pmi_go: %s" % e
+    if 0x14 in board_addrs:
+      try:
+        hub.send_room_wait(addrs.pmi, room.pmi_go())
+      except Exception as e:
+        print "no response to pmi_go: %s" % e
 
     self.run_homologation()
 

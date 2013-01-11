@@ -14,7 +14,7 @@ hreidmar_nodes = [
   (0x11, '/dev/ttySAC1'),  # prop
   (0x12, '/dev/ttySAC2'),  # meca
   (0x13, '/dev/ttySAC3'),  # r3d2
-  (0x14, '/dev/ttyUSB0'),  # pmi
+  #(0x14, '/dev/ttyUSB0'),  # pmi
 ]
 
 
