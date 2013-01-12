@@ -118,6 +118,7 @@ class RoomHubMixin(object):
     if n == 0:
       del self._room_cbs[(frame.dst, frame.payload.response.mid)]
       raise RuntimeError("room response not received: %r" % frame)
+    self.send(frame)
     self.schedule(self.room_timeout, lambda: self._room_timeout_cb(frame, n-1))
 
   def payload_handler_room(self, frame):
