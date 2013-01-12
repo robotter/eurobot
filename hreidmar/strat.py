@@ -38,7 +38,7 @@ class StratHub(HreidmarHub, RoomHubMixin):
     """Wait for a given period, in seconds"""
     t = time.time() + dt
     while time.time() < t:
-      hub.run_one(1)
+      self.run_one()
 
   def killall(self):
     frame = Frame(self.address, 0xFF, PayloadSystemStop(1))
@@ -130,7 +130,7 @@ class Match(object):
       if color2 != self.color:
         self.color = color2
         print "changing color to %s ..." % color2name[self.color]
-        self.hub.send_room(addrs.meca, room.robot_color(self.color), None)
+        self.hub.send_room_wait(addrs.meca, room.robot_color(self.color))
         print "ready"
     self.color = self.get_color()
     print "start match with color %s" % color2name[self.color]
@@ -173,27 +173,23 @@ class Match(object):
         'open': 1,
         'caking': 2,
         }.get(mode, 0)
-    self.hub.send_room(addrs.meca, room.meca_set_arm_mode(mode), None)
+    self.hub.send_room_wait(addrs.meca, room.meca_set_arm_mode(mode))
 
 
-  def goto_xya(self, x, y, a=None, kx=True):
+  def goto_xya(self, x, y, a=None):
     """Go to x,y,a position, avoid opponents"""
-    if kx:
-      x = x * self.kx
-      if a is not None and kx == -1:
-        a = pi*2./3 - a
     hub = self.hub
-    if a is None:
-      pl_goto = room.asserv_goto_xy(x, y)
-    else:
-      #TODO handle a
-      pl_goto = room.asserv_goto_xy(x, y)
+    def do_goto():
+      print "do goto"
+      hub.send_room_wait(addrs.prop, room.asserv_goto_xy(x, y))
+      if a is not None:
+        hub.send_room_wait(addrs.prop, room.asserv_goto_a(a))
 
     status_l = []  # nonlocal is not available :(
     def cb_status(frame):
       status_l.append(frame.payload)
 
-    hub.send_room(addrs.prop, pl_goto, None)
+    do_goto()
     hub.send_room(addrs.prop, room.asserv_status(), cb_status)
     while True:
       if len(status_l):
@@ -214,42 +210,121 @@ class Match(object):
           hub.run_one()
         print "opponent moved away"
         #hub.send_room_wait(addrs.prop, room.asserv_activate(True))
-        hub.send_room(addrs.prop, pl_goto, None)
+        do_goto()
 
       hub.run_one()
+
+  def thrusting(d, a, omegaz):
+    self.hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(d*math.cos(a), d*math.sin(a), omegaz))
 
 
   def run(self):
     """Main strat routine"""
     hub = self.hub
+
     if self.color == COLOR_BLUE:
       self.kx = -1
       x0, y0, a0 = (-1.500 + 0.120, 2.000 - 0.150, pi/6)
     else:
       self.kx = 1
       x0, y0, a0 = (1.500 - 0.120, 2.000 - 0.150, pi/2)
-    #hub.send_room_wait(addrs.prop, room.asserv_set_position(x0, y0, a0))
+    x0, y0, a0 = (0, 0, 0)
+    hub.send_room_wait(addrs.prop, room.asserv_set_position(x0, y0, a0))
+    print hub.send_room_wait(addrs.prop, room.asserv_get_position())
+    #XXX
     if 0x14 in board_addrs:
       try:
         hub.send_room_wait(addrs.pmi, room.pmi_go())
       except Exception as e:
         print "no response to pmi_go: %s" % e
 
-    self.run_homologation()
-
-
-  def run_homologation(self):
-    hub = self.hub
-
-    if self.kx == 1:
-      self.goto_xya(-0.5, 1.0, kx=False)
-    else:
-      self.goto_xya(0.5, -1.0, kx=False)
-    #self.goto_xya(1.500 - 0.120 - 0.500, 2.000 - 0.250, kx=True)
+    self.run_caking()
     print "wait for end of match"
     while True:
-      hub.run_one()
+      self.hub.run_one()
 
+
+  def run_caking(self):
+    hub = self.hub
+    kx = self.kx
+
+    #TODO avoidance while thrusting
+
+    if kx == 1:
+      print "left the starting area"
+      self.goto_xya(-0.1, 0.1)
+      print "open arms"
+      self.set_arm_mode('open')
+
+      print "go near the cake "
+      self.goto_xya(0, 0.8, pi/6)
+
+      print "disable asserv"
+      hub.send_room_wait(addrs.prop, room.asserv_activate(False))
+
+      print "push the cake"
+      self.thrusting(30e6, pi/6, 0)
+      hub.wait(1.0)
+
+      print "stalling..."
+      self.thrusting(50e6, -math.radians(20), -1e6)
+      hub.wait(1.0)
+
+      print "change arm mode to caking"
+      self.set_arm_mode('caking')
+      print "go along the cake"
+      self.thrusting(40e6, math.radians(70), -1e6)
+      hub.wait(12.0)
+
+      print "re-enable asserv"
+      hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
+      hub.send_room_wait(addrs.prop, room.asserv_activate(True))
+      hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
+      hub.send_room_wait(addrs.prop, room.asserv_goto_xy(0, 0))
+
+      print "go back"
+      self.goto_xya(0, -0.1)
+      print "close arms"
+      self.set_arm_mode('close')
+
+    else:
+      print "left the starting area"
+      self.goto_xya(0, -0.1)
+      print "open arms"
+      self.set_arm_mode('open')
+
+      print "go near the cake "
+      self.goto_xya(0.6, -0.5, -pi/6)
+
+      print "disable asserv"
+      hub.send_room_wait(addrs.prop, room.asserv_activate(False))
+
+      print "push the cake"
+      self.thrusting(30e6, pi/4, 0)
+      hub.wait(1.0)
+
+      print "stalling..."
+      self.thrusting(50e6, math.radians(80), 1e6)
+      hub.wait(1.0)
+
+      print "change arm mode to caking"
+      self.set_arm_mode('caking')
+      print "go along the cake"
+      self.thrusting(40e6, math.radians(0), 1e6)
+      hub.wait(10.0)
+
+      print "re-enable asserv"
+      hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
+      hub.send_room_wait(addrs.prop, room.asserv_activate(True))
+      hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
+      hub.send_room_wait(addrs.prop, room.asserv_goto_xy(0, 0))
+
+      print "go back"
+      self.goto_xya(-0.5, 0)
+      print "close arms"
+      self.set_arm_mode('close')
+
+    print "caking DONE"
 
 
 def main():

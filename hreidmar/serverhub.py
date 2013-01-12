@@ -73,7 +73,6 @@ class HreidmarHub(HubBase):
     HubBase.remove_connection(self, con)
 
   def route_frame(self, frame, con=None):
-    print "route: %r" % frame
     # update network on ping reply
     if con is not None and frame.dst == self.address and isinstance(frame.payload, PayloadSystemPing):
       print "register address 0x%02X with connection %r" % (frame.src, con)
