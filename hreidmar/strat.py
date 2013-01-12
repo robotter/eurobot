@@ -150,10 +150,18 @@ class Match(object):
       time.sleep(self.match_timer_duration)
       led_set(0, 0)
       led_set(1, 0)
+      print "blow up balloon"
       self.hub.send_room_wait(addrs.meca, room.meca_balloon_tap(1))
       print "end of match"
       self.hub.killall()
+      print "stop asserv"
+      self.hub.send_room(addrs.prop, room.asserv_activate(False))
+      hub.send_room(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
+      print "stop meca"
+      #self.hub.send_room(addrs.meca, room.meca_set_arm_mode(0))
+
       os._exit(0)
+
     self.timer_thread = threading.Thread(target=match_timer)
     self.timer_thread.daemon = True
     print "start match timer thread"
