@@ -424,6 +424,7 @@ def main():
 
   hub = StratHub(args.port)
   hub.start()
+  hub.room_ntries = 5000
   match = Match(hub)
   try:
     match.start()
