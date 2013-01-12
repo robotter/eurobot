@@ -347,7 +347,7 @@ class Match(object):
       hub.send_room_wait(addrs.prop, room.asserv_activate(True))
 
       print "push glasses"
-      d, a = 2.05, pi/6
+      d, a = 2.09, pi/6
       self.goto_xya(d*math.cos(a), d*math.sin(a))
 
     else:
