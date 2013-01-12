@@ -116,7 +116,7 @@ class Match(object):
     hub.send_room_wait(addrs.prop, room.galipeur_set_xy_cruise_speed(10, 0.05))
     hub.send_room_wait(addrs.prop, room.galipeur_set_xy_steering_speed(5, 0.05))
     hub.send_room_wait(addrs.prop, room.galipeur_set_xy_stop_speed(1, 0.05))
-    hub.send_room_wait(addrs.prop, room.galipeur_set_windows(50, 5, 0.03))
+    hub.send_room_wait(addrs.prop, room.galipeur_set_windows(50, 10, 0.03))
 
     hub.send_room_wait(addrs.r3d2, room.r3d2_set_conf(4000, 50, 0.573, 11))
 
