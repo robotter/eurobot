@@ -83,7 +83,7 @@ class Match(object):
 
   match_timer_duration = 90-1
   # distance under which we stop to avoid the opponent
-  r3d2_avoid_distance = 0.8
+  r3d2_avoid_distance = 0.6
 
   def __init__(self, hub):
     self.color = None
@@ -187,7 +187,7 @@ class Match(object):
 
   def opponent_detected(self):
     """Return True if an opponent is detected"""
-    return any(o is not None and o[1] < self.r3d2_avoid_distance for o in hub.r3d2_objects)
+    return any(o is not None and o[1] < self.r3d2_avoid_distance for o in self.hub.r3d2_objects)
 
 
   def goto_xya(self, x, y, a=None):
@@ -217,8 +217,7 @@ class Match(object):
       # stop when r3d2 detects something close
       if self.opponent_detected():
         print "opponent detected at %r" % (hub.r3d2_objects[0],)
-        pl_pos = hub.send_room_wait(addrs.prop, room.asserv_get_position())
-        hub.send_room_wait(addrs.prop, room.asserv_goto_xy(pl_pos.params.x, pl_pos.params.y))
+        hub.send_room_wait(addrs.prop, room.asserv_goto_xy_rel(0, 0))
         #hub.send_room(addrs.prop, room.asserv_activate(False))
         while self.opponent_detected():
           hub.run_one()
@@ -232,11 +231,11 @@ class Match(object):
     hub = self.hub
     pl = room.galipeur_force_thrust(d*math.cos(a), d*math.sin(a), omegaz)
     hub.send_room_wait(addrs.prop, pl)
-    if not dist:
+    if not caking:
       return
 
     hub.cake_completed = False
-    while not hub.cake_completed or hub.cake_completed:
+    while not hub.cake_completed:
       # stop when r3d2 detects something close
       if self.opponent_detected():
         print "opponent detected at: %r" % (hub.r3d2_objects,)
@@ -300,19 +299,38 @@ class Match(object):
 
       print "change arm mode to caking"
       self.set_arm_mode('caking')
+      hub.wait(0.5)
       print "go along the cake"
       self.thrusting(40e6, math.radians(70), -1e6, True)
 
+      #print "back from the cake"
+      #self.thrusting(40e6, -pi, 0)
+      #hub.wait(0.5)
+      #print "close arms"
+      #hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
+      #self.set_arm_mode('close')
+
       print "re-enable asserv"
-      hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
-      hub.send_room_wait(addrs.prop, room.asserv_activate(True))
+      hub.send_room_wait(addrs.prop, room.asserv_activate(False))
       hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
-      hub.send_room_wait(addrs.prop, room.asserv_goto_xy(0, 0))
+      hub.send_room_wait(addrs.prop, room.asserv_activate(True))
 
       print "go back"
-      self.goto_xya(0, -0.1)
+      self.goto_xya(0, -0.05)
       print "close arms"
+      hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
       self.set_arm_mode('close')
+
+      print "go to glasses"
+      self.goto_xya(0, -0.87, -math.radians(13))
+      print "reset position"
+      hub.send_room_wait(addrs.prop, room.asserv_activate(False))
+      hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
+      hub.send_room_wait(addrs.prop, room.asserv_activate(True))
+
+      print "push glasses"
+      d, a = 2.05, pi/6
+      self.goto_xya(d*math.cos(a), d*math.sin(a))
 
     else:
       print "left the starting area"
@@ -336,21 +354,49 @@ class Match(object):
 
       print "change arm mode to caking"
       self.set_arm_mode('caking')
+      hub.wait(0.5)
       print "go along the cake"
       self.thrusting(40e6, math.radians(0), 1e6, True)
 
+      #print "back from the cake"
+      #self.thrusting(40e6, -pi, 0)
+      #hub.wait(0.5)
+      #print "close arms"
+      #hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
+      #self.set_arm_mode('close')
+
       print "re-enable asserv"
-      hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
-      hub.send_room_wait(addrs.prop, room.asserv_activate(True))
       hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
-      hub.send_room_wait(addrs.prop, room.asserv_goto_xy(0, 0))
+      hub.send_room_wait(addrs.prop, room.asserv_activate(True))
 
       print "go back"
-      self.goto_xya(-0.5, 0)
+      self.goto_xya(-0.05, 0)
       print "close arms"
+      hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
       self.set_arm_mode('close')
 
-    print "caking DONE"
+      print "go to glasses"
+      self.goto_xya(-0.87, 0.28, math.radians(13))
+      print "reset position"
+      hub.send_room_wait(addrs.prop, room.asserv_activate(False))
+      hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
+      hub.send_room_wait(addrs.prop, room.asserv_activate(True))
+
+      print "push glasses"
+      d, a = 2.05, pi/6
+      self.goto_xya(d*math.cos(a), d*math.sin(a))
+
+      print "go to first gift 1"
+      d, a = 1.80, pi/6
+      x, y = d*math.cos(a), d*math.sin(a)
+      self.goto_xya(x, y)
+      print "go to first gift 2"
+      d, a = 0.9, pi/6+pi/2
+      x, y = x + d*math.cos(a), y + d*math.sin(a)
+      self.goto_xya(x, y, pi/2)
+
+      print "disable asserv"
+      hub.send_room_wait(addrs.prop, room.asserv_activate(False))
 
 
 def main():
