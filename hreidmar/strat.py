@@ -83,7 +83,7 @@ class Match(object):
 
   match_timer_duration = 90-1
   # distance under which we stop to avoid the opponent
-  r3d2_avoid_distance = 0.6
+  r3d2_avoid_distance = 0.7
 
   def __init__(self, hub):
     self.color = None
