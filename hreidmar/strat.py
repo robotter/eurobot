@@ -124,7 +124,7 @@ class Match(object):
     self.set_arm_mode('close')
 
     hub.send_room_wait(addrs.prop, room.galipeur_set_a_speed(600, 100))
-    hub.send_room_wait(addrs.prop, room.galipeur_set_xy_cruise_speed(10, 0.05))
+    hub.send_room_wait(addrs.prop, room.galipeur_set_xy_cruise_speed(7, 0.05))
     hub.send_room_wait(addrs.prop, room.galipeur_set_xy_steering_speed(5, 0.05))
     hub.send_room_wait(addrs.prop, room.galipeur_set_xy_stop_speed(1, 0.05))
     hub.send_room_wait(addrs.prop, room.galipeur_set_windows(50, 10, 0.03))
@@ -335,14 +335,10 @@ class Match(object):
       self.set_arm_mode('caking')
       hub.wait(0.5)
       print "go along the cake"
-      self.thrusting(40e6, math.radians(70), -0.8e6, True)
-
-      #print "back from the cake"
-      #self.thrusting(40e6, -pi, 0)
-      #hub.wait(0.5)
-      #print "close arms"
-      #hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
-      #self.set_arm_mode('close')
+      self.thrusting(40e6, math.radians(70), -1e6, True)
+      print "correct angle"
+      self.thrusting(40e6, pi/6, 0)
+      hub.wait(0.5)
 
       print "re-enable asserv"
       hub.send_room_wait(addrs.prop, room.asserv_activate(False))
@@ -363,7 +359,7 @@ class Match(object):
       hub.send_room_wait(addrs.prop, room.asserv_activate(True))
 
       print "push glasses"
-      d, a = 2.09, pi/6
+      d, a = 2.04, pi/6
       x, y = d*math.cos(a), d*math.sin(a)
       self.goto_xya(x, y, avoid_angles=(0, pi/3))
 
@@ -391,7 +387,10 @@ class Match(object):
       self.set_arm_mode('caking')
       hub.wait(0.5)
       print "go along the cake"
-      self.thrusting(40e6, math.radians(0), 0.8e6, True)
+      self.thrusting(40e6, math.radians(0), 1e6, True)
+      print "correct angle"
+      self.thrusting(40e6, pi/6, 0)
+      hub.wait(0.5)
 
       print "re-enable asserv"
       hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
