@@ -204,7 +204,9 @@ class Match(object):
       if any(o is not None and o[1] < self.r3d2_avoid_distance for o in self.hub.r3d2_objects):
         print "r3d2_objects:", self.hub.r3d2_objects, avoid_angles
       a0, a1 = avoid_angles
-      return any(o is not None and o[1] < self.r3d2_avoid_distance and a0 < o[0] < a1 for o in self.hub.r3d2_objects)
+      #XXX hack, hardcoded values to handle 0
+      #return any(o is not None and o[1] < self.r3d2_avoid_distance and a0 < o[0] < a1 for o in self.hub.r3d2_objects)
+      return any(o is not None and o[1] < self.r3d2_avoid_distance and (o[0] > 11*pi/6 or o[0] < pi/3) for o in self.hub.r3d2_objects)
 
 
   def goto_xya(self, x, y, a=None, avoid_angles=None):
@@ -287,7 +289,7 @@ class Match(object):
     #XXX
     if 0x14 in board_addrs:
       try:
-        hub.send_room_wait(addrs.pmi, room.pmi_go())
+        pass#hub.send_room_wait(addrs.pmi, room.pmi_go())
       except Exception as e:
         print "no response to pmi_go: %s" % e
 
@@ -359,9 +361,9 @@ class Match(object):
       hub.send_room_wait(addrs.prop, room.asserv_activate(True))
 
       print "push glasses"
-      d, a = 2.04, pi/6
+      d, a = 2.14, pi/6
       x, y = d*math.cos(a), d*math.sin(a)
-      self.goto_xya(x, y, avoid_angles=(pi/2, 11*pi/6))
+      self.goto_xya(x, y, avoid_angles=(-pi/6, pi/2))
 
     else:
       print "left the starting area"
@@ -410,9 +412,9 @@ class Match(object):
       hub.send_room_wait(addrs.prop, room.asserv_activate(True))
 
       print "push glasses"
-      d, a = 2.09, pi/6
+      d, a = 2.14, pi/6
       x, y = d*math.cos(a), d*math.sin(a)
-      self.goto_xya(x, y, avoid_angles=(pi/2, 11*pi/6))
+      self.goto_xya(x, y, avoid_angles=(-pi/6, pi/2))
 
 
 def main():
