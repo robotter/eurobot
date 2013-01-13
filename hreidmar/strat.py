@@ -367,35 +367,6 @@ class Match(object):
       x, y = d*math.cos(a), d*math.sin(a)
       self.goto_xya(x, y, avoid_angles=(0, pi/3))
 
-      print "go back for gifts"
-      d, a = -0.25, pi/6
-      x, y = x + d*math.cos(a), y + d*math.sin(a)
-      self.goto_xya(x, y)
-
-      print "go toward gift 1"
-      hub.send_room_wait(addrs.meca, room.ax12_move(3, 900, 0x2FF))
-      d, a = 1, pi/6-pi/2
-      x, y = x + d*math.cos(a), y + d*math.sin(a)
-      self.goto_xya(x, y, -pi/2)
-      hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
-
-      for igift in (2, 3, 4):
-        print "gift %d step 1" % igift
-        d, a = 0.15, pi/6+pi
-        x, y = x + d*math.cos(a), y + d*math.sin(a)
-        self.goto_xya(x, y)
-
-        print "gift %d step 2" % igift
-        d, a = 0.61, -pi/3
-        x, y = x + d*math.cos(a), y + d*math.sin(a)
-        self.goto_xya(x, y)
-
-        print "gift %d step 3" % igift
-        d, a = 0.16, pi/6
-        x, y = x + d*math.cos(a), y + d*math.sin(a)
-        self.goto_xya(x, y)
-        hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
-
     else:
       print "left the starting area"
       self.goto_xya(0, -0.1)
@@ -443,36 +414,6 @@ class Match(object):
       d, a = 2.09, pi/6
       x, y = d*math.cos(a), d*math.sin(a)
       self.goto_xya(x, y, avoid_angles=(0, pi/3))
-
-      print "go back for gifts"
-      d, a = -0.25, pi/6
-      x, y = x + d*math.cos(a), y + d*math.sin(a)
-      self.goto_xya(x, y)
-
-      print "go toward gift 1"
-      hub.send_room_wait(addrs.meca, room.ax12_move(2, 320, 0x2FF))
-      hub.send_room_wait(addrs.meca, room.ax12_move(4, 100, 0x2FF))
-      d, a = 1, pi/6+pi/2
-      x, y = x + d*math.cos(a), y + d*math.sin(a)
-      self.goto_xya(x, y, pi*2./3) #TODO same for red?
-      hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
-
-      for igift in (2, 3, 4):
-        print "gift %d step 1" % igift
-        d, a = 0.15, pi/6+pi
-        x, y = x + d*math.cos(a), y + d*math.sin(a)
-        self.goto_xya(x, y)
-
-        print "gift %d step 2" % igift
-        d, a = 0.61, pi/6+pi/2
-        x, y = x + d*math.cos(a), y + d*math.sin(a)
-        self.goto_xya(x, y)
-
-        print "gift %d step 3" % igift
-        d, a = 0.16, pi/6
-        x, y = x + d*math.cos(a), y + d*math.sin(a)
-        self.goto_xya(x, y)
-        hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
 
 
 def main():
