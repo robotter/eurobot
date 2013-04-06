@@ -4,6 +4,20 @@ from perlimpinpin.payload.room.transaction import *
 
 transactions = register_groups(
 
+    # Robot movement
+    (0x10, [
+      Command('asserv_get_position', [], [('x', 'dist'), ('y', 'dist'), ('a', 'angle')],
+        desc="Get robot position"),
+      Order('asserv_set_position', [('x', 'dist'), ('y', 'dist'), ('a', 'angle')],
+        desc="Set robot position"),
+
+      Order('asserv_goto_xy', [('x', 'dist'), ('y', 'dist')],
+        desc="Move to given absolute position coordinates"),
+      Order('asserv_goto_a', [('a', 'angle')],
+        desc="Move to given absolute angle"),
+
+      ]),
+
     # R3D2
     (0x30, [
       # detection
