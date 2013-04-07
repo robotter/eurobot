@@ -6,17 +6,13 @@
 
 #define TRAJ_FLAG_PAUSE  (1 << 0)
 #define TRAJ_FLAG_ENDED  (1 << 1)
-#define TRAJ_FLAG_BACKWARD  (1 << 2)
-#define TRAJ_FLAG_NEW_MOVE  (1 << 3)
 
 
 /// Trajectory consign type
 typedef enum {
   TRAJ_NO_ASSERV = 0,
-  TRAJ_NO_MOVE,
   TRAJ_D_MOVE,
   TRAJ_A_MOVE,
-  TRAJ_A_REL_MOVE,
   TRAJ_XY_MOVE,
   TRAJ_XYA_MOVE,
 
@@ -36,18 +32,14 @@ typedef struct {
   traj_cons_t cons;
   uint8_t flags;
 
-  double d_start;
-  double a_start;
-  double x_start;
-  double y_start;
   double d_cur;
   double a_cur;
   double x_cur;
   double y_cur;
-  double d_cons;
-  double a_cons;
-  double x_cons;
-  double y_cons;
+  double d_target;
+  double a_target;
+  double x_target;
+  double y_target;
 
   double d_out;
   double a_out;
@@ -65,7 +57,8 @@ void traj_init(traj_t *t, position_t *p);
 void traj_no_asserv(traj_t *t);
 void traj_goto_d(traj_t *t, double d);
 void traj_goto_a(traj_t *t, double a);
-void traj_goto_a_rel(traj_t *t, double a);
+void traj_goto_xy(traj_t *t, double x, double y);
+void traj_goto_xya(traj_t *t, double x, double y, double a);
 
 /// Compute outputs
 void traj_do_computation(traj_t *t);

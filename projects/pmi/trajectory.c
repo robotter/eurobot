@@ -13,14 +13,10 @@ void traj_init(traj_t *t, position_t *p)
   t->a_cur = 0;
   t->x_cur = 0;
   t->y_cur = 0;
-  t->d_cons = 0;
-  t->a_cons = 0;
-  t->x_cons = 0;
-  t->y_cons = 0;
-  t->d_start = 0;
-  t->a_start = 0;
-  t->x_start = 0;
-  t->y_start = 0;
+  t->d_target = 0;
+  t->a_target = 0;
+  t->x_target = 0;
+  t->y_target = 0;
 
   // init with a move
   traj_goto_d(t, 0);
@@ -29,40 +25,50 @@ void traj_init(traj_t *t, position_t *p)
 
 void traj_no_asserv(traj_t *t)
 {
-  INTLVL_DISABLE_ALL_BLOCK() {
+  INTLVL_DISABLE_BLOCK(CONTROL_SYSTEM_INTLVL) {
     t->cons = TRAJ_NO_ASSERV;
     t->flags &= ~TRAJ_FLAG_ENDED;
-    t->flags |= TRAJ_FLAG_NEW_MOVE;
   }
 }
 
 void traj_goto_d(traj_t *t, double d)
 {
-  INTLVL_DISABLE_ALL_BLOCK() {
-    t->d_cons = d;
+  INTLVL_DISABLE_BLOCK(CONTROL_SYSTEM_INTLVL) {
+    t->d_target = t->d_cur + d;
     t->cons = TRAJ_D_MOVE;
     t->flags &= ~TRAJ_FLAG_ENDED;
-    t->flags |= TRAJ_FLAG_NEW_MOVE;
   }
 }
 
 void traj_goto_a(traj_t *t, double a)
 {
-  INTLVL_DISABLE_ALL_BLOCK() {
-    t->a_cons = a;
+  INTLVL_DISABLE_BLOCK(CONTROL_SYSTEM_INTLVL) {
+    t->a_target = a;
     t->cons = TRAJ_A_MOVE;
     t->flags &= ~TRAJ_FLAG_ENDED;
-    t->flags |= TRAJ_FLAG_NEW_MOVE;
   }
 }
 
-void traj_goto_a_rel(traj_t *t, double a)
+void traj_goto_xy(traj_t *t, double x, double y)
 {
-  INTLVL_DISABLE_ALL_BLOCK() {
-    t->a_cons = a;
-    t->cons = TRAJ_A_REL_MOVE;
+  INTLVL_DISABLE_BLOCK(CONTROL_SYSTEM_INTLVL) {
+    t->x_target = x;
+    t->y_target = y;
+    t->d_target = NAN;
+    t->cons = TRAJ_XY_MOVE;
     t->flags &= ~TRAJ_FLAG_ENDED;
-    t->flags |= TRAJ_FLAG_NEW_MOVE;
+  }
+}
+
+void traj_goto_xya(traj_t *t, double x, double y, double a)
+{
+  INTLVL_DISABLE_BLOCK(CONTROL_SYSTEM_INTLVL) {
+    t->x_target = x;
+    t->y_target = y;
+    t->a_target = a;
+    t->d_target = NAN;
+    t->cons = TRAJ_XYA_MOVE;
+    t->flags &= ~TRAJ_FLAG_ENDED;
   }
 }
 
@@ -74,16 +80,10 @@ static void traj_handle_no_asserv(traj_t *t)
   t->flags |= TRAJ_FLAG_ENDED;
 }
 
-static void traj_handle_no_move(traj_t *t)
-{
-  t->d_out = t->d_start;
-  t->a_out = t->a_start;
-}
-
 static void traj_handle_d_move(traj_t *t)
 {
-  t->d_out = t->d_start + t->d_cons;
-  t->a_out = t->a_cons;
+  t->d_out = t->d_target;
+  t->a_out = t->a_target;
   if(fabs(t->d_out - t->d_cur) < pos_mm_to_tick(t->pos, TRAJECTORY_MARGIN_DIST)) {
     t->flags |= TRAJ_FLAG_ENDED;
   }
@@ -91,17 +91,56 @@ static void traj_handle_d_move(traj_t *t)
 
 static void traj_handle_a_move(traj_t *t)
 {
-  t->a_out = t->a_cons;
+  t->a_out = t->a_target;
   if(fabs(t->a_out - t->a_cur) < pos_deg_to_tick(t->pos, TRAJECTORY_MARGIN_ANGLE)) {
     t->flags |= TRAJ_FLAG_ENDED;
   }
 }
 
-static void traj_handle_a_rel_move(traj_t *t)
+static void traj_handle_xy_move(traj_t *t)
 {
-  t->d_out = t->d_cons;
-  t->a_out = t->a_start + t->a_cons;
-  //TODO missing check to set TRAJ_FLAG_ENDED flag?
+  double xy_margin = pos_mm_to_tick(t->pos, TRAJECTORY_MARGIN_DIST);
+  double dx = t->x_target - t->x_cur;
+  double dy = t->y_target - t->y_cur;
+  double dd = dx*dx + dy*dy;
+
+  if(dd < xy_margin*xy_margin) {
+    // XY target reached
+    t->flags |= TRAJ_FLAG_ENDED;
+  } else {
+    // check angle to destination
+    t->a_out = atan2(dy, dx);
+    if(fabs(t->a_out - t->a_cur) < pos_deg_to_tick(t->pos, TRAJECTORY_MARGIN_ANGLE)) {
+      // angle is fine, update d target
+      t->d_out = t->d_cur + sqrt(dd);
+    } else {
+      // need to turn
+      t->d_out = t->d_cur;
+    }
+  }
+}
+
+static void traj_handle_xya_move(traj_t *t)
+{
+  double xy_margin = pos_mm_to_tick(t->pos, TRAJECTORY_MARGIN_DIST);
+  double dx = t->x_target - t->x_cur;
+  double dy = t->y_target - t->y_cur;
+  double dd = dx*dx + dy*dy;
+
+  if(dd < xy_margin*xy_margin) {
+    // XY target reached, check final angle
+    return traj_handle_a_move(t);
+  } else {
+    // check angle to destination
+    t->a_out = atan2(dy, dx);
+    if(fabs(t->a_out - t->a_cur) < pos_deg_to_tick(t->pos, TRAJECTORY_MARGIN_ANGLE)) {
+      // angle is fine, update d target
+      t->d_out = t->d_cur + sqrt(dd);
+    } else {
+      // need to turn
+      t->d_out = t->d_cur;
+    }
+  }
 }
 
 
@@ -117,21 +156,9 @@ void traj_do_computation(traj_t *t)
     t->d_out = t->d_pause;
     t->a_out = t->a_pause;
   } else {
-
-    if(t->flags & TRAJ_FLAG_NEW_MOVE) {
-      t->d_start = t->d_cur;
-      t->a_start = t->a_cur;
-      t->x_start = t->x_cur;
-      t->y_start = t->y_cur;
-      t->flags &= ~TRAJ_FLAG_NEW_MOVE;
-    }
-
     switch(t->cons) {
       case TRAJ_NO_ASSERV:
         traj_handle_no_asserv(t);
-        break;
-      case TRAJ_NO_MOVE:
-        traj_handle_no_move(t);
         break;
       case TRAJ_D_MOVE:
         traj_handle_d_move(t);
@@ -139,8 +166,11 @@ void traj_do_computation(traj_t *t)
       case TRAJ_A_MOVE:
         traj_handle_a_move(t);
         break;
-      case TRAJ_A_REL_MOVE:
-        traj_handle_a_rel_move(t);
+      case TRAJ_XY_MOVE:
+        traj_handle_xy_move(t);
+        break;
+      case TRAJ_XYA_MOVE:
+        traj_handle_xya_move(t);
         break;
       default:
         traj_no_asserv(t);

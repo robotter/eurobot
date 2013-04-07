@@ -116,7 +116,13 @@ int main(void)
 
   timer_set_callback(timerC0, 'A', TIMER_US_TO_TICKS(C0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, manage_control_system);
 
-  // main loop
+  /*
+   * main loop
+   *
+   * There are two "threads", excluding low-level ones from modules:
+   *  - main: just below, PPP (order handling, ...)
+   *  - asserv: manage_control_system() call
+   */
   for(;;) {
     ppp_intf_update(&pppintf);
   }
