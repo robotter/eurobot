@@ -76,6 +76,7 @@ int main(void)
   clock_init();
   uart_init();
   uart_fopen(uartC1);
+  timer_init();
   CPU_SREG |= CPU_I_bm;
   INTLVL_ENABLE_ALL();
 
