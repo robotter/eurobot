@@ -40,5 +40,25 @@ transactions = register_groups(
 
       ]),
 
+    # AX-12
+    (0x80, [
+      # generic read/write
+      Command('ax12_read_byte', [('id', 'uint8'), ('addr', 'uint8')], [('data', 'uint8'), ('error', 'uint8')],
+        desc="Read a byte from an AX-12 memory"),
+      Command('ax12_read_word', [('id', 'uint8'), ('addr', 'uint8')], [('data', 'uint16'), ('error', 'uint8')],
+        desc="Read a word (2 bytes) from an AX-12 memory"),
+      Command('ax12_write_byte', [('id', 'uint8'), ('addr', 'uint8'), ('data', 'uint8')], [('error', 'uint8')],
+        desc="Write a byte to an AX-12 memory"),
+      Command('ax12_write_word', [('id', 'uint8'), ('addr', 'uint8'), ('data', 'uint16')], [('error', 'uint8')],
+        desc="Write a word (2 bytes) to an AX-12 memory"),
+
+      # helpers to get/set several common values at once
+      Order('ax12_move', [('id', 'uint8'), ('pos', 'uint16'), ('speed', 'uint16')],
+        desc="Move AX-12 to a given position at a given speed"),
+      Command('ax12_state', [('id', 'uint8')], [('pos', 'uint16'), ('moving', 'bool')],
+        desc="Get AX-12 current position and if it is moving"),
+
+      ]),
+
     )
 
