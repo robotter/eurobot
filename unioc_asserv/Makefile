@@ -4,7 +4,7 @@
 SRCS = $(filter-out avoidance%, $(wildcard *.c))
 ASRCS =
 TARGET = main
-MODULES = uart clock pwm quadra
+MODULES = uart clock pwm encoder/quadra
 
 ## Target configuration
 MCU = atxmega128a1

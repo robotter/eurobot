@@ -64,9 +64,9 @@ static void _set_motorC_sign(bool sign) {
 void hrobot_init()
 {
   // configure PWMs
-  pwm_motor_init(system.pwms+0, &TCC0, 'A', PORTPIN(F,0), _set_motorA_sign); 
-  pwm_motor_init(system.pwms+1, &TCC0, 'B', PORTPIN(F,1), _set_motorB_sign); 
-  pwm_motor_init(system.pwms+2, &TCC0, 'C', PORTPIN(F,2), _set_motorC_sign); 
+  pwm_motor_init(system.pwms+0, &TCC0, 'A',  _set_motorA_sign); 
+  pwm_motor_init(system.pwms+1, &TCC0, 'B',  _set_motorB_sign); 
+  pwm_motor_init(system.pwms+2, &TCC0, 'C',  _set_motorC_sign); 
   // configure frequency
   uint8_t it;
   for(it=0;it<3;it++)

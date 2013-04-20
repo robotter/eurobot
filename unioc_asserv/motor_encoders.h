@@ -25,7 +25,7 @@
 
 #include <avarix.h>
 #include <avarix/portpin.h>
-#include <quadra/quadra.h>
+#include <encoder/quadra/quadra.h>
 
 typedef struct {
   // motors quadrature decoders

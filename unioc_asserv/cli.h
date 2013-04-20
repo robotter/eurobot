@@ -26,7 +26,7 @@
 #include <avarix.h>
 #include <uart/uart.h>
 
-#define CLI_USER_UART uartC0
+#define CLI_USER_UART uartE0
 
 static inline int cli_getkey(void)
 {

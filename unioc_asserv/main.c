@@ -71,6 +71,12 @@ int main(void)
   uart_init();
   uart_fopen(CLI_USER_UART);
 
+  // Initialize Timer
+  timer_init();
+
+  INTLVL_ENABLE_ALL();
+  __asm__("sei");
+
   // Clear screen
 #ifdef SETTING_UART_UI_ENABLED
   printf("%c[2J",0x1B);
@@ -78,7 +84,7 @@ int main(void)
 #endif
 
   // Some advertisment :p
-  NOTICE(0,"Robotter 2013 - Galipeur - SUPER-UNIOC-NG PROPULSION");
+  NOTICE(0,"Robotter 2013 - Galipeur - SUPER-UNIOC-NG PROPULSION\n");
   NOTICE(0,"Compiled "__DATE__" at "__TIME__".");
 
   //--------------------------------------------------------
