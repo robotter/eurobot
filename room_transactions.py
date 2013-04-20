@@ -40,6 +40,17 @@ transactions = register_groups(
 
       ]),
 
+    # Meca
+    (0x50, [
+      Order('meca_balloon_tap', [('open', 'bool')],
+        desc="Open/close the balloon tap"),
+      Order('meca_set_cake_angle', [('a', 'angle')], 
+        desc="Set angle position along the cake"),
+      Command('meca_get_cake_angle', [], [('a', 'angle')],
+        desc="Get angle position along the cake"),
+
+      ]),
+
     # AX-12
     (0x80, [
       # generic read/write
