@@ -79,7 +79,7 @@ int main(void)
 
   // Initialize Timer
   timer_init();
- // timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, vcs_update);
+  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, vcs_update);
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
@@ -181,6 +181,7 @@ void paddock_manualControl(void)
 
   NOTICE(0,"Entering manual control");
 
+  NOTICE(0,"'j' -x / 'l' +x / 'k' -y / 'p' +y / 'o' -a / 'u' +a");
   while(1)
   {
     key = cli_getkey();

@@ -37,7 +37,7 @@
 #define SETTING_MATCH_DURATION_SECS (89)
 
 // -- PWM --
-#define SETTING_PWM_FREQUENCY_KHZ (10)
+#define SETTING_PWM_FREQUENCY_KHZ (20)
 
 // -- motors --
 
