@@ -42,4 +42,6 @@ void motor_encoders_init(void);
 
 int16_t *motor_encoders_get_value(void);
 
+void motor_encoders_update(void);
+
 #endif/*MOTOR_ENCODERS_H*/

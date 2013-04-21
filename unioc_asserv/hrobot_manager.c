@@ -64,13 +64,17 @@ static void _set_motorC_sign(bool sign) {
 void hrobot_init()
 {
   // configure PWMs
-  pwm_motor_init(system.pwms+0, &TCC0, 'A',  _set_motorA_sign); 
-  pwm_motor_init(system.pwms+1, &TCC0, 'B',  _set_motorB_sign); 
-  pwm_motor_init(system.pwms+2, &TCC0, 'C',  _set_motorC_sign); 
+  pwm_motor_init(system.pwms+0, &TCF0, 'A',  _set_motorA_sign); 
+  pwm_motor_init(system.pwms+1, &TCF0, 'B',  _set_motorB_sign); 
+  pwm_motor_init(system.pwms+2, &TCF0, 'C',  _set_motorC_sign); 
   // configure frequency
   uint8_t it;
   for(it=0;it<3;it++)
     pwm_motor_set_frequency(system.pwms+it, SETTING_PWM_FREQUENCY_KHZ*1000);
+
+  //set break as output
+  PORTF.DIRSET = _BV(6)|_BV(7);
+  PORTA.DIRSET = _BV(6);
 
   // configure break pps
   system.breaks[0] = PORTPIN(F,6);
@@ -89,9 +93,9 @@ void hrobot_break(uint8_t state)
   uint8_t it;
   for(it=0;it<3;it++) {
     if(state)
-      portpin_outclr(system.breaks+it);
-    else
       portpin_outset(system.breaks+it);
+    else
+      portpin_outclr(system.breaks+it);
   }
 }
 

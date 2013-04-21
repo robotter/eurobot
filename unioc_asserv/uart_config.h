@@ -13,9 +13,9 @@
 //@{
 
 /// Buffer size for received data
-#define UART_RX_BUF_SIZE  16
+#define UART_RX_BUF_SIZE  64
 /// Buffer size for sent data
-#define UART_TX_BUF_SIZE  16
+#define UART_TX_BUF_SIZE  64
 
 /// Baudrate
 #define UART_BAUDRATE  38400

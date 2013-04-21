@@ -50,7 +50,14 @@ int16_t* motor_encoders_get_value()
   uint8_t it;
   for(it=0;it<3;it++)
     encoders.vectors[it] = (int16_t)quadra_get_value(encoders.quadras+it);
-  for(it=3;it<6;it++)
-    encoders.vectors[it] = 0;
+/*  for(it=3;it<6;it++)
+    encoders.vectors[it] = 0;*/
   return encoders.vectors;
+}
+
+void motor_encoders_update()
+{
+  uint8_t it;
+  for(it=0;it<3;it++)
+    quadra_update(encoders.quadras+it);
 }

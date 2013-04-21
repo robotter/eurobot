@@ -33,5 +33,6 @@ static inline void logging_report(logging_level_t lvl, int x, const char *fmt, .
   va_start(argp, fmt);
   vprintf(fmt,argp);
   va_end(argp);
+  printf("\n");
 }
 #endif//LOGGING_H

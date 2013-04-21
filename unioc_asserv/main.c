@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <uart/uart.h>
 #include <math.h>
+#include <timer/timer.h>
 
 #include "logging.h"
 
@@ -60,6 +61,11 @@ extern uint8_t log_level;
 // CSs cpu usage in percent (0-100)
 extern uint8_t cs_cpuUsage;
 
+void vcs_update(void)
+{
+  cs_update(NULL);
+}
+
 int main(void)
 {
   // Booting
@@ -73,6 +79,7 @@ int main(void)
 
   // Initialize Timer
   timer_init();
+ // timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, vcs_update);
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
@@ -231,7 +238,7 @@ void paddock_pwmTest(void)
   int16_t pwm1 = 0;
   int16_t pwm2 = 0;
   int16_t pwm3 = 0;
-  uint16_t frq_khz = 10000;
+  uint16_t frq_khz = 20;
   
   NOTICE(0,"Entering PWM test mode");
   NOTICE(0,"PWM1 +/- : i/k | PWM2 +/- : o/l | PWM3 +/- : p/m | FRQ +/- : u/j | zero all : z");
@@ -251,8 +258,8 @@ void paddock_pwmTest(void)
       case 'l': pwm2 -= SETTING_PADDOCK_PWMTEST_INC; break;
       case 'p': pwm3 += SETTING_PADDOCK_PWMTEST_INC; break;
       case 'm': pwm3 -= SETTING_PADDOCK_PWMTEST_INC; break;
-      case 'u': frq_khz += 10; break;
-      case 'j': frq_khz -= 10; break;
+      case 'u': frq_khz += 1; break;
+      case 'j': frq_khz -= 1; break;
       case 'z':
         pwm1 = 0;
         pwm2 = 0;
@@ -268,7 +275,7 @@ void paddock_pwmTest(void)
     for(it=0;it<3;it++)
       pwm_motor_set_frequency(system.pwms+it, frq_khz*1000);
 
-    NOTICE(0,"PWM1=%5ld PWM2=%5ld PWM3=%5ld FRQ=%d",pwm1,pwm2,pwm3,frq_khz);
+    NOTICE(0,"PWM1=%5i PWM2=%5i PWM3=%5i FRQ=%u_kHz",pwm1,pwm2,pwm3,frq_khz);
 
   }
 
@@ -286,11 +293,12 @@ void paddock_calibration(void)
   while(1)
   {
     vectors = motor_encoders_get_value();
-    printf("%d,%d,%d\n",
+    printf("%i,%i,%i\n",
               vectors[0],
               vectors[1],
               vectors[2]);
     _delay_ms(10);
+    motor_encoders_update();
   }
 
 #endif

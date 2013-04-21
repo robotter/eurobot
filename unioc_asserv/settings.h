@@ -107,6 +107,11 @@
 #define SETTING_TRAJECTORY_STOP_XYWIN (5.0)
 #define SETTING_TRAJECTORY_STOP_AWIN  (0.03)
 
+// Control system update period, in microseconds
+#define CONTROL_SYSTEM_PERIOD_US  15000
+/// Interrupt level for control system update
+#define CONTROL_SYSTEM_INTLVL  INTLVL_LO
+
 // -- position manager --
 
 #define SETTING_POSITION_INIT_X (0.0)
@@ -115,7 +120,7 @@
 
 // -- paddock/pwm test --
 
-#define SETTING_PADDOCK_PWMTEST_INC (50)
+#define SETTING_PADDOCK_PWMTEST_INC (500)
 
 // -- avoidance --
 
