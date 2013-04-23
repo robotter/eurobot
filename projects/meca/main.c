@@ -46,6 +46,14 @@ static void ax12_set_state(ax12_state_t state)
     usart->CTRLB |= USART_TXEN_bm;
     portpin_outset(&AX12_DIR_PP);
   } else {
+    while(ax12_nsent > 0) {
+      while(uart_recv_nowait(UART_AX12) == -1) ;
+      ax12_nsent--;
+    }
+    portpin_outclr(&AX12_DIR_PP);
+    //usart->CTRLB &= ~USART_TXEN_bm;
+    PORTC.DIRCLR = _BV(7);
+
     while(!(usart->STATUS & USART_DREIF_bm)) ;
     usart->CTRLB &= ~USART_TXEN_bm;
     while(!(usart->STATUS & USART_TXCIF_bm)) ;

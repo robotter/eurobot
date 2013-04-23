@@ -7,6 +7,7 @@
 
 // AX-12
 #define UARTC1_ENABLED
+#define UARTC1_BAUDRATE  19200
 // Communication
 #define UARTF0_ENABLED
 // Cam
