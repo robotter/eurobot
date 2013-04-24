@@ -2,6 +2,7 @@
 #include <avarix/portpin.h>
 #include <avarix/intlvl.h>
 #include <clock/clock.h>
+#include <util/delay.h>
 #include <uart/uart.h>
 #include <perlimpinpin/perlimpinpin.h>
 #include <perlimpinpin/payload/system.h>
@@ -86,6 +87,20 @@ int main(void)
   portpin_dirset(&LED_GREEN_PP);
   portpin_dirset(&LED_RED_PP);
   portpin_dirset(&LED_BLUE_PP);
+
+  // do a led cycling for one second
+  // NOTE: it allows board reprogramming if something
+  // fails, like full motor power right at the beginning.
+  // Do not remove this code.
+  uint8_t i;
+  portpin_outset(&LED_BLUE_PP);
+  for(i=0;i<10;i++) {
+    portpin_outtgl(&LED_GREEN_PP);
+    portpin_outtgl(&LED_BLUE_PP);
+    _delay_ms(100);
+  }
+  portpin_outclr(&LED_BLUE_PP);
+  portpin_outclr(&LED_GREEN_PP);
 
   // PPP init
   pppintf.filter = ppp_filter;
