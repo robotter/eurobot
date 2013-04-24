@@ -94,7 +94,7 @@ static void cc_motor_3_pwm_set(int16_t val)
   }
 }
 
-static volatile uint8_t char_nsent;
+static volatile uint8_t ax12_nsent;
 
 void ax12_set_state(ax12_state_t state)
 {
@@ -104,37 +104,40 @@ void ax12_set_state(ax12_state_t state)
       //USARTC1.CTRLB |= USART_TXEN_bm; 
       AX12_DIR_PORT.OUTSET = _BV(AX12_DIR_PIN_bp);
       AX12_TX_PORT.DIRSET = _BV(AX12_TX_PIN_bp);
-      char_nsent = 0;
+      ax12_nsent = 0;
      // USARTC1.CTRLB &= ~USART_RXEN_bm; 
       break;
 
     case AX12_STATE_READ:
       
-      while(char_nsent>0) {
-        while(uart_recv_nowait(uartC1) == -1);
-        char_nsent--;
+      while(ax12_nsent>0) {
+        int c;
+        while( (c = uart_recv_nowait(uartC1)) == -1);
+        printf("pop %X\n", c);
+        ax12_nsent--;
         }
      // USARTC1.CTRLB &= ~USART_TXEN_bm; 
       AX12_DIR_PORT.OUTCLR = _BV(AX12_DIR_PIN_bp);
-      //AX12_TX_PORT.DIRCLR = _BV(AX12_TX_PIN_bp);
+      AX12_TX_PORT.DIRCLR = _BV(AX12_TX_PIN_bp);
        USARTC1.CTRLB |= USART_RXEN_bm; 
       break;
 
   }
 
 }
-int8_t ax12_send_fn(uint8_t data)
+int8_t ax12_send_char(uint8_t data)
 {
-  char_nsent ++;
+  ax12_nsent ++;
   return uart_send(UART_AX12, data);
 }
 
-int ax12_recv_fn(void)
+int ax12_recv_char(void)
 {
   uint32_t tend = uptime + AX12_TIMEOUT_US;
   for(;;) {
     int c = uart_recv_nowait(UART_AX12);
     if(c != -1) {
+        printf("recv%X\n", c);
       return c;
     }
     if(tend <= uptime) {
@@ -191,14 +194,12 @@ int main(void) {
   // AX12
   ax12_t ax12 = 
   { 
-    .send = ax12_send_fn,
-    //.send = ax12_send_char,
-    .recv = ax12_recv_fn,
-    //.recv = ax12_recv_char,
+    .send = ax12_send_char,
+    .recv = ax12_recv_char,
     .set_state = ax12_set_state
   };
 
-  for(uint8_t it; it < 100; it ++) 
+  for(uint8_t it; it < 5; it ++) 
   {
     printf("@%3u:%3u \t", it, ax12_ping(&ax12, it));
     if (it %5 == 0)
@@ -231,10 +232,21 @@ int main(void) {
     {
       ax12_write_byte(&ax12, 2, 0x19, 0);
     }
+    else if (cpt == 200)
+    {
+      uint8_t data = 0xff;
+      ax12_read_byte(&ax12, 2, 0x00, &data);
+      printf( "%X\t", data);
+      ax12_read_byte(&ax12, 2, 0x01, &data);
+      printf( "%X\t",data);
+      ax12_read_byte(&ax12, 2, 0x02, &data);
+      printf( "%X\n",data);
+    }
     else if (cpt == 2000)
     {
       ax12_write_byte(&ax12, 2, 0x19, 1);
       cpt = 0;
+ 
     }
     int c = uart_recv_nowait(uartF0);
     if(c != -1) {
@@ -283,7 +295,7 @@ int main(void) {
     //cc_motor_1_pwm_set(16000 * cos(t/10));
     //cc_motor_2_pwm_set(16000 * cos(t/10));
     //cc_motor_3_pwm_set(16000 * cos(t/10));
-    cc_motor_1_pwm_set(16000);
+//    cc_motor_1_pwm_set(16000);
 
     //pwm_motor_set(cc_motor+2, -16000); 
 
