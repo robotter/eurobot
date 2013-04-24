@@ -39,24 +39,19 @@ static volatile uint8_t ax12_nsent = 0;
 /// Switch UART line for AX-12 module
 static void ax12_set_state(ax12_state_t state)
 {
-  USART_t *usart = uart_get_usart(UART_AX12);
+  USART_t *const usart = uart_get_usart(UART_AX12);
   if(state == AX12_STATE_WRITE) {
     ax12_nsent = 0;
     while(uart_recv_nowait(UART_AX12) != -1) ;
-    usart->CTRLB |= USART_TXEN_bm;
+    portpin_dirset(&PORTPIN_TXDN(usart));
     portpin_outset(&AX12_DIR_PP);
   } else {
     while(ax12_nsent > 0) {
-      while(uart_recv_nowait(UART_AX12) == -1) ;
+      int c;
+      while((c = uart_recv_nowait(UART_AX12)) == -1) ;
       ax12_nsent--;
     }
-    portpin_outclr(&AX12_DIR_PP);
-    //usart->CTRLB &= ~USART_TXEN_bm;
-    PORTC.DIRCLR = _BV(7);
-
-    while(!(usart->STATUS & USART_DREIF_bm)) ;
-    usart->CTRLB &= ~USART_TXEN_bm;
-    while(!(usart->STATUS & USART_TXCIF_bm)) ;
+    portpin_dirclr(&PORTPIN_TXDN(usart));
     portpin_outclr(&AX12_DIR_PP);
   }
 }
@@ -76,10 +71,7 @@ static int ax12_recv_char(void)
   for(;;) {
     int c = uart_recv_nowait(UART_AX12);
     if(c != -1) {
-      if(ax12_nsent == 0) {
-        return c;
-      }
-      ax12_nsent--;
+      return c;
     }
     if(tend <= uptime) {
       return -1; // timeout
@@ -197,6 +189,7 @@ int main(void)
   // init AX-12
   portpin_dirset(&AX12_DIR_PP);
   portpin_outclr(&AX12_DIR_PP);
+  portpin_dirset(&PORTPIN_TXDN(uart_get_usart(UART_AX12)));
 
   // main loop
   for(;;) {
