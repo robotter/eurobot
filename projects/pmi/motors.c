@@ -20,11 +20,11 @@ static motor_t motor_right;
 static void motor_left_set_sign(bool sign)
 {
   if(sign) {
-    portpin_outclr(&MOTOR_LEFT_ROTATE_A_PP);
-    portpin_outset(&MOTOR_LEFT_ROTATE_B_PP);
-  } else {
     portpin_outset(&MOTOR_LEFT_ROTATE_A_PP);
     portpin_outclr(&MOTOR_LEFT_ROTATE_B_PP);
+  } else {
+    portpin_outclr(&MOTOR_LEFT_ROTATE_A_PP);
+    portpin_outset(&MOTOR_LEFT_ROTATE_B_PP);
   }
 }
 
@@ -61,16 +61,13 @@ void motors_init(void)
   aeat_spi_init();
 
   // PWMs
-  pwm_motor_init(&motor_left.pwm, &TCD0, MOTOR_LEFT_PWM_TC_CH, motor_left_set_sign);
-  pwm_motor_init(&motor_right.pwm, &TCD0, MOTOR_RIGHT_PWM_TC_CH, motor_right_set_sign);
+  pwm_motor_init(&motor_left.pwm, &MOTOR_RIGHT_PWM_TC, MOTOR_LEFT_PWM_TC_CH, motor_left_set_sign);
+  pwm_motor_init(&motor_right.pwm, &MOTOR_RIGHT_PWM_TC, MOTOR_RIGHT_PWM_TC_CH, motor_right_set_sign);
   pwm_motor_set_frequency(&motor_left.pwm, MOTOR_FREQUENCY);
   pwm_motor_set_frequency(&motor_right.pwm, MOTOR_FREQUENCY);
   motors_set_consign(0, 0);
 
-  portpin_outset(&MOTOR_LEFT_ENABLE_A_PP);
-  portpin_outset(&MOTOR_LEFT_ENABLE_B_PP);
-  portpin_outset(&MOTOR_RIGHT_ENABLE_A_PP);
-  portpin_outset(&MOTOR_RIGHT_ENABLE_B_PP);
+  motors_brake(false);
 }
 
 
@@ -81,12 +78,19 @@ void motors_set_consign(int16_t left, int16_t right)
 }
 
 
-void motors_brake(void)
+void motors_brake(bool b)
 {
-  portpin_outclr(&MOTOR_LEFT_ROTATE_A_PP);
-  portpin_outclr(&MOTOR_LEFT_ROTATE_B_PP);
-  portpin_outclr(&MOTOR_RIGHT_ROTATE_A_PP);
-  portpin_outclr(&MOTOR_RIGHT_ROTATE_B_PP);
+  if(b) {
+    portpin_outclr(&MOTOR_LEFT_ROTATE_A_PP);
+    portpin_outclr(&MOTOR_LEFT_ROTATE_B_PP);
+    portpin_outclr(&MOTOR_RIGHT_ROTATE_A_PP);
+    portpin_outclr(&MOTOR_RIGHT_ROTATE_B_PP);
+  } else {
+    portpin_outset(&MOTOR_LEFT_ROTATE_A_PP);
+    portpin_outset(&MOTOR_LEFT_ROTATE_B_PP);
+    portpin_outset(&MOTOR_RIGHT_ROTATE_A_PP);
+    portpin_outset(&MOTOR_RIGHT_ROTATE_B_PP);
+  }
 }
 
 
