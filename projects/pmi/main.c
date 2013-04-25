@@ -30,12 +30,12 @@ ramp_t ramp_angle;
 pid_t pid_dist;
 pid_t pid_angle;
 
-static EEMEM position_conf_t pos_man_conf;
-static EEMEM traj_conf_t traj_man_conf;
-static EEMEM ramp_conf_t ramp_dist_conf;
-static EEMEM ramp_conf_t ramp_angle_conf;
-static EEMEM pid_conf_t pid_dist_conf;
-static EEMEM pid_conf_t pid_angle_conf;
+EEMEM position_conf_t pos_man_conf;
+EEMEM traj_conf_t traj_man_conf;
+EEMEM ramp_conf_t ramp_dist_conf;
+EEMEM ramp_conf_t ramp_angle_conf;
+EEMEM pid_conf_t pid_dist_conf;
+EEMEM pid_conf_t pid_angle_conf;
 
 // Default configurations
 
