@@ -62,15 +62,18 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
       ROOM_REPLY_ASSERV_SET_POSITION(intf, pl);
     } break;
 
-    case ROOM_MID_ASSERV_GOTO_XY:
-      //TODO
+    case ROOM_MID_ASSERV_GOTO_XY: {
+      double x = pos_mm_to_tick(&pos_man, pl->asserv_goto_xy.x);
+      double y = pos_mm_to_tick(&pos_man, pl->asserv_goto_xy.y);
+      traj_goto_xy(&traj_man, x, y);
       ROOM_REPLY_ASSERV_GOTO_XY(intf, pl);
-      break;
+    } break;
 
-    case ROOM_MID_ASSERV_GOTO_A:
-      //TODO
+    case ROOM_MID_ASSERV_GOTO_A: {
+      double a = pos_rad_to_tick(&pos_man, pl->asserv_goto_a.a/1000.);
+      traj_goto_a(&traj_man, a);
       ROOM_REPLY_ASSERV_GOTO_A(intf, pl);
-      break;
+    } break;
 
     default:
       PPP_LOGF(intf, INFO, "unexpected ROOM message: %u", pl->mid);
