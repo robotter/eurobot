@@ -36,6 +36,38 @@ static EEMEM ramp_conf_t ramp_angle_conf;
 static EEMEM pid_conf_t pid_dist_conf;
 static EEMEM pid_conf_t pid_angle_conf;
 
+// Default configurations
+
+static const position_conf_t pos_man_default_conf = {
+  .left_wheel_ratio = 0.10,
+  .right_wheel_ratio = -0.10,
+  .tick_p_mm = 1.0,
+  .tick_p_180deg = 1.0,
+};
+
+static const ramp_conf_t ramp_default_conf = {
+  .a_max = 1000.0,
+  .v_max = 10000.0,
+};
+
+static const pid_conf_t pid_dist_default_conf = {
+  .kd = 10,
+  .ki = 0.2,
+  .kp = 100.0,
+  .d_alpha = 1.0,
+  .max_integral = 500.0,
+  .max_output = 30000.0,
+};
+
+static const pid_conf_t pid_angle_default_conf = {
+  .kd = 0,
+  .ki = 0.5,
+  .kp = 100.0,
+  .d_alpha = 1.0,
+  .max_integral = 500.0,
+  .max_output = 30000.0,
+};
+
 
 
 void manage_control_system(void)
@@ -113,16 +145,16 @@ int main(void)
 
   // position system
   pos_init(&pos_man);
-  pos_conf_load(&pos_man, &pos_man_conf);
+  pos_conf_load(&pos_man, &pos_man_conf, &pos_man_default_conf);
   // control system
   ramp_init(&ramp_dist);
-  ramp_conf_load(&ramp_dist, &ramp_dist_conf);
+  ramp_conf_load(&ramp_dist, &ramp_dist_conf, &ramp_default_conf);
   ramp_init(&ramp_angle);
-  ramp_conf_load(&ramp_angle, &ramp_angle_conf);
+  ramp_conf_load(&ramp_angle, &ramp_angle_conf, &ramp_default_conf);
   pid_init(&pid_dist);
-  pid_conf_load(&pid_dist, &pid_dist_conf);
+  pid_conf_load(&pid_dist, &pid_dist_conf, &pid_dist_default_conf);
   pid_init(&pid_angle);
-  pid_conf_load(&pid_angle, &pid_angle_conf);
+  pid_conf_load(&pid_angle, &pid_angle_conf, &pid_angle_default_conf);
   // motors
   motors_init();
   // trajectory

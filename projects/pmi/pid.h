@@ -6,6 +6,8 @@
 
 /// Ramp configuration
 typedef struct {
+  uint32_t magic;
+
   double kd;
   double ki;
   double kp;
@@ -47,8 +49,8 @@ void pid_do_computation(pid_t *p);
 void pid_reset(pid_t *p);
 
 /// Load PID configuration from EEPROM
-void pid_conf_load(pid_t *p, const pid_conf_t *conf);
+void pid_conf_load(pid_t *p, const pid_conf_t *conf, const pid_conf_t *def);
 /// Save PID configuration to EEPROM
-void pid_conf_save(const pid_t *p, pid_conf_t *conf);
+void pid_conf_save(pid_t *p, pid_conf_t *conf);
 
 #endif

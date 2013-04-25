@@ -1,5 +1,11 @@
+#include <string.h>
 #include <avr/eeprom.h>
+#include <avarix/intlvl.h>
 #include "position.h"
+
+
+// RBR!
+#define EEPROM_MAGIC  0x52425221
 
 
 void pos_init(position_t * p)
@@ -41,15 +47,20 @@ void pos_set_encoder_values(position_t *p, int32_t left, int32_t right)
 }
 
 
-void pos_conf_load(position_t *p, const position_conf_t *conf)
+void pos_conf_load(position_t *p, const position_conf_t *conf, const position_conf_t *def)
 {
   eeprom_read_block(&p->conf, conf, sizeof(*conf));
+  if(p->conf.magic != EEPROM_MAGIC) {
+    memcpy(&p->conf, &def, sizeof(p->conf));
+  }
 }
 
-void pos_conf_save(const position_t *p, position_conf_t *conf)
+void pos_conf_save(position_t *p, position_conf_t *conf)
 {
-  //TODO lock while saving?!
-  eeprom_update_block(&p->conf, conf, sizeof(*conf));
+  INTLVL_DISABLE_ALL_BLOCK() {
+    p->conf.magic = EEPROM_MAGIC;
+    eeprom_update_block(&p->conf, conf, sizeof(*conf));
+  }
 }
 
 

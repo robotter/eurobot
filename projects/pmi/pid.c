@@ -1,6 +1,12 @@
 #include <math.h>
+#include <string.h>
 #include <avr/eeprom.h>
+#include <avarix/intlvl.h>
 #include "pid.h"
+
+
+// RBR+
+#define EEPROM_MAGIC  0x5242522b
 
 
 void pid_init(pid_t *p)
@@ -50,15 +56,20 @@ void pid_reset(pid_t *p)
 }
 
 
-void pid_conf_load(pid_t *p, const pid_conf_t *conf)
+void pid_conf_load(pid_t *p, const pid_conf_t *conf, const pid_conf_t *def)
 {
   eeprom_read_block(&p->conf, conf, sizeof(*conf));
+  if(p->conf.magic != EEPROM_MAGIC) {
+    memcpy(&p->conf, &def, sizeof(p->conf));
+  }
 }
 
-void pid_conf_save(const pid_t *p, pid_conf_t *conf)
+void pid_conf_save(pid_t *p, pid_conf_t *conf)
 {
-  //TODO lock while saving?!
-  eeprom_update_block(&p->conf, conf, sizeof(*conf));
+  INTLVL_DISABLE_ALL_BLOCK() {
+    p->conf.magic = EEPROM_MAGIC;
+    eeprom_update_block(&p->conf, conf, sizeof(*conf));
+  }
 }
 
 

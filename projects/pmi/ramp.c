@@ -1,6 +1,12 @@
+#include <string.h>
 #include <avr/eeprom.h>
+#include <avarix/intlvl.h>
 #include "ramp.h"
 #include "config.h"
+
+
+// RBR?
+#define EEPROM_MAGIC  0x5242523f
 
 
 void ramp_init(ramp_t *r)
@@ -54,15 +60,20 @@ void ramp_reset(ramp_t *r, double cons)
 }
 
 
-void ramp_conf_load(ramp_t *r, const ramp_conf_t *conf)
+void ramp_conf_load(ramp_t *r, const ramp_conf_t *conf, const ramp_conf_t *def)
 {
   eeprom_read_block(&r->conf, conf, sizeof(*conf));
+  if(r->conf.magic != EEPROM_MAGIC) {
+    memcpy(&r->conf, &def, sizeof(r->conf));
+  }
 }
 
-void ramp_conf_save(const ramp_t *r, ramp_conf_t *conf)
+void ramp_conf_save(ramp_t *r, ramp_conf_t *conf)
 {
-  //TODO lock while saving?!
-  eeprom_update_block(&r->conf, conf, sizeof(*conf));
+  INTLVL_DISABLE_ALL_BLOCK() {
+    r->conf.magic = EEPROM_MAGIC;
+    eeprom_update_block(&r->conf, conf, sizeof(*conf));
+  }
 }
 
 

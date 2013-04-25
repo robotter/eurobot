@@ -7,6 +7,8 @@
 
 /// Position configuration
 typedef struct { 
+  uint32_t magic;
+
   double left_wheel_ratio;
   double right_wheel_ratio;
   double tick_p_mm;
@@ -55,9 +57,9 @@ static inline void pos_set_y(position_t *p, double y) { p->y = y; }
 void pos_do_computation(position_t *p);
 
 /// Load position configuration from EEPROM
-void pos_conf_load(position_t *p, const position_conf_t *conf);
+void pos_conf_load(position_t *p, const position_conf_t *conf, const position_conf_t *def);
 /// Save position configuration to EEPROM
-void pos_conf_save(const position_t *p, position_conf_t *conf);
+void pos_conf_save(position_t *p, position_conf_t *conf);
 
 
 /// Convert millimeters to position ticks
