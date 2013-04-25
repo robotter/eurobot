@@ -9,6 +9,7 @@
 #include <perlimpinpin/payload/log.h>
 #include <perlimpinpin/payload/room.h>
 #include <timer/timer.h>
+#include <pwm/motor.h>
 #include "position.h"
 #include "trajectory.h"
 #include "ramp.h"
@@ -69,6 +70,9 @@ static const pid_conf_t pid_angle_default_conf = {
 };
 
 
+static pwm_motor_t servos[5];
+
+
 
 void manage_control_system(void)
 {
@@ -101,6 +105,12 @@ void manage_control_system(void)
   double lcons = pid_get_output(&pid_dist) - pid_get_output(&pid_angle);
 
   motors_set_consign(lcons, rcons);
+}
+
+
+void monitor_battery(void)
+{
+  //TODO battery voltage on A3 (analogic input), multiply read value by 7.8
 }
 
 
@@ -161,9 +171,15 @@ int main(void)
   traj_init(&traj_man, &pos_man);
   traj_conf_load(&traj_man, &traj_man_conf);
 
-  //TODO battery voltage on A3 (analogic input), multiply read value by 7.8
+  // servos
+  pwm_servo_init(&servos[0], (TC0_t*)&SERVO_ANA_0_TC, SERVO_ANA_0_CH);
+  pwm_servo_init(&servos[1], (TC0_t*)&SERVO_ANA_1_TC, SERVO_ANA_1_CH);
+  pwm_servo_init(&servos[2], (TC0_t*)&SERVO_ANA_2_TC, SERVO_ANA_2_CH);
+  pwm_servo_init(&servos[3], (TC0_t*)&SERVO_ANA_3_TC, SERVO_ANA_3_CH);
+  pwm_servo_init(&servos[4], (TC0_t*)&SERVO_ANA_4_TC, SERVO_ANA_4_CH);
 
   timer_set_callback(timerC0, 'A', TIMER_US_TO_TICKS(C0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, manage_control_system);
+  timer_set_callback(timerC0, 'B', TIMER_US_TO_TICKS(C0,BATTERY_MONITORING_PERIOD_US), BATTERY_MONITORING_INTLVL, monitor_battery);
 
   /*
    * main loop

@@ -4,6 +4,7 @@
 /*
  * TCC0 -- scheduler
  *  - channel A: update of motor encoders
+ *  - channel B: battery monitoring
  *
  * TCD0 -- motor PWMs
  *
@@ -19,6 +20,11 @@
 #define CONTROL_SYSTEM_PERIOD_US  10000
 /// Interrupt level for control system update
 #define CONTROL_SYSTEM_INTLVL  INTLVL_LO
+
+/// Battery monitoring period, in microseconds
+#define BATTERY_MONITORING_PERIOD_US  100000
+/// Interrupt level for battery monitoring
+#define BATTERY_MONITORING_INTLVL  INTLVL_MED
 
 
 /// Distance precision margin, in centimers
