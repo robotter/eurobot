@@ -61,8 +61,8 @@ void motors_init(void)
   aeat_spi_init();
 
   // PWMs
-  pwm_motor_init(&motor_left.pwm, &MOTOR_RIGHT_PWM_TC, MOTOR_LEFT_PWM_TC_CH, motor_left_set_sign);
-  pwm_motor_init(&motor_right.pwm, &MOTOR_RIGHT_PWM_TC, MOTOR_RIGHT_PWM_TC_CH, motor_right_set_sign);
+  pwm_motor_init(&motor_left.pwm, &MOTOR_RIGHT_PWM_TC, MOTOR_LEFT_PWM_CH, motor_left_set_sign);
+  pwm_motor_init(&motor_right.pwm, &MOTOR_RIGHT_PWM_TC, MOTOR_RIGHT_PWM_CH, motor_right_set_sign);
   pwm_motor_set_frequency(&motor_left.pwm, MOTOR_FREQUENCY);
   pwm_motor_set_frequency(&motor_right.pwm, MOTOR_FREQUENCY);
   motors_set_consign(0, 0);

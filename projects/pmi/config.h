@@ -45,7 +45,7 @@
 #define MOTOR_LEFT_ROTATE_B_PP  PORTPIN(H,1)
 #define MOTOR_LEFT_ENCODER_CS_PP  PORTPIN(E,1)
 #define MOTOR_LEFT_PWM_TC  TCE0
-#define MOTOR_LEFT_PWM_TC_CH  'C'
+#define MOTOR_LEFT_PWM_CH  'C'
 
 #define MOTOR_RIGHT_ENABLE_A_PP  PORTPIN(H,7)
 #define MOTOR_RIGHT_ENABLE_B_PP  PORTPIN(H,6)
@@ -53,9 +53,26 @@
 #define MOTOR_RIGHT_ROTATE_B_PP  PORTPIN(H,5)
 #define MOTOR_RIGHT_ENCODER_CS_PP  PORTPIN(E,0)
 #define MOTOR_RIGHT_PWM_TC  TCE0
-#define MOTOR_RIGHT_PWM_TC_CH  'D'
+#define MOTOR_RIGHT_PWM_CH  'D'
 
 #define BATTERY_VOLTAGE_PP  PORTPIN(A,3)
+
+#define SERVO_ANA_0_TC  TCE1
+#define SERVO_ANA_0_CH  'A'
+#define SERVO_ANA_1_TC  TCE1
+#define SERVO_ANA_1_CH  'B'
+#define SERVO_ANA_2_TC  TCF0
+#define SERVO_ANA_2_CH  'A'
+#define SERVO_ANA_3_TC  TCF0
+#define SERVO_ANA_3_CH  'B'
+#define SERVO_ANA_4_TC  TCF0
+#define SERVO_ANA_4_CH  'C'
+#define SERVO_ANA_5_TC  TCF0
+#define SERVO_ANA_5_CH  'D'
+#define SERVO_ANA_6_TC  TCF1
+#define SERVO_ANA_6_CH  'A'
+#define SERVO_ANA_7_TC  TCF1
+#define SERVO_ANA_7_CH  'B'
 
 
 #endif
