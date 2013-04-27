@@ -76,7 +76,7 @@ if __name__ == '__main__':
              [1000, 0, 0],
              [1000, 0, 0],
              [-1000*cos(pi/3), -1000*sin(pi/3), 0],
-             [-1000*cos(pi/3), -1000*sin(pi/3), 0]]).transpose()
+             [-1000*cos(pi/3), -1000*sin(pi/3), 0]]).transpose()*1000
 
   # corresponding encoder measurement (enc0,enc1,enc2)
   Y = array([[-399508, -392954, -393487],

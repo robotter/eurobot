@@ -124,11 +124,12 @@ void hposition_update(void *dummy)
   double *matrix    = NULL;
 
   // access motor encoders values
+  motor_encoders_update();
   vectors = motor_encoders_get_value();
   // first time update => update vector, quit
   if( hpos->firstUpdate )
   {
-    for(i=0;i<6;i++)
+    for(i=0;i<6;i++) // XXX JM: 6 !?
       hpos->pvectors[i] = vectors[i];
     hpos->firstUpdate = 0;
     return;
