@@ -4,6 +4,20 @@ from perlimpinpin.payload.room.transaction import *
 
 transactions = register_groups(
 
+    # Robot movement
+    (0x10, [
+      Command('asserv_get_position', [], [('x', 'dist'), ('y', 'dist'), ('a', 'angle')],
+        desc="Get robot position"),
+      Order('asserv_set_position', [('x', 'dist'), ('y', 'dist'), ('a', 'angle')],
+        desc="Set robot position"),
+
+      Order('asserv_goto_xy', [('x', 'dist'), ('y', 'dist')],
+        desc="Move to given absolute position coordinates"),
+      Order('asserv_goto_a', [('a', 'angle')],
+        desc="Move to given absolute angle"),
+
+      ]),
+
     # R3D2
     (0x30, [
       # detection
@@ -57,6 +71,53 @@ transactions = register_groups(
         desc="Move AX-12 to a given position at a given speed"),
       Command('ax12_state', [('id', 'uint8')], [('pos', 'uint16'), ('moving', 'bool')],
         desc="Get AX-12 current position and if it is moving"),
+
+      ]),
+
+    # PMI
+    (0xA0, [
+      # position configuration
+      Order('pmi_position_set_conf', [
+        ('left_wheel_ratio', 'float'),
+        ('right_wheel_ratio', 'float'),
+        ('tick_p_mm', 'float'),
+        ('tick_p_180deg', 'float'),
+        ], desc="Set position manager configuration"),
+      Order('pmi_position_save_conf', [],
+        desc="Save position manager configuration to EEPROM"),
+      # ramp configurations
+      Order('pmi_ramp_dist_set_conf', [('a_max', 'float'), ('v_max', 'float')],
+        desc="Set distance ramp configuration"),
+      Order('pmi_ramp_dist_save_conf', [],
+        desc="Save distance ramp configuration to EEPROM"),
+      Order('pmi_ramp_angle_set_conf', [('a_max', 'float'), ('v_max', 'float')],
+        desc="Set distance ramp configuration"),
+      Order('pmi_ramp_angle_save_conf', [],
+        desc="Save angle ramp configuration to EEPROM"),
+      # pid configurations
+      Order('pmi_pid_dist_set_conf', [
+        ('kd', 'float'),
+        ('ki', 'float'),
+        ('kp', 'float'),
+        ('d_alpha', 'float'),
+        ('max_integral', 'float'),
+        ('max_output', 'float'),
+        ], desc="Set distance PID configuration"),
+      Order('pmi_pid_dist_save_conf', [],
+        desc="Save distance PID configuration to EEPROM"),
+      Order('pmi_pid_angle_set_conf', [
+        ('kd', 'float'),
+        ('ki', 'float'),
+        ('kp', 'float'),
+        ('d_alpha', 'float'),
+        ('max_integral', 'float'),
+        ('max_output', 'float'),
+        ], desc="Set distance PID configuration"),
+      Order('pmi_pid_angle_save_conf', [],
+        desc="Save angle PID configuration to EEPROM"),
+      # all
+      Order('pmi_save_all_conf', [],
+        desc="Save all configurations to EEPROM"),
 
       ]),
 
