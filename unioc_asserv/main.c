@@ -151,7 +151,31 @@ void paddock_testCode(void)
 
   // doing nothing
 
-  for(;;);
+  for(;;)
+  {
+    /*//robot_cs_set_xy_consigns(&robot_cs, 0, 100.*RCS_MM_TO_CSUNIT);
+    robot_cs_set_a_consign(&robot_cs, 45*M_PI/180*RCS_RAD_TO_CSUNIT);
+    _delay_ms(2000);
+    robot_cs_set_a_consign(&robot_cs, 0.);
+    _delay_ms(2000);*/
+    
+    htrajectory_gotoXY(&trajectory, -750,0);
+    while(!htrajectory_doneXY(&trajectory)); _delay_ms(500);
+    htrajectory_gotoXY(&trajectory, -750, 250);
+    while(!htrajectory_doneXY(&trajectory)); _delay_ms(500);
+    htrajectory_gotoXY(&trajectory, 0, 250);
+    while(!htrajectory_doneXY(&trajectory)); _delay_ms(500);
+    htrajectory_gotoXY(&trajectory, 0, 0);
+    while(!htrajectory_doneXY(&trajectory)); _delay_ms(500);
+    htrajectory_gotoXY(&trajectory, -750, 250);
+    while(!htrajectory_doneXY(&trajectory)); _delay_ms(500);
+    htrajectory_gotoXY(&trajectory, -750, 0);
+    while(!htrajectory_doneXY(&trajectory)); _delay_ms(500);
+    htrajectory_gotoXY(&trajectory, 0, 250);
+    while(!htrajectory_doneXY(&trajectory)); _delay_ms(500);
+    htrajectory_gotoXY(&trajectory, 0, 0);
+    while(!htrajectory_doneXY(&trajectory)); _delay_ms(2000);
+  }
 }
 
 void paddock_positionTest(void)

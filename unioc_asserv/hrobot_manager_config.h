@@ -1,7 +1,7 @@
 /*
  * @brief calibration parameters files
  * @author Julien Metge <jmetge@gmail.com>
- * automatically generated file 2013-04-28 15:24:06.942527
+ * automatically generated file 2013-04-28 15:36:09.777205
  */
 #ifndef HROBOT_MANAGER_CONFIG_H
 #define HROBOT_MANAGER_CONFIG_H

@@ -1,7 +1,7 @@
 /*
  * @brief calibration parameters files
  * @author Julien Metge <jmetge@gmail.com>
- * automatically generated file 2013-04-28 15:24:06.942830
+ * automatically generated file 2013-04-28 15:36:09.777484
  */
 #ifndef HPOSITION_MANAGER_CONFIG_H
 #define HPOSITION_MANAGER_CONFIG_H
