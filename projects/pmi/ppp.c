@@ -155,6 +155,11 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
     } break;
 
     case ROOM_MID_PMI_SAVE_ALL_CONF: {
+      pos_conf_save(&pos_man, &pos_man_conf);
+      ramp_conf_save(&ramp_dist, &ramp_dist_conf);
+      ramp_conf_save(&ramp_angle, &ramp_angle_conf);
+      pid_conf_save(&pid_dist, &pid_dist_conf);
+      pid_conf_save(&pid_angle, &pid_angle_conf);
       ROOM_REPLY_PMI_SAVE_ALL_CONF(intf, pl);
     } break;
 
