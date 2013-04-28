@@ -129,7 +129,7 @@ void hposition_update(void *dummy)
   // first time update => update vector, quit
   if( hpos->firstUpdate )
   {
-    for(i=0;i<6;i++) // XXX JM: 6 !?
+    for(i=0;i<3;i++)
       hpos->pvectors[i] = vectors[i];
     hpos->firstUpdate = 0;
     return;
