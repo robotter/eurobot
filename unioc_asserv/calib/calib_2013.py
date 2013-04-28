@@ -90,13 +90,19 @@ if __name__ == '__main__':
   
   # Model : Y = AX
   A = dot(Y,pinv(X))
+  Ainv = inv(A)
 
-  write_calib_file("../hrobot_manager_config.h", "hrobot_motors_matrix", A)
-  write_calib_file("../hposition_manager_config.h", "hrobot_motors_invmatrix", inv(A))
+
+  # motors sense are the oposite of coder senses so
+  A_motor = -A
+
+  write_calib_file("../hrobot_manager_config.h", "hrobot_motors_matrix", A_motor)
+  write_calib_file("../hposition_manager_config.h", "hrobot_motors_invmatrix", Ainv)
 
   print "X\n", X
   print "Y\n", Y
   print "A\n", A
+  print "A_motor\n", A_motor
   print "Y2=AX\n", dot(A,X)
   print "X2=inv(A)Y\n", dot(inv(A),Y)
 
