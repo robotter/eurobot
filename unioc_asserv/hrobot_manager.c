@@ -81,9 +81,12 @@ void hrobot_init()
   system.breaks[1] = PORTPIN(F,7);
   system.breaks[2] = PORTPIN(A,6);
   // configure sign pps
-  system.signs[0] = PORTPIN(F,3); 
-  system.signs[1] = PORTPIN(F,4); 
-  system.signs[2] = PORTPIN(F,5); 
+  system.signs[0] = PORTPIN(F,3);
+  system.signs[1] = PORTPIN(F,4);
+  system.signs[2] = PORTPIN(F,5);
+  for(it=0; it<3; it++)
+    portpin_dirset(system.signs+it);
+
   return;
 }
 
@@ -119,6 +122,11 @@ void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega)
 
   // for each motor
   for(i=0;i<3;i++)
-    pwm_motor_set(system.pwms+i, (int16_t)dp[0]);
+  {
+    if(dp[i] > 32767) dp[i] = 32767;
+    if(dp[i] < -32768) dp[i] = -32768;
+    pwm_motor_set(system.pwms+i, (int16_t)dp[i]);
+  }
+  
   return;
 }

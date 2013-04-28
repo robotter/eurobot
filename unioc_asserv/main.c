@@ -244,6 +244,9 @@ void paddock_pwmTest(void)
   NOTICE(0,"Entering PWM test mode");
   NOTICE(0,"PWM1 +/- : i/k | PWM2 +/- : o/l | PWM3 +/- : p/m | FRQ +/- : u/j | zero all : z");
 
+  // stop assev and other callbacks
+  timer_clear_callback(timerE0, 'A');
+
   while(1)
   {
     key = cli_getkey();
