@@ -76,7 +76,7 @@ if __name__ == '__main__':
              [1000, 0, 0],
              [1000, 0, 0],
              [-1000*cos(pi/3), -1000*sin(pi/3), 0],
-             [-1000*cos(pi/3), -1000*sin(pi/3), 0]]).transpose()*1000
+             [-1000*cos(pi/3), -1000*sin(pi/3), 0]]).T*1000
 
   # corresponding encoder measurement (enc0,enc1,enc2)
   Y = array([[-399508, -392954, -393487],
@@ -86,23 +86,36 @@ if __name__ == '__main__':
              [-122679, 250142, -123203],
              [-121900, 249835, -123471],
              [-119967, -124680, 249145],
-             [-119962, -124621, 249365]]).transpose()
+             [-119962, -124621, 249365]]).T
   
-  # Model : Y = AX
+  # Model : Y = A*X   =>  X = Ainv*Y
   A = dot(Y,pinv(X))
   Ainv = inv(A)
+  
+  # correctif X' = A_corr*A_inv*Y
+  Acorr = array([[0.92  , 5e-4 , 0],
+                 [-1e-5 , 0.92 , 0],
+                 [-12e-5, 10e-6, 0.97]])
+  Ainv2 = dot(Acorr,Ainv)
+  A2 = inv(Ainv2)
 
 
   # motors sense are the oposite of coder senses so
-  A_motor = -A
+  A_motor = -A2
 
   write_calib_file("../hrobot_manager_config.h", "hrobot_motors_matrix", A_motor)
-  write_calib_file("../hposition_manager_config.h", "hrobot_motors_invmatrix", Ainv)
+  write_calib_file("../hposition_manager_config.h", "hrobot_motors_invmatrix", Ainv2)
 
   print "X\n", X
   print "Y\n", Y
   print "A\n", A
+  print "Ainv\n", Ainv
   print "A_motor\n", A_motor
+  print ""
   print "Y2=AX\n", dot(A,X)
   print "X2=inv(A)Y\n", dot(inv(A),Y)
+  print ""
+  print "Acorr\n", Acorr
+  print "A2\n", A2
+  print "Ainv2\n", Ainv2
 
