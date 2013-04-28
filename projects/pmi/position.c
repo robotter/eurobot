@@ -7,7 +7,6 @@
 // RBR!
 #define EEPROM_MAGIC  0x52425221
 
-
 void pos_init(position_t * p)
 {
   // Init to NAN, used to detect first computation run.
@@ -67,12 +66,12 @@ void pos_conf_save(position_t *p, position_conf_t *conf)
 void pos_do_computation(position_t *p)
 {
   // compute deltas
-  double delta_common = (p->rdelta + p->ldelta)/2;
-  double delta_diff = (p->rdelta - p->ldelta)/2;
+  double delta_common = (p->rdelta + p->ldelta)/2.;
+  double delta_diff = (p->rdelta - p->ldelta)/2.;
 
   // compute new position
-  p->x += delta_common * cos(pos_tick_to_rad(p, p->a + delta_diff/2));
-  p->y += delta_common * sin(pos_tick_to_rad(p, p->a + delta_diff/2));
+  p->x += pos_tick_to_mm(p, delta_common) * cos(pos_tick_to_rad(p, p->a + delta_diff/2));
+  p->y += pos_tick_to_mm(p, delta_common) * sin(pos_tick_to_rad(p, p->a + delta_diff/2));
   p->d += delta_common;
   p->a += delta_diff;
 }

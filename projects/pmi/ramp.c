@@ -8,7 +8,6 @@
 // RBR?
 #define EEPROM_MAGIC  0x5242523f
 
-
 void ramp_init(ramp_t *r)
 {
   r->cons = 0;

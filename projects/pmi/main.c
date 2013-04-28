@@ -40,21 +40,21 @@ EEMEM pid_conf_t pid_angle_conf;
 // Default configurations
 
 static const position_conf_t pos_man_default_conf = {
-  .left_wheel_ratio = 0.10,
-  .right_wheel_ratio = -0.10,
-  .tick_p_mm = 1.0,
-  .tick_p_180deg = 1.0,
+  .left_wheel_ratio = 1,
+  .right_wheel_ratio = -1,
+  .tick_p_mm = 41.0,
+  .tick_p_180deg = 8274.0,
 };
 
 static const ramp_conf_t ramp_default_conf = {
-  .a_max = 1000.0,
-  .v_max = 10000.0,
+  .a_max = 100000.0,
+  .v_max = 1000000.0,
 };
 
 static const pid_conf_t pid_dist_default_conf = {
   .kd = 10,
-  .ki = 0.2,
-  .kp = 100.0,
+  .ki = 0,
+  .kp = 2.0,
   .d_alpha = 1.0,
   .max_integral = 500.0,
   .max_output = 30000.0,
@@ -62,8 +62,8 @@ static const pid_conf_t pid_dist_default_conf = {
 
 static const pid_conf_t pid_angle_default_conf = {
   .kd = 0,
-  .ki = 0.5,
-  .kp = 100.0,
+  .ki = 0,
+  .kp = 4.0,
   .d_alpha = 1.0,
   .max_integral = 500.0,
   .max_output = 30000.0,
@@ -136,13 +136,17 @@ int main(void)
   // Do not remove this code.
   uint8_t i;
   portpin_outset(&LED_BLUE_PP);
-  for(i=0;i<10;i++) {
+  for(i=0;i<5;i++) {
     portpin_outtgl(&LED_GREEN_PP);
+    _delay_ms(100);
     portpin_outtgl(&LED_BLUE_PP);
+    _delay_ms(100);
+    portpin_outtgl(&LED_RED_PP);
     _delay_ms(100);
   }
   portpin_outclr(&LED_BLUE_PP);
   portpin_outclr(&LED_GREEN_PP);
+  portpin_outclr(&LED_RED_PP);
 
   // PPP init
   pppintf.filter = ppp_filter;
@@ -180,7 +184,7 @@ int main(void)
 
   timer_set_callback(timerC0, 'A', TIMER_US_TO_TICKS(C0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, manage_control_system);
   timer_set_callback(timerC0, 'B', TIMER_US_TO_TICKS(C0,BATTERY_MONITORING_PERIOD_US), BATTERY_MONITORING_INTLVL, monitor_battery);
-
+  
   /*
    * main loop
    *
