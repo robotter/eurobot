@@ -4,6 +4,7 @@
 #include <pwm/motor.h>
 #include <ax12/ax12.h>
 #include <timer/timer.h>
+#include <encoder/aeat/aeat.h>
 
 #include <math.h>
 
@@ -25,7 +26,9 @@
 // AX-12 timeout for state switch, in microseconds
 #define AX12_TIMEOUT_US  10000
 
+#define MOTOR_INCREMENT  1000
 
+#define AX12_INCREMENT 10
 
 /// current time in microseconds
 volatile uint32_t uptime;
@@ -40,13 +43,13 @@ pwm_motor_t cc_motor[4];
 
 static void cc_motor_0_pwm_set(int16_t val)
 {
- if (val >= 0)
- {
+  if (val >= 0)
+  {
     PORTD.OUTCLR = _BV(4);
     pwm_motor_set(cc_motor+0, val); 
- }
- else
- {
+  }
+  else
+  {
     PORTD.OUTSET = _BV(4);
     pwm_motor_set(cc_motor+0, PWM_MOTOR_MAX + val); 
   }
@@ -54,13 +57,13 @@ static void cc_motor_0_pwm_set(int16_t val)
 
 static void cc_motor_1_pwm_set(int16_t val)
 {
- if (val >= 0)
- {
+  if (val >= 0)
+  {
     PORTD.OUTCLR = _BV(6);
     pwm_motor_set(cc_motor+1, val); 
- }
- else
- {
+  }
+  else
+  {
     PORTD.OUTSET = _BV(6);
     pwm_motor_set(cc_motor+1, PWM_MOTOR_MAX + val); 
   }
@@ -68,13 +71,13 @@ static void cc_motor_1_pwm_set(int16_t val)
 
 static void cc_motor_2_pwm_set(int16_t val)
 {
- if (val >= 0)
- {
+  if (val >= 0)
+  {
     PORTE.OUTCLR = _BV(0);
     pwm_motor_set(cc_motor+2, val); 
- }
- else
- {
+  }
+  else
+  {
     PORTE.OUTSET = _BV(0);
     pwm_motor_set(cc_motor+2, PWM_MOTOR_MAX + val); 
   }
@@ -82,13 +85,13 @@ static void cc_motor_2_pwm_set(int16_t val)
 
 static void cc_motor_3_pwm_set(int16_t val)
 {
- if (val >= 0)
- {
+  if (val >= 0)
+  {
     PORTE.OUTCLR = _BV(2);
     pwm_motor_set(cc_motor+3, val); 
- }
- else
- {
+  }
+  else
+  {
     PORTE.OUTSET = _BV(2);
     pwm_motor_set(cc_motor+3, PWM_MOTOR_MAX + val); 
   }
@@ -105,21 +108,20 @@ void ax12_set_state(ax12_state_t state)
       AX12_DIR_PORT.OUTSET = _BV(AX12_DIR_PIN_bp);
       AX12_TX_PORT.DIRSET = _BV(AX12_TX_PIN_bp);
       ax12_nsent = 0;
-     // USARTC1.CTRLB &= ~USART_RXEN_bm; 
+      // USARTC1.CTRLB &= ~USART_RXEN_bm; 
       break;
 
     case AX12_STATE_READ:
-      
+
       while(ax12_nsent>0) {
         int c;
         while( (c = uart_recv_nowait(uartC1)) == -1);
-        printf("pop %X\n", c);
         ax12_nsent--;
-        }
-     // USARTC1.CTRLB &= ~USART_TXEN_bm; 
+      }
+      // USARTC1.CTRLB &= ~USART_TXEN_bm; 
       AX12_DIR_PORT.OUTCLR = _BV(AX12_DIR_PIN_bp);
       AX12_TX_PORT.DIRCLR = _BV(AX12_TX_PIN_bp);
-       USARTC1.CTRLB |= USART_RXEN_bm; 
+      USARTC1.CTRLB |= USART_RXEN_bm; 
       break;
 
   }
@@ -137,14 +139,19 @@ int ax12_recv_char(void)
   for(;;) {
     int c = uart_recv_nowait(UART_AX12);
     if(c != -1) {
-        printf("recv%X\n", c);
       return c;
     }
     if(tend <= uptime) {
       return -1; // timeout
     }
   }
-//return uart_recv_nowait(UART_AX12);
+  //return uart_recv_nowait(UART_AX12);
+}
+
+
+uint8_t t_ax12_move(ax12_t *s, uint8_t id, uint16_t pos)
+{
+  return ax12_write_word(s, id, AX12_ADDR_GOAL_POSITION_L, pos);
 }
 
 int main(void) {
@@ -159,7 +166,7 @@ int main(void) {
   AX12_DIR_PORT.OUTSET = _BV(AX12_DIR_PIN_bp);
 
   AX12_TX_PORT.DIRSET = _BV(AX12_TX_PIN_bp);
-  
+
   uart_init();
   uart_fopen(uartF0); // use UARTF0 as stdin/stdout
   __asm__("sei");
@@ -170,14 +177,14 @@ int main(void) {
   pwm_servo_init( &pwm_servos[1], &TCD0, 'B');
   pwm_servo_init( &pwm_servos[2], &TCD0, 'C'); //SV1 connector
   pwm_servo_init( &pwm_servos[3], &TCD0, 'D');
-  
- PORTD.DIRSET = 0x0F; 
+
+  PORTD.DIRSET = 0x0F; 
 
   printf("test meca\n");
 
-// timer
+  // timer
   timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPTIME_TICK_US), INTLVL_LO, uptime_update);
-  
+
   // ANALOG SERVOS
   uint8_t lvla = 50;
   uint8_t lvlb = 50;
@@ -187,7 +194,7 @@ int main(void) {
 
   for (uint8_t it = 0; it < 4; it ++)
   {
-   // pwm_motor_set_range(&pwm_servos[it], 1000, 2000);
+    // pwm_motor_set_range(&pwm_servos[it], 1000, 2000);
     pwm_motor_set(&pwm_servos[it], pos);
   }
 
@@ -224,32 +231,47 @@ int main(void) {
   pwm_motor_set(cc_motor+2, 0);
   pwm_motor_set(cc_motor+3, 0);
 
+
+  PORTE.DIRSET = _BV(4);
+  PORTE.OUTSET = _BV(4);
+  aeat_t cake_enc;
+  aeat_spi_init();
+  aeat_init(&cake_enc, PORTPIN( E, 4));
+
   volatile uint32_t cpt = 0; 
+ 
+  int16_t motor_pwm[4]; 
+ 
+  uint16_t ax12_pos[4]; 
+
   while(1) {
+
+    aeat_update(&cake_enc);
 
     cpt++;
     if (cpt == 100)
     {
       ax12_write_byte(&ax12, 2, 0x19, 0);
     }
-    else if (cpt == 200)
-    {
-      uint8_t data = 0xff;
-      ax12_read_byte(&ax12, 2, 0x00, &data);
-      printf( "%X\t", data);
-      ax12_read_byte(&ax12, 2, 0x01, &data);
-      printf( "%X\t",data);
-      ax12_read_byte(&ax12, 2, 0x02, &data);
-      printf( "%X\n",data);
-    }
+    /* else if (cpt == 200)
+       {
+       uint8_t data = 0xff;
+       ax12_read_byte(&ax12, 2, 0x00, &data);
+       printf( "%X\t", data);
+       ax12_read_byte(&ax12, 2, 0x01, &data);
+       printf( "%X\t",data);
+       ax12_read_byte(&ax12, 2, 0x02, &data);
+       printf( "%X\n",data);
+       }*/
     else if (cpt == 2000)
     {
       ax12_write_byte(&ax12, 2, 0x19, 1);
       cpt = 0;
- 
     }
+    
     int c = uart_recv_nowait(uartF0);
-    if(c != -1) {
+    if(c != -1) 
+    {
       update_analog_servos = false;
       switch(c)
       {
@@ -259,19 +281,79 @@ int main(void) {
         case 'm' : pos -= 100;
                    update_analog_servos = true;
                    break;
-     
-      }
+        case 'y' : motor_pwm[0] +=  MOTOR_INCREMENT;
+                   break;
+        case 'h' : motor_pwm[0] -=  MOTOR_INCREMENT;
+                   break;
 
+        case 'u' : motor_pwm[1] +=  MOTOR_INCREMENT;
+                   break;
+        case 'j' : motor_pwm[1] -=  MOTOR_INCREMENT;
+                   break;
+     
+        case 'i' : motor_pwm[2] +=  MOTOR_INCREMENT;
+                   break;
+        case 'k' : motor_pwm[2] -=  MOTOR_INCREMENT;
+                   break;
+     
+        case 'o' : motor_pwm[3] +=  MOTOR_INCREMENT;
+                   break;
+        case 'l' : motor_pwm[3] -=  MOTOR_INCREMENT;
+                   break;
+     
+        case 'q' : ax12_pos[0] +=  AX12_INCREMENT;
+                   break;
+        case 'w' : ax12_pos[0] -=  AX12_INCREMENT;
+                   break;
+     
+        case 's' : ax12_pos[1] +=  AX12_INCREMENT;
+                   break;
+        case 'x' : ax12_pos[1] -=  AX12_INCREMENT;
+                   break;
+      
+        case 'd' : ax12_pos[2] +=  AX12_INCREMENT;
+                   break;
+        case 'c' : ax12_pos[2] -=  AX12_INCREMENT;
+                   break;
+      
+        case 'f' : ax12_pos[3] +=  AX12_INCREMENT;
+                   break;
+        case 'v' : ax12_pos[3] -=  AX12_INCREMENT;
+                   break;
+     
+        case 'z' : pos = 2600;
+                   motor_pwm[0] = 0;
+                   motor_pwm[1] = 0;
+                   motor_pwm[2] = 0;
+                   motor_pwm[3] = 0;
+                   ax12_pos[0] = 200;
+                   ax12_pos[1] = 520; 
+                   ax12_pos[2] = 500; 
+                  break;
+                    
+     }
 
       /*for (uint8_t it = 0; it < 4; it ++)
-      {
+        {
         pwm_motor_set(&pwm_servos[it], pos);
-      }*/
+        }*/
 
-      
+for (int8_t it = 0; it < 4; it ++)
+{
+  ax12_pos[it] &= 0x3ff;
+}
+       t_ax12_move(&ax12, 2, ax12_pos[0]);
+      t_ax12_move(&ax12, 3, ax12_pos[1]);
+      t_ax12_move(&ax12, 4, ax12_pos[2]);
       pwm_motor_set(&pwm_servos[2], pos);
-      printf("%i\n", pos); 
+      printf("servos %4i\t mot0 %5i\t mot1 %5i\t mot2 %5i\t mot3 %5i\tax12_2 %u\tax12_3 %u\tax12_4 %u\n",pos, motor_pwm[0], motor_pwm[1], motor_pwm[2], motor_pwm[3], ax12_pos[0], ax12_pos[1], ax12_pos[2]); 
     } 
+
+    if (cpt == 10)
+    {
+      printf("\tcake aeat %li\n", aeat_get_value(&cake_enc));
+    }
+
 
     t+=0.01;
     lvla = 255*(0.5+0.5*cos(t));
@@ -291,22 +373,12 @@ int main(void) {
     (void)cc_motor_1_pwm_set;
     (void)cc_motor_2_pwm_set;
     (void)cc_motor_3_pwm_set;
-    //cc_motor_0_pwm_set(16000 * cos(t/10));
-    //cc_motor_1_pwm_set(16000 * cos(t/10));
-    //cc_motor_2_pwm_set(16000 * cos(t/10));
-    //cc_motor_3_pwm_set(16000 * cos(t/10));
-//    cc_motor_1_pwm_set(16000);
+    cc_motor_0_pwm_set( motor_pwm[0]);
+    cc_motor_1_pwm_set( motor_pwm[1]);
+    cc_motor_2_pwm_set( motor_pwm[2]);
+    cc_motor_3_pwm_set( motor_pwm[3]);
 
-    //pwm_motor_set(cc_motor+2, -16000); 
-
-/*    pwm_motor_set(&cc_motor[2], 16000 * cos(t));
-    pwm_motor_set(&cc_motor[3], 16000 * cos(t));
-  
-  
-    pwm_motor_set(&cc_motor[2], 10 );
-    pwm_motor_set(&cc_motor[3], 10 );
- */
- }
+  }
 
   return 0;
 }

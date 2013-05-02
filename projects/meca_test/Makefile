@@ -4,7 +4,7 @@
 SRCS = $(wildcard *.c)
 ASRCS =
 TARGET = main
-MODULES = uart clock pwm ax12 timer
+MODULES = uart clock pwm ax12 timer encoder/aeat
 
 ## Target configuration
 MCU = atxmega128a1
