@@ -5,8 +5,12 @@
 #include <ax12/ax12.h>
 #include <timer/timer.h>
 #include <encoder/aeat/aeat.h>
-
 #include <math.h>
+#include "../meca/acm.h"
+
+/// use this define to have advanced 
+#define USE_CAKE_ADVANCED_PROCESSING
+
 
 #define AX12_DIR_PORT     PORTC
 #define AX12_DIR_PIN_bp   5 
@@ -239,13 +243,73 @@ int main(void) {
   aeat_init(&cake_enc, PORTPIN( E, 4));
 
   volatile uint32_t cpt = 0; 
- 
+
   int16_t motor_pwm[4]; 
- 
+
   uint16_t ax12_pos[4]; 
 
-  while(1) {
+  (void) cc_motor;
+  (void) ax12_pos;
+  (void) motor_pwm;
+  (void)lvla;
+  (void)lvlb;
+  (void)cpt;
+  (void)t;
+  (void)cc_motor_0_pwm_set;
+  (void)cc_motor_1_pwm_set;
+  (void)cc_motor_2_pwm_set;
+  (void)cc_motor_3_pwm_set;
+  (void)update_analog_servos;
 
+  acm_t acm;
+  acm_init(&acm);
+  acm.ax12 = &ax12;
+  acm.encoder = &cake_enc;
+  acm.set_second_lvl_motor_pwm = cc_motor_3_pwm_set;
+  acm.set_first_lvl_left_motor_pwm = cc_motor_0_pwm_set;
+  acm.set_first_lvl_right_motor_pwm = cc_motor_2_pwm_set;
+
+ /// debug 
+  for (uint8_t it= 0; it < FIRST_LVL_CANDLE_NB; it ++)
+  {
+    if (acm.candle_color[it] == ACM_CANDLE_UNKNOWN)
+    {
+      if (it%2 == 0)
+      {
+        acm.candle_color[it] = ACM_CANDLE_BLUE; 
+   //     acm.candle_color[it] = ACM_CANDLE_RED; 
+      }
+      else
+      {
+        acm.candle_color[it] = ACM_CANDLE_RED; 
+      }
+    }
+  }
+
+  while(1) {
+#ifdef USE_CAKE_ADVANCED_PROCESSING
+    aeat_update(&cake_enc);
+    acm_update(&acm);
+    int c = uart_recv_nowait(uartF0);
+    if(c != -1) 
+    {
+    printf("test");
+      update_analog_servos = false;
+      switch(c)
+      {
+        case 'p' : acm.sm_state = ACM_SM_MAX_OPEN_FIRST_LVL_LEFT;
+                   break;
+        case 'm' : acm.sm_state = ACM_SM_HOME_MOVE_FIRST_LVL_RIGHT;
+                   break;
+        case 'o' : acm.sm_state = ACM_SM_CAKING_MOVE_SECOND_LVL;
+                   break;
+        default : break;
+      }
+      PORTK.OUTTGL = _BV(2);
+    }
+   // for (volatile uint32_t it = 0; it < 100000; it ++) ;
+    PORTK.OUTTGL = _BV(0);
+#else
     aeat_update(&cake_enc);
 
     cpt++;
@@ -268,7 +332,7 @@ int main(void) {
       ax12_write_byte(&ax12, 2, 0x19, 1);
       cpt = 0;
     }
-    
+
     int c = uart_recv_nowait(uartF0);
     if(c != -1) 
     {
@@ -290,37 +354,37 @@ int main(void) {
                    break;
         case 'j' : motor_pwm[1] -=  MOTOR_INCREMENT;
                    break;
-     
+
         case 'i' : motor_pwm[2] +=  MOTOR_INCREMENT;
                    break;
         case 'k' : motor_pwm[2] -=  MOTOR_INCREMENT;
                    break;
-     
+
         case 'o' : motor_pwm[3] +=  MOTOR_INCREMENT;
                    break;
         case 'l' : motor_pwm[3] -=  MOTOR_INCREMENT;
                    break;
-     
+
         case 'q' : ax12_pos[0] +=  AX12_INCREMENT;
                    break;
         case 'w' : ax12_pos[0] -=  AX12_INCREMENT;
                    break;
-     
+
         case 's' : ax12_pos[1] +=  AX12_INCREMENT;
                    break;
         case 'x' : ax12_pos[1] -=  AX12_INCREMENT;
                    break;
-      
+
         case 'd' : ax12_pos[2] +=  AX12_INCREMENT;
                    break;
         case 'c' : ax12_pos[2] -=  AX12_INCREMENT;
                    break;
-      
+
         case 'f' : ax12_pos[3] +=  AX12_INCREMENT;
                    break;
         case 'v' : ax12_pos[3] -=  AX12_INCREMENT;
                    break;
-     
+
         case 'z' : pos = 2600;
                    motor_pwm[0] = 0;
                    motor_pwm[1] = 0;
@@ -329,20 +393,20 @@ int main(void) {
                    ax12_pos[0] = 200;
                    ax12_pos[1] = 520; 
                    ax12_pos[2] = 500; 
-                  break;
-                    
-     }
+                   break;
+
+      }
 
       /*for (uint8_t it = 0; it < 4; it ++)
         {
         pwm_motor_set(&pwm_servos[it], pos);
         }*/
 
-for (int8_t it = 0; it < 4; it ++)
-{
-  ax12_pos[it] &= 0x3ff;
-}
-       t_ax12_move(&ax12, 2, ax12_pos[0]);
+      for (int8_t it = 0; it < 4; it ++)
+      {
+        ax12_pos[it] &= 0x3ff;
+      }
+      t_ax12_move(&ax12, 2, ax12_pos[0]);
       t_ax12_move(&ax12, 3, ax12_pos[1]);
       t_ax12_move(&ax12, 4, ax12_pos[2]);
       pwm_motor_set(&pwm_servos[2], pos);
@@ -377,8 +441,7 @@ for (int8_t it = 0; it < 4; it ++)
     cc_motor_1_pwm_set( motor_pwm[1]);
     cc_motor_2_pwm_set( motor_pwm[2]);
     cc_motor_3_pwm_set( motor_pwm[3]);
-
+#     endif
   }
-
   return 0;
 }
