@@ -2,6 +2,7 @@
 #define ACM_DEFS_H
 
 #define FIRST_LVL_CANDLE_NB 12
+#define SECOND_LVL_CANDLE_NB 8
 #define ACM_CAKE_ENCODER_RESOLUTION 12
 
 typedef enum{

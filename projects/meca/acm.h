@@ -67,6 +67,7 @@ typedef struct
   uint16_t first_lvl_right_blow_candle_pos;
   uint16_t first_lvl_right_avoid_candle_pos;
 
+  double second_lvl_arm_enc_offset_mm; // distance from encoder wheel to second lvl arm ax12
   double first_lvl_left_arm_enc_offset_mm; // distance from encoder wheel to left arm ax12
   double first_lvl_right_arm_enc_offset_mm; // distance from encoder wheel to right arm ax12
   double encoder_to_side_enc_offset_mm; // distance from encoder to side of the robot (it's centered so same distance to each side) 
