@@ -13,9 +13,9 @@
 //@{
 
 /// Buffer size for received data
-#define UART_RX_BUF_SIZE  16
+#define UART_RX_BUF_SIZE  128
 /// Buffer size for sent data
-#define UART_TX_BUF_SIZE  16
+#define UART_TX_BUF_SIZE  128
 
 /// Baudrate
 #define UART_BAUDRATE  38400
@@ -23,12 +23,11 @@
 #define UART_BSCALE  0
 
 /// Enable UARTxn
-#define UARTC0_ENABLED
+#define UARTF1_ENABLED
 
-/** @brief Interrupt level (an \ref intlvl_t value)
- * @note Global configuration only.
- */
-#define UART_INTLVL  INTLVL_HI
+
+// We need motor and sensor interrupts to have a higher level
+#define UART_INTLVL  INTLVL_MED
 
 //@}
 //@}

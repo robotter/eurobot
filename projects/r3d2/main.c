@@ -1,4 +1,5 @@
 #include <avarix/intlvl.h>
+#include <avarix/portpin.h>
 #include <clock/clock.h>
 #include <uart/uart.h>
 #include <timer/timer.h>
@@ -7,6 +8,7 @@
 #include <perlimpinpin/payload/room.h>
 #include <perlimpinpin/payload/log.h>
 #include "r3d2.h"
+#include "config.h"
 
 
 static r3d2_data_t r3d2_data;
@@ -15,6 +17,7 @@ static ppp_intf_t pppintf;
 
 ppp_payload_handler_t *ppp_filter(ppp_intf_t *intf)
 {
+  portpin_outset(&LED_COM_PP);
   if(intf->rstate.header.dst != 0xFF && intf->rstate.header.dst != intf->addr) {
     return NULL;
   }
@@ -118,14 +121,22 @@ int main(void)
   clock_init();
   timer_init();
   uart_init();
-  uart_fopen(uartC0);
+  uart_fopen(UART_PPP);
   CPU_SREG |= CPU_I_bm;
   INTLVL_ENABLE_ALL();
 
+  portpin_dirset(&LED_RUN_PP);
+  portpin_dirset(&LED_ERROR_PP);
+  portpin_dirset(&LED_COM_PP);
+  portpin_dirset(&LED_WEST_PP);
+  portpin_dirset(&LED_EAST_PP);
+  portpin_dirset(&LED_NORTH_PP);
+  portpin_dirset(&LED_SOUTH_PP);
+
   // init PPP
   pppintf.filter = ppp_filter;
-  pppintf.uart = uartC0;
-  pppintf.addr = 0x13;
+  pppintf.uart = UART_PPP;
+  pppintf.addr = PPP_ADDR;
 
   ppp_intf_init(&pppintf);
   room_set_message_handler(room_message_handler);
@@ -137,8 +148,8 @@ int main(void)
   r3d2_conf_load();
   r3d2_start();
 
-  timer_set_callback(timerD0, 'A', TIMER_US_TO_TICKS(D0,20000), INTLVL_LO, update_data_cb);
-  timer_set_callback(timerD0, 'B', TIMER_US_TO_TICKS(D0,200000), INTLVL_LO, send_ppp_events_cb);
+  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,20000), INTLVL_LO, update_data_cb);
+  timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0,200000), INTLVL_LO, send_ppp_events_cb);
 
   // main loop
   for(;;) {

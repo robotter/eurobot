@@ -5,9 +5,10 @@
 #include <util/atomic.h>
 #include <avarix/intlvl.h>
 #include <pwm/motor.h>
-#include "r3d2.h"
-#include "clock/defs.h"
+#include <clock/defs.h>
 #include <util/delay.h>
+#include "r3d2.h"
+#include "config.h"
 
 
 #define TC_CLKSEL_DIVn_gc_(n)  TC_CLKSEL_DIV ## n ## _gc
@@ -32,6 +33,8 @@ typedef struct {
   volatile uint8_t capture_count;
   /// Motor rotation period (in timer ticks)
   volatile uint16_t motor_period;
+  /// Motor enabled
+  bool motor_enabled;
 
   /** @brief Number of updates without motor rotation
    *
@@ -75,26 +78,28 @@ void r3d2_init(void)
   portpin_dirset(&R3D2_SENSOR_CTRL_PP);
 
   // init motor interrupt (on falling edge)
-  PORTPIN_CTRL(&R3D2_MOTOR_INT_PP) |= (1 << PORT_ISC_FALLING_gc);
+  PORTPIN_CTRL(&R3D2_MOTOR_INT_PP) |= PORT_ISC_FALLING_gc;
   portpin_enable_int(&R3D2_MOTOR_INT_PP, R3D2_MOTOR_INT_NUM, R3D2_INTLVL);
 
   // init sensor interrupt (on both edges)
-  PORTPIN_CTRL(&R3D2_SENSOR_INT_PP) |= (1 << PORT_ISC_BOTHEDGES_gc);
+  PORTPIN_CTRL(&R3D2_SENSOR_INT_PP) |= PORT_ISC_BOTHEDGES_gc;
   portpin_enable_int(&R3D2_SENSOR_INT_PP, R3D2_SENSOR_INT_NUM, R3D2_INTLVL);
+
+  r3d2_stop();
 }
 
 
 static void r3d2_start_motor(void)
 {
   // motor need a short burst to start
-  pwm_motor_set(&r3d2.pwm, 32000);
+  r3d2.motor_enabled = true;
+  pwm_motor_set(&r3d2.pwm, R3D2_MOTOR_SPEED_BURST);
   _delay_ms(500);
   pwm_motor_set(&r3d2.pwm, r3d2.conf.motor_speed);
 }
 
 void r3d2_start(void)
 {
-  portpin_outset(&R3D2_MOTOR_CTRL_PP);
   portpin_outset(&R3D2_SENSOR_CTRL_PP);
   r3d2_start_motor();
 }
@@ -102,7 +107,8 @@ void r3d2_start(void)
 
 void r3d2_stop(void)
 {
-  portpin_outclr(&R3D2_MOTOR_CTRL_PP);
+  r3d2.motor_enabled = false;
+  pwm_motor_set(&r3d2.pwm, 0);
   portpin_outclr(&R3D2_SENSOR_CTRL_PP);
 }
 
@@ -111,6 +117,7 @@ void r3d2_set_motor_speed(uint16_t speed)
 {
   r3d2.conf.motor_speed = speed;
   pwm_motor_set(&r3d2.pwm, r3d2.conf.motor_speed);
+  r3d2.motor_enabled = speed != 0;
 }
 
 
@@ -145,7 +152,8 @@ void r3d2_update(r3d2_data_t *data)
 
   for(uint8_t i=0; i<count; i++) {
     // compute object position
-    double angle = (double)(captures[i].start + captures[i].len/2)*2*M_PI/motor_period;
+    // use opposite value because motor rotation direction is inverted
+    double angle = -(double)(captures[i].start + captures[i].len/2)*2*M_PI/motor_period;
     angle += r3d2.conf.angle_offset;
     if(angle > 2*M_PI) {
       angle -= 2*M_PI;
@@ -153,9 +161,7 @@ void r3d2_update(r3d2_data_t *data)
       angle += 2*M_PI;
     }
 
-    // get semi arc angle: len/2 * 2*M_PI -> len * M_PI
-    double arc = (double)captures[i].len * M_PI/motor_period;
-    double dist = r3d2.conf.dist_coef * tan(arc);
+    double dist = r3d2.conf.dist_coef * captures[i].len;
 
     data->objects[i].angle = angle;
     data->objects[i].dist = dist;
@@ -165,7 +171,7 @@ void r3d2_update(r3d2_data_t *data)
 
   // restart motor if stuck
   // note: motor_inactivity is a single byte, no need to lock
-  if(r3d2.motor_inactivity++ >= R3D2_MOTOR_TIMEOUT_DEFAULT) {
+  if(r3d2.motor_enabled && r3d2.motor_inactivity++ >= R3D2_MOTOR_TIMEOUT_DEFAULT) {
     r3d2.motor_inactivity = 0;
     r3d2_start_motor();
   }
@@ -269,11 +275,13 @@ ISR(R3D2_MOTOR_INT_VECT)
 /// Sensor interrupt routine
 ISR(R3D2_SENSOR_INT_VECT)
 {
+  portpin_outtgl(&LED_RUN_PP);
   r3d2_capture_t *capture = capture_state.captures + capture_state.index;
   uint16_t motor_pos = R3D2_MOTOR_POS_TC.CNT;
-  if(capture_state.capturing) {
+  if(!capture_state.capturing) {
     // rising edge, detection starts
     capture->start = motor_pos;
+    capture_state.capturing = 1;
   } else {
     // falling edge, detection ends
     if(capture_state.capture_end) {
@@ -285,6 +293,7 @@ ISR(R3D2_SENSOR_INT_VECT)
       capture->len = motor_pos - capture->start;
       capture_state.index++;
     }
+    capture_state.capturing = 0;
   }
 }
 

@@ -21,7 +21,7 @@
 #define TIMER_PRESCALER_DIV  64
 
 /// Enable TIMERxn
-#define TIMERD0_ENABLED
+#define TIMERE0_ENABLED
 
 //@}
 //@}
