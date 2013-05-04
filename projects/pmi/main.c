@@ -10,6 +10,7 @@
 #include <perlimpinpin/payload/room.h>
 #include <timer/timer.h>
 #include <pwm/motor.h>
+#include <i2c/i2c.h>
 #include "position.h"
 #include "trajectory.h"
 #include "ramp.h"
@@ -114,6 +115,19 @@ void monitor_battery(void)
 }
 
 
+void monitor_rangemeters(void)
+{
+  uint8_t buf[2][3];
+  i2cm_recv(i2cC, 0x70, buf[0], 3);
+  i2cm_recv(i2cD, 0x70, buf[1], 3);
+  int16_t dist[2] = {
+    ((uint16_t)buf[0][2] << 8) + buf[0][1],
+    ((uint16_t)buf[1][2] << 8) + buf[1][1],
+  };
+  (void)dist; //TODO
+}
+
+
 int main(void)
 {
   clock_init();
@@ -156,6 +170,9 @@ int main(void)
   room_set_message_handler(room_message_handler);
   // send a system RESET to signal that we have booted
   ppp_send_system_reset(&pppintf);
+
+  // i2c init, for rangemeter
+  i2c_init();
 
   // position system
   pos_init(&pos_man);

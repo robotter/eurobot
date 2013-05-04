@@ -4,7 +4,7 @@
 SRCS = $(wildcard *.c)
 ASRCS =
 TARGET = main
-MODULES = timer perlimpinpin encoder/aeat pwm
+MODULES = timer perlimpinpin encoder/aeat pwm i2c
 
 
 ## Target configuration
