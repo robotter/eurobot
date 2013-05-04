@@ -12,7 +12,7 @@
 
 
 /// default positions of each AX12 at startup of board (in ax12 units)
-#define DEFAULT_ACM_SECOND_LVL_HOME_POS          200 
+#define DEFAULT_ACM_SECOND_LVL_HOME_POS          200
 #define DEFAULT_ACM_SECOND_LVL_BLOW_CANDLE_POS   490
 #define DEFAULT_ACM_SECOND_LVL_MAX_OPEN_POS_BLUE 700
 #define DEFAULT_ACM_SECOND_LVL_MAX_OPEN_POS_RED  320
@@ -47,12 +47,12 @@
 #define DEFAULT_ACM_MOTOR_PWM_ON_CAKE     32000
 
 
-/// robot position and color must be define using color (XXX ) 
+/// robot position and color must be define using color (XXX )
 #define DEFAULT_ACM_ROBOT_COLOR  ACM_RED
 #define DEFAULT_ACM_ROBOT_STALL_POSITION  ACM_RED
 
 
 
-#define DEFAULT_ACM_QUALIFICATION_ROUNDS true
+#define DEFAULT_ACM_IGNORE_COLORS true
 
 #endif //ACM_CONFIG_H
