@@ -56,7 +56,8 @@ typedef struct
 
   uint16_t second_lvl_home_pos;
   uint16_t second_lvl_blow_candle_pos;
-  uint16_t second_lvl_max_open_pos;
+  uint16_t second_lvl_max_open_pos_blue;
+  uint16_t second_lvl_max_open_pos_red;
 
   uint16_t first_lvl_left_home_pos;
   uint16_t first_lvl_left_blow_candle_pos;
@@ -69,6 +70,8 @@ typedef struct
   double first_lvl_left_arm_enc_offset_mm; // distance from encoder wheel to left arm ax12
   double first_lvl_right_arm_enc_offset_mm; // distance from encoder wheel to right arm ax12
   double encoder_to_side_enc_offset_mm; // distance from encoder to side of the robot (it's centered so same distance to each side) 
+
+  double candle_anticipation_offset_mm; // distance used to rise the arm before the next candle if next candle musn't be blown 
 
   int16_t motor_pwm_on_cake;
   uint16_t ax12_end_of_move_margin; // margin that will trigger if ax12 move is finished or not
@@ -89,7 +92,7 @@ typedef struct
   acm_arm_config_t arm_config; // arm configuration 
   acm_sm_state_t sm_state; // state machine state 
   acm_candle_color_t candle_color[FIRST_LVL_CANDLE_NB];
-
+  int32_t previous_enc_value; // encoder value at previous call
 
 } acm_t;
 

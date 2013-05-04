@@ -158,6 +158,37 @@ uint8_t t_ax12_move(ax12_t *s, uint8_t id, uint16_t pos)
   return ax12_write_word(s, id, AX12_ADDR_GOAL_POSITION_L, pos);
 }
 
+void update_acm_candle_color_list(acm_t *s)
+{
+  acm_candle_color_t robot_candle_color, advers_candle_color;
+  if (s->robot_color == ACM_BLUE)
+  {
+    robot_candle_color = ACM_CANDLE_BLUE;
+    advers_candle_color = ACM_CANDLE_RED;
+  }
+  else
+  {
+    robot_candle_color = ACM_CANDLE_RED;
+    advers_candle_color = ACM_CANDLE_BLUE;
+  }
+  
+  for (uint8_t it= 0; it < FIRST_LVL_CANDLE_NB; it ++)
+  {
+    if (s->candle_color[it] != ACM_CANDLE_WHITE)
+    {
+      if (it%2 == 0)
+      {
+        s->candle_color[it] = robot_candle_color; 
+   //     acm.candle_color[it] = ACM_CANDLE_RED; 
+      }
+      else
+      {
+        s->candle_color[it] = advers_candle_color; 
+      }
+    }
+  }
+}
+
 int main(void) {
 
   clock_init();
@@ -269,22 +300,8 @@ int main(void) {
   acm.set_first_lvl_left_motor_pwm = cc_motor_0_pwm_set;
   acm.set_first_lvl_right_motor_pwm = cc_motor_2_pwm_set;
 
- /// debug 
-  for (uint8_t it= 0; it < FIRST_LVL_CANDLE_NB; it ++)
-  {
-    if (acm.candle_color[it] == ACM_CANDLE_UNKNOWN)
-    {
-      if (it%2 == 0)
-      {
-        acm.candle_color[it] = ACM_CANDLE_BLUE; 
-   //     acm.candle_color[it] = ACM_CANDLE_RED; 
-      }
-      else
-      {
-        acm.candle_color[it] = ACM_CANDLE_RED; 
-      }
-    }
-  }
+  /// debug 
+  update_acm_candle_color_list(&acm);
 
   while(1) {
 #ifdef USE_CAKE_ADVANCED_PROCESSING
@@ -302,6 +319,30 @@ int main(void) {
         case 'm' : acm.sm_state = ACM_SM_HOME_MOVE_FIRST_LVL_RIGHT;
                    break;
         case 'o' : acm.sm_state = ACM_SM_CAKING_MOVE_SECOND_LVL;
+                   break;
+        case 's': if (acm.cake_stall_side == ACM_BLUE)
+                   {
+                    acm.cake_stall_side = ACM_RED;
+                    printf("stall RED\n");
+                   }
+                   else
+                   {
+                    acm.cake_stall_side = ACM_BLUE;
+                    printf("stall BLUE\n");
+                   }
+                   update_acm_candle_color_list(&acm);
+                   break;
+        case 'c': if (acm.robot_color == ACM_BLUE)
+                   {
+                    acm.robot_color = ACM_RED;
+                    printf("robot color RED\n");
+                   }
+                   else
+                   {
+                    acm.robot_color = ACM_BLUE;
+                    printf("robot color BLUE\n");
+                   }
+                   update_acm_candle_color_list(&acm);
                    break;
         default : break;
       }
