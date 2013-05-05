@@ -68,6 +68,8 @@ typedef struct {
   uint16_t first_lvl_right_avoid_candle_pos;
 
   double second_lvl_arm_enc_offset_mm; // distance from encoder wheel to second lvl arm ax12
+  double second_lvl_arm_red_side_avoid_red_candle_pos_offset_mm; // distance from encoder wheel to second lvl arm ax12
+  double second_lvl_arm_blue_side_avoid_blue_candle_pos_offset_mm; // distance from encoder wheel to second lvl arm ax12
   double first_lvl_left_arm_enc_offset_mm; // distance from encoder wheel to left arm ax12
   double first_lvl_right_arm_enc_offset_mm; // distance from encoder wheel to right arm ax12
   double encoder_to_side_enc_offset_mm; // distance from encoder to side of the robot (it's centered so same distance to each side)
@@ -94,7 +96,7 @@ typedef struct {
   acm_sm_state_t sm_state; // state machine state
   acm_candle_color_t candle_color[FIRST_LVL_CANDLE_NB];
   int32_t previous_enc_value; // encoder value at previous call
-
+  uint32_t last_ax12_order_timestamp;
 } acm_t;
 
 void acm_init(acm_t *s);

@@ -12,6 +12,8 @@
 #define USE_CAKE_ADVANCED_PROCESSING
 
 
+#define UPTIME_INTLVL   INTLVL_HI
+
 #define AX12_DIR_PORT     PORTC
 #define AX12_DIR_PIN_bp   5 
 
@@ -42,6 +44,16 @@ void uptime_update(void)
 {
   uptime += UPTIME_TICK_US;
 }
+
+uint32_t get_uptime_us(void)
+{
+  uint32_t tmp;
+  INTLVL_DISABLE_BLOCK(UPTIME_INTLVL) {
+    tmp = uptime;
+  }
+  return tmp;
+}
+
 
 pwm_motor_t cc_motor[4];
 
@@ -139,17 +151,16 @@ int8_t ax12_send_char(uint8_t data)
 
 int ax12_recv_char(void)
 {
-  uint32_t tend = uptime + AX12_TIMEOUT_US;
+  uint32_t tend = get_uptime_us() + AX12_TIMEOUT_US;
   for(;;) {
     int c = uart_recv_nowait(UART_AX12);
     if(c != -1) {
       return c;
     }
-    if(tend <= uptime) {
+    if(tend <= get_uptime_us()) {
       return -1; // timeout
     }
   }
-  //return uart_recv_nowait(UART_AX12);
 }
 
 
@@ -161,7 +172,7 @@ uint8_t t_ax12_move(ax12_t *s, uint8_t id, uint16_t pos)
 void update_acm_candle_color_list(acm_t *s)
 {
   acm_candle_color_t robot_candle_color, advers_candle_color;
-  if (s->robot_color == ACM_BLUE)
+  if (s->cake_stall_side == ACM_BLUE)
   {
     robot_candle_color = ACM_CANDLE_BLUE;
     advers_candle_color = ACM_CANDLE_RED;
@@ -176,7 +187,7 @@ void update_acm_candle_color_list(acm_t *s)
   {
     if (s->candle_color[it] != ACM_CANDLE_WHITE)
     {
-      if (it%2 == 0)
+      if (it%2 == 0 || it == 1)
       {
         s->candle_color[it] = robot_candle_color; 
    //     acm.candle_color[it] = ACM_CANDLE_RED; 
@@ -186,7 +197,14 @@ void update_acm_candle_color_list(acm_t *s)
         s->candle_color[it] = advers_candle_color; 
       }
     }
+    if(s->candle_color[it] == ACM_CANDLE_WHITE)
+      printf(" %u W | ", it);
+    else if(s->candle_color[it] == ACM_CANDLE_BLUE)
+      printf(" %u B | ", it);
+    else if(s->candle_color[it] == ACM_CANDLE_RED)
+      printf(" %u R | ", it);
   }
+      printf("\n");
 }
 
 int main(void) {
@@ -218,7 +236,7 @@ int main(void) {
   printf("test meca\n");
 
   // timer
-  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPTIME_TICK_US), INTLVL_LO, uptime_update);
+  timer_set_callback(timerF0, 'A', TIMER_US_TO_TICKS(F0,UPTIME_TICK_US), UPTIME_INTLVL, uptime_update);
 
   // ANALOG SERVOS
   uint8_t lvla = 50;
@@ -299,7 +317,7 @@ int main(void) {
   acm.set_second_lvl_motor_pwm = cc_motor_3_pwm_set;
   acm.set_first_lvl_left_motor_pwm = cc_motor_0_pwm_set;
   acm.set_first_lvl_right_motor_pwm = cc_motor_2_pwm_set;
-
+  
   /// debug 
   update_acm_candle_color_list(&acm);
 
@@ -323,33 +341,45 @@ int main(void) {
         case 's': if (acm.cake_stall_side == ACM_BLUE)
                    {
                     acm.cake_stall_side = ACM_RED;
-                    printf("stall RED\n");
                    }
                    else
                    {
                     acm.cake_stall_side = ACM_BLUE;
-                    printf("stall BLUE\n");
                    }
                    update_acm_candle_color_list(&acm);
                    break;
         case 'c': if (acm.robot_color == ACM_BLUE)
                    {
                     acm.robot_color = ACM_RED;
-                    printf("robot color RED\n");
                    }
                    else
                    {
                     acm.robot_color = ACM_BLUE;
-                    printf("robot color BLUE\n");
                    }
                    update_acm_candle_color_list(&acm);
                    break;
         default : break;
       }
       PORTK.OUTTGL = _BV(2);
+      if (acm.robot_color == ACM_BLUE)
+      {
+        printf("robot BLUE\t");
+      }
+      else
+      {
+        printf("robot RED\t");
+      }
+      
+      if (acm.cake_stall_side == ACM_BLUE)
+      {
+        printf("callage BLUE\n");
+      }
+      else
+      {
+        printf("callage RED\n");
+      }
     }
    // for (volatile uint32_t it = 0; it < 100000; it ++) ;
-    PORTK.OUTTGL = _BV(0);
 #else
     aeat_update(&cake_enc);
 

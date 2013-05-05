@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <math.h>
 
+
+uint32_t get_uptime_us(void);
+
 static bool acm_arm_in_position(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
 {
   uint16_t goal, pos = 0xffff;
@@ -18,6 +21,7 @@ static bool acm_arm_in_position(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
           break;
         case ACM_ARM_STALLING:
         case ACM_ARM_ON_CAKE_AVOID_CANDLE:
+          //if (s->cake_stall_side == ACM_BLUE && s->robot_color == ACM_BLUE)
           if (s->cake_stall_side == ACM_BLUE)
           {
             goal = s->second_lvl_max_open_pos_blue;
@@ -36,7 +40,10 @@ static bool acm_arm_in_position(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
         default:
           return true;
       }
-      ax12_read_word(s->ax12, s->second_lvl_ax12_id, AX12_ADDR_PRESENT_POSITION_L, &pos);
+      if (ax12_read_word(s->ax12, s->second_lvl_ax12_id, AX12_ADDR_PRESENT_POSITION_L, &pos) )
+      {
+        return false;
+      }
       break;
 
     case ACM_ARM_FIRST_LVL_LEFT:
@@ -67,7 +74,10 @@ static bool acm_arm_in_position(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
         default:
           return true;
       }
-      ax12_read_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_PRESENT_POSITION_L, &pos);
+      if (ax12_read_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_PRESENT_POSITION_L, &pos) )
+      {
+        return false;
+      }
       break;
 
     case ACM_ARM_FIRST_LVL_RIGHT:
@@ -82,13 +92,13 @@ static bool acm_arm_in_position(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
           break;
 
         case ACM_ARM_ON_CAKE:
-          if (s->cake_stall_side == ACM_BLUE && s->robot_color == ACM_BLUE)
+          if (s->cake_stall_side == ACM_RED && s->robot_color == ACM_RED)
           {
-            goal = s->first_lvl_right_avoid_candle_pos;
+            goal = s->first_lvl_right_blow_candle_pos;
           }
           else
           {
-            goal = s->first_lvl_right_blow_candle_pos;
+            goal = s->first_lvl_right_avoid_candle_pos;
           }
           break;
 
@@ -99,13 +109,15 @@ static bool acm_arm_in_position(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
         default:
           return true;
       }
-      ax12_read_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_PRESENT_POSITION_L, &pos);
+      if (ax12_read_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_PRESENT_POSITION_L, &pos) )
+      {
+        return false;
+      }
       break;
 
     default:
       return true;
   }
-
 
   uint16_t diff_abs = goal >= pos ? goal-pos : pos-goal;
   return diff_abs <= s->ax12_end_of_move_margin;
@@ -113,6 +125,8 @@ static bool acm_arm_in_position(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
 
 static void acm_update_motor(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
 {
+  int16_t pwm =0;
+  
   switch(arm)
   {
     case ACM_ARM_SECOND_LVL:
@@ -120,25 +134,26 @@ static void acm_update_motor(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
       {
         case ACM_ARM_HOMED:
         case ACM_ARM_STALLING:
-          s->set_second_lvl_motor_pwm(0);
-          break;
+            pwm = 0;
+            break;
 
         case ACM_ARM_ON_CAKE_AVOID_CANDLE:
         case ACM_ARM_ON_CAKE:
         case ACM_ARM_ON_CAKE_BLOW_CANDLE:
           if (s->cake_stall_side == ACM_BLUE)
           {
-            s->set_second_lvl_motor_pwm(-s->motor_pwm_on_cake);
+            pwm = -s->motor_pwm_on_cake;
           }
           else
           {
-            s->set_second_lvl_motor_pwm(s->motor_pwm_on_cake);
+            pwm = s->motor_pwm_on_cake;
           }
           break;
 
         default:
           return;
       }
+      s->set_second_lvl_motor_pwm(pwm);
       break;
 
     case ACM_ARM_FIRST_LVL_LEFT:
@@ -146,7 +161,7 @@ static void acm_update_motor(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
       {
         case ACM_ARM_HOMED:
         case ACM_ARM_STALLING:
-          s->set_first_lvl_left_motor_pwm(0);
+            pwm = 0;
           break;
 
         case ACM_ARM_ON_CAKE_AVOID_CANDLE:
@@ -154,17 +169,18 @@ static void acm_update_motor(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
         case ACM_ARM_ON_CAKE_BLOW_CANDLE:
           if (s->cake_stall_side == ACM_BLUE)
           {
-            s->set_first_lvl_left_motor_pwm(-s->motor_pwm_on_cake);
+            pwm = -s->motor_pwm_on_cake;
           }
           else
           {
-            s->set_first_lvl_left_motor_pwm(s->motor_pwm_on_cake);
+            pwm = s->motor_pwm_on_cake;
           }
           break;
 
         default:
           return;
       }
+      s->set_first_lvl_left_motor_pwm(pwm);
       break;
 
     case ACM_ARM_FIRST_LVL_RIGHT:
@@ -172,7 +188,7 @@ static void acm_update_motor(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
       {
         case ACM_ARM_HOMED:
         case ACM_ARM_STALLING:
-          s->set_first_lvl_right_motor_pwm(0);
+            pwm = 0;
           break;
 
         case ACM_ARM_ON_CAKE_AVOID_CANDLE:
@@ -180,17 +196,18 @@ static void acm_update_motor(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
         case ACM_ARM_ON_CAKE_BLOW_CANDLE:
           if (s->cake_stall_side == ACM_BLUE)
           {
-            s->set_first_lvl_right_motor_pwm(-s->motor_pwm_on_cake);
+            pwm = -s->motor_pwm_on_cake;
           }
           else
           {
-            s->set_first_lvl_right_motor_pwm(s->motor_pwm_on_cake);
+            pwm = s->motor_pwm_on_cake;
           }
           break;
 
         default:
           return;
       }
+      s->set_first_lvl_right_motor_pwm(pwm);
       break;
 
     default:
@@ -206,24 +223,41 @@ static void acm_move_arm(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
       switch(conf)
       {
         case ACM_ARM_HOMED:
-          ax12_write_word(s->ax12, s->second_lvl_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->second_lvl_home_pos);
+          for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+          {
+            if(!ax12_write_word(s->ax12, s->second_lvl_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->second_lvl_home_pos))
+              break;
+          }
           break;
 
         case ACM_ARM_ON_CAKE:
         case ACM_ARM_STALLING:
         case ACM_ARM_ON_CAKE_AVOID_CANDLE:
+          //if (s->cake_stall_side == ACM_BLUE && s->robot_color == ACM_BLUE)
           if (s->cake_stall_side == ACM_BLUE)
           {
-            ax12_write_word(s->ax12, s->second_lvl_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->second_lvl_max_open_pos_blue);
+            for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+            {
+              if(!ax12_write_word(s->ax12, s->second_lvl_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->second_lvl_max_open_pos_blue))
+                break;
+            }
           }
           else
           {
-            ax12_write_word(s->ax12, s->second_lvl_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->second_lvl_max_open_pos_red);
+            for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+            {
+              if(!ax12_write_word(s->ax12, s->second_lvl_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->second_lvl_max_open_pos_red))
+                break;
+            }
           }
           break;
 
         case ACM_ARM_ON_CAKE_BLOW_CANDLE:
-          ax12_write_word(s->ax12, s->second_lvl_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->second_lvl_blow_candle_pos);
+          for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+          {
+            if(!ax12_write_word(s->ax12, s->second_lvl_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->second_lvl_blow_candle_pos))
+              break;
+          }
           break;
 
         default:
@@ -235,27 +269,47 @@ static void acm_move_arm(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
       switch(conf)
       {
         case ACM_ARM_HOMED:
-          ax12_write_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_left_home_pos);
+          for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+          {
+            if(!ax12_write_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_left_home_pos))
+              break;
+          }
           break;
 
         case ACM_ARM_ON_CAKE:
           if (s->cake_stall_side == ACM_BLUE && s->robot_color == ACM_BLUE)
           {
-            ax12_write_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_left_blow_candle_pos);
+            for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+            {
+              if(!ax12_write_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_left_blow_candle_pos))
+                break;
+            }
           }
           else
           {
-            ax12_write_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_left_avoid_candle_pos);
+            for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+            {
+              if(!ax12_write_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_left_avoid_candle_pos))
+                break;
+            }
           }
           break;
 
         case ACM_ARM_STALLING:
         case ACM_ARM_ON_CAKE_AVOID_CANDLE:
-          ax12_write_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_left_avoid_candle_pos);
+          for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+          {
+            if(!ax12_write_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_left_avoid_candle_pos))
+              break;
+          }
           break;
 
         case ACM_ARM_ON_CAKE_BLOW_CANDLE:
-          ax12_write_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_left_blow_candle_pos);
+          for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+          {
+            if(!ax12_write_word(s->ax12, s->first_lvl_left_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_left_blow_candle_pos))
+              break;
+          }
           break;
 
         default:
@@ -267,28 +321,48 @@ static void acm_move_arm(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
       switch(conf)
       {
         case ACM_ARM_HOMED:
-          ax12_write_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_right_home_pos);
+          for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+          {
+            if(!ax12_write_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_right_home_pos))
+              break;
+          }
           break;
 
         case ACM_ARM_ON_CAKE:
-          if (s->cake_stall_side == ACM_BLUE && s->robot_color == ACM_BLUE)
+          if (s->cake_stall_side == ACM_RED && s->robot_color == ACM_RED)
           {
-            ax12_write_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_right_avoid_candle_pos);
+            for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+            {
+              if(!ax12_write_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_right_blow_candle_pos))
+                break;
+            }
           }
           else
           {
-            ax12_write_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_right_blow_candle_pos);
+            for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+            {
+              if(!ax12_write_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_right_avoid_candle_pos))
+                break;
+            }
           }
           break;
 
 
         case ACM_ARM_STALLING:
         case ACM_ARM_ON_CAKE_AVOID_CANDLE:
-          ax12_write_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_right_avoid_candle_pos);
+          for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+          {
+            if(!ax12_write_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_right_avoid_candle_pos))
+              break;
+          }
           break;
 
         case ACM_ARM_ON_CAKE_BLOW_CANDLE:
-          ax12_write_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_right_blow_candle_pos);
+          for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+          {
+            if(!ax12_write_word(s->ax12, s->first_lvl_right_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->first_lvl_right_blow_candle_pos))
+              break;
+          }
           break;
 
         default:
@@ -329,23 +403,31 @@ void acm_update_arm_position(acm_t *s)
 
   double cake_perimeter_mm = s->cake_radius * M_PI;
 
-  double second_lvl_arm_enc_offset_mm, first_lvl_left_arm_enc_offset_mm, first_lvl_right_arm_enc_offset_mm;
+  double second_lvl_arm_enc_offset_mm;
+  double second_lvl_arm_red_side_avoid_red_candle_pos_offset_mm;
+  double second_lvl_arm_blue_side_avoid_blue_candle_pos_offset_mm;
+  double first_lvl_left_arm_enc_offset_mm;
+  double first_lvl_right_arm_enc_offset_mm;
   if (s->cake_stall_side == ACM_BLUE)
   {
     second_lvl_arm_enc_offset_mm = s->second_lvl_arm_enc_offset_mm;
+    second_lvl_arm_red_side_avoid_red_candle_pos_offset_mm = 0.0;
+    second_lvl_arm_blue_side_avoid_blue_candle_pos_offset_mm = s->second_lvl_arm_blue_side_avoid_blue_candle_pos_offset_mm;
     first_lvl_left_arm_enc_offset_mm = s->first_lvl_left_arm_enc_offset_mm;
     first_lvl_right_arm_enc_offset_mm = s->first_lvl_left_arm_enc_offset_mm;
   }
   else
   {
     second_lvl_arm_enc_offset_mm = -s->second_lvl_arm_enc_offset_mm;
+    second_lvl_arm_red_side_avoid_red_candle_pos_offset_mm = -s->second_lvl_arm_red_side_avoid_red_candle_pos_offset_mm;
+    second_lvl_arm_blue_side_avoid_blue_candle_pos_offset_mm = 0.0;
     first_lvl_left_arm_enc_offset_mm = -s->first_lvl_left_arm_enc_offset_mm;
     first_lvl_right_arm_enc_offset_mm = -s->first_lvl_left_arm_enc_offset_mm;
   }
 
 
   // get ax12 candle position for each arm
-  uint8_t second_lvl_arm_candle_id = (cake_pos_mm - second_lvl_arm_enc_offset_mm) / (cake_perimeter_mm / SECOND_LVL_CANDLE_NB);
+  uint8_t second_lvl_arm_candle_id = (cake_pos_mm - (second_lvl_arm_enc_offset_mm - second_lvl_arm_red_side_avoid_red_candle_pos_offset_mm - second_lvl_arm_blue_side_avoid_blue_candle_pos_offset_mm )) / (cake_perimeter_mm / SECOND_LVL_CANDLE_NB);
   uint8_t left_arm_candle_id = (cake_pos_mm - first_lvl_left_arm_enc_offset_mm) / (cake_perimeter_mm / FIRST_LVL_CANDLE_NB);
   uint8_t right_arm_candle_id = (cake_pos_mm + first_lvl_right_arm_enc_offset_mm) / (cake_perimeter_mm / FIRST_LVL_CANDLE_NB);
 
@@ -371,24 +453,25 @@ void acm_update_arm_position(acm_t *s)
     candle_target_color = ACM_CANDLE_RED;
   }
 
-
   // update arm position
   if (second_lvl_arm_candle_id == 0 && s->robot_color == ACM_BLUE && s->cake_stall_side == ACM_RED)
   {
     acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_STALLING);
   }
-  else if (second_lvl_arm_candle_id == 0 && s->robot_color == ACM_RED && s->cake_stall_side == ACM_BLUE)
+  else if (second_lvl_arm_candle_id <= 1 && s->robot_color == ACM_RED && s->cake_stall_side == ACM_BLUE)
   {
-    acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_HOMED);
+    //acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_ON_CAKE_AVOID_CANDLE);
+    acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_STALLING);
   }
   else
   {
-    acm_move_arm(s, ACM_ARM_FIRST_LVL_RIGHT, ACM_ARM_ON_CAKE_AVOID_CANDLE);
+    acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_ON_CAKE_BLOW_CANDLE);
   }
 
 
   if ((s->candle_color[left_arm_candle_id] == candle_target_color || s->candle_color[left_arm_candle_id] == ACM_CANDLE_WHITE)
-     && (s->candle_color[left_arm_candle_id_anticipated] == candle_target_color || s->candle_color[left_arm_candle_id_anticipated] == ACM_CANDLE_WHITE))
+     && (s->candle_color[left_arm_candle_id_anticipated] == candle_target_color || s->candle_color[left_arm_candle_id_anticipated] == ACM_CANDLE_WHITE)
+     && ((s->cake_stall_side == ACM_RED && left_arm_candle_id >= 2) || s->cake_stall_side == ACM_BLUE) )
   {
     acm_move_arm(s, ACM_ARM_FIRST_LVL_LEFT, ACM_ARM_ON_CAKE_BLOW_CANDLE);
   }
@@ -397,9 +480,9 @@ void acm_update_arm_position(acm_t *s)
     acm_move_arm(s, ACM_ARM_FIRST_LVL_LEFT, ACM_ARM_ON_CAKE_AVOID_CANDLE);
   }
 
+// when stalled, right arm cannot blow candle id lower than 2
   if ((s->candle_color[right_arm_candle_id] == candle_target_color || s->candle_color[right_arm_candle_id] == ACM_CANDLE_WHITE)
-      && (s->candle_color[right_arm_candle_id_anticipated] == candle_target_color || s->candle_color[right_arm_candle_id_anticipated] == ACM_CANDLE_WHITE))
-
+      && (s->candle_color[right_arm_candle_id_anticipated] == candle_target_color || s->candle_color[right_arm_candle_id_anticipated] == ACM_CANDLE_WHITE)      && ((s->cake_stall_side == ACM_BLUE && right_arm_candle_id >= 2) || s->cake_stall_side == ACM_RED))
   {
     acm_move_arm(s, ACM_ARM_FIRST_LVL_RIGHT, ACM_ARM_ON_CAKE_BLOW_CANDLE);
   }
@@ -407,6 +490,18 @@ void acm_update_arm_position(acm_t *s)
   {
     acm_move_arm(s, ACM_ARM_FIRST_LVL_RIGHT, ACM_ARM_ON_CAKE_AVOID_CANDLE);
   }
+
+/*
+/// XXX TODO REPRENDRE CODE ICI
+  // first ball must be attacked with cc motor rotation direction inverted
+  if (arm == ACM_ARM_SECOND_LVL && s->cake_stall_side == ACM_BLUE && s->robot_color == ACM_RED && second_lvl_arm_candle_id <= 2)
+  {
+    acm_update_motor(s, arm, conf, true);
+  }
+  else
+  {
+    acm_update_motor(s, arm, conf, false);
+  }*/
 }
 
 void acm_init(acm_t *s)
@@ -433,6 +528,8 @@ void acm_init(acm_t *s)
   s->first_lvl_right_avoid_candle_pos = DEFAULT_ACM_FIRST_LVL_RIGHT_AVOID_CANDLE_POS;
 
   s->second_lvl_arm_enc_offset_mm = DEFAULT_ACM_SECOND_LVL_ARM_ENC_OFFSET_MM;
+  s->second_lvl_arm_red_side_avoid_red_candle_pos_offset_mm = DEFAULT_ACM_SECOND_LVL_ARM_RED_SIDE_AVOID_RED_CANDLE_POS_OFFSET_MM;
+  s->second_lvl_arm_blue_side_avoid_blue_candle_pos_offset_mm = DEFAULT_ACM_SECOND_LVL_ARM_BLUE_SIDE_AVOID_BLUE_CANDLE_POS_OFFSET_MM;
   s->first_lvl_left_arm_enc_offset_mm = DEFAULT_ACM_FIRST_LVL_LEFT_ARM_ENC_OFFSET_MM;
   s->first_lvl_right_arm_enc_offset_mm = DEFAULT_ACM_FIRST_LVL_RIGHT_ARM_ENC_OFFSET_MM;
   s->encoder_to_side_enc_offset_mm = DEFAULT_ACM_ENCODER_TO_SIDE_ENC_OFFSET_MM;
@@ -485,6 +582,7 @@ void acm_update(acm_t *s)
 
     case ACM_SM_MAX_OPEN_FIRST_LVL_LEFT:
       acm_move_arm(s, ACM_ARM_FIRST_LVL_LEFT, ACM_ARM_STALLING);
+      s->last_ax12_order_timestamp = get_uptime_us();
       s->sm_state = ACM_SM_MAX_WAIT_FIRST_LVL_LEFT_OPEN;
       break;
     case ACM_SM_MAX_WAIT_FIRST_LVL_LEFT_OPEN:
@@ -492,9 +590,14 @@ void acm_update(acm_t *s)
       {
         s->sm_state = ACM_SM_MAX_OPEN_SECOND_LVL;
       }
+      else if((get_uptime_us() - s->last_ax12_order_timestamp) >= ACM_AX12_ORDER_TIMEOUT_US)
+      {
+        s->sm_state = ACM_SM_MAX_OPEN_FIRST_LVL_LEFT;
+      }
       break;
     case ACM_SM_MAX_OPEN_SECOND_LVL:
       acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_STALLING);
+      s->last_ax12_order_timestamp = get_uptime_us();
       s->sm_state = ACM_SM_MAX_WAIT_SECOND_LVL_OPEN;
       break;
     case ACM_SM_MAX_WAIT_SECOND_LVL_OPEN:
@@ -502,9 +605,14 @@ void acm_update(acm_t *s)
       {
         s->sm_state = ACM_SM_MAX_OPEN_FIRST_LVL_RIGHT;
       }
+       else if((get_uptime_us() - s->last_ax12_order_timestamp) >= ACM_AX12_ORDER_TIMEOUT_US)
+      {
+        s->sm_state = ACM_SM_MAX_OPEN_SECOND_LVL;
+      }
       break;
     case ACM_SM_MAX_OPEN_FIRST_LVL_RIGHT:
       acm_move_arm(s, ACM_ARM_FIRST_LVL_RIGHT, ACM_ARM_STALLING);
+      s->last_ax12_order_timestamp = get_uptime_us();
       s->sm_state = ACM_SM_MAX_WAIT_FIRST_LVL_RIGHT_OPEN;
       break;
     case ACM_SM_MAX_WAIT_FIRST_LVL_RIGHT_OPEN:
@@ -512,10 +620,15 @@ void acm_update(acm_t *s)
       {
         s->sm_state = ACM_SM_INACTIVE;
       }
+       else if((get_uptime_us() - s->last_ax12_order_timestamp) >= ACM_AX12_ORDER_TIMEOUT_US)
+      {
+        s->sm_state = ACM_SM_MAX_OPEN_FIRST_LVL_RIGHT;
+      }
       break;
 
     case ACM_SM_HOME_MOVE_FIRST_LVL_RIGHT:
       acm_move_arm(s, ACM_ARM_FIRST_LVL_RIGHT, ACM_ARM_HOMED);
+      s->last_ax12_order_timestamp = get_uptime_us();
       s->sm_state = ACM_SM_HOME_WAIT_FIRST_LVL_RIGHT_HOMED;
       break;
     case ACM_SM_HOME_WAIT_FIRST_LVL_RIGHT_HOMED:
@@ -523,9 +636,14 @@ void acm_update(acm_t *s)
       {
         s->sm_state = ACM_SM_HOME_MOVE_SECOND_LVL;
       }
+       else if((get_uptime_us() - s->last_ax12_order_timestamp) >= ACM_AX12_ORDER_TIMEOUT_US)
+      {
+        s->sm_state = ACM_SM_HOME_MOVE_FIRST_LVL_RIGHT;
+      }
       break;
     case ACM_SM_HOME_MOVE_SECOND_LVL:
       acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_HOMED);
+      s->last_ax12_order_timestamp = get_uptime_us();
       s->sm_state = ACM_SM_HOME_WAIT_SECOND_LBL_HOMED;
       break;
     case ACM_SM_HOME_WAIT_SECOND_LBL_HOMED:
@@ -533,9 +651,14 @@ void acm_update(acm_t *s)
       {
         s->sm_state = ACM_SM_HOME_MOVE_FIRST_LVL_LEFT;
       }
+       else if((get_uptime_us() - s->last_ax12_order_timestamp) >= ACM_AX12_ORDER_TIMEOUT_US)
+      {
+        s->sm_state = ACM_SM_HOME_MOVE_SECOND_LVL;
+      }
       break;
     case ACM_SM_HOME_MOVE_FIRST_LVL_LEFT:
       acm_move_arm(s, ACM_ARM_FIRST_LVL_LEFT, ACM_ARM_HOMED);
+      s->last_ax12_order_timestamp = get_uptime_us();
       s->sm_state = ACM_SM_HOME_WAIT_FIRST_LVL_LEFT_HOMED;
       break;
     case ACM_SM_HOME_WAIT_FIRST_LVL_LEFT_HOMED:
@@ -543,20 +666,30 @@ void acm_update(acm_t *s)
       {
         s->sm_state = ACM_SM_INACTIVE;
       }
+       else if((get_uptime_us() - s->last_ax12_order_timestamp) >= ACM_AX12_ORDER_TIMEOUT_US)
+      {
+        s->sm_state = ACM_SM_HOME_MOVE_FIRST_LVL_LEFT;
+      }
       break;
 
     case ACM_SM_CAKING_MOVE_SECOND_LVL:
-      acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_ON_CAKE_BLOW_CANDLE);
+      acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_STALLING);
+      s->last_ax12_order_timestamp = get_uptime_us();
       s->sm_state = ACM_SM_CAKING_WAIT_SECOND_LVL_MOVED;
       break;
     case ACM_SM_CAKING_WAIT_SECOND_LVL_MOVED:
-      if (acm_arm_in_position(s, ACM_ARM_SECOND_LVL, ACM_ARM_ON_CAKE_BLOW_CANDLE))
+      if (acm_arm_in_position(s, ACM_ARM_SECOND_LVL, ACM_ARM_STALLING))
       {
         s->sm_state = ACM_SM_CAKING_MOVE_FIRST_LVL_LEFT;
+      }
+       else if((get_uptime_us() - s->last_ax12_order_timestamp) >= ACM_AX12_ORDER_TIMEOUT_US)
+      {
+        s->sm_state = ACM_SM_CAKING_MOVE_SECOND_LVL;
       }
       break;
     case ACM_SM_CAKING_MOVE_FIRST_LVL_LEFT:
       acm_move_arm(s, ACM_ARM_FIRST_LVL_LEFT, ACM_ARM_ON_CAKE);
+      s->last_ax12_order_timestamp = get_uptime_us();
       s->sm_state = ACM_SM_CAKING_WAIT_FIRST_LVL_LEFT_MOVED;
       break;
     case  ACM_SM_CAKING_WAIT_FIRST_LVL_LEFT_MOVED:
@@ -564,15 +697,24 @@ void acm_update(acm_t *s)
       {
         s->sm_state = ACM_SM_CAKING_MOVE_FIRST_LVL_RIGHT;
       }
+       else if((get_uptime_us() - s->last_ax12_order_timestamp) >= ACM_AX12_ORDER_TIMEOUT_US)
+      {
+        s->sm_state = ACM_SM_CAKING_MOVE_FIRST_LVL_LEFT;
+      }
       break;
    case ACM_SM_CAKING_MOVE_FIRST_LVL_RIGHT:
       acm_move_arm(s, ACM_ARM_FIRST_LVL_RIGHT, ACM_ARM_ON_CAKE);
+      s->last_ax12_order_timestamp = get_uptime_us();
       s->sm_state = ACM_SM_CAKING_WAIT_FIRST_LVL_RIGHT_MOVED;
       break;
     case  ACM_SM_CAKING_WAIT_FIRST_LVL_RIGHT_MOVED:
       if (acm_arm_in_position(s, ACM_ARM_FIRST_LVL_RIGHT, ACM_ARM_ON_CAKE))
       {
         s->sm_state = ACM_SM_CAKING_RESET_ENCODER_VALUE;
+      }
+       else if((get_uptime_us() - s->last_ax12_order_timestamp) >= ACM_AX12_ORDER_TIMEOUT_US)
+      {
+        s->sm_state = ACM_SM_CAKING_MOVE_FIRST_LVL_RIGHT;
       }
       break;
     case ACM_SM_CAKING_RESET_ENCODER_VALUE:
@@ -590,10 +732,12 @@ void acm_update(acm_t *s)
     case ACM_SM_CAKING_UPDATE_ARMS:
       acm_update_arm_position(s);
       s->sm_state = ACM_SM_CAKING_WAIT_CANDLES;
+      PORTK.OUTSET = _BV(0);
       break;
     case ACM_SM_CAKING_UPDATE_CANDLE_COLOR:
       /// TODO add update list of candles
       s->sm_state = ACM_SM_CAKING_WAIT_CANDLES;
+      PORTK.OUTCLR = _BV(0);
       break;
 
     default:

@@ -1,6 +1,6 @@
 
-#define UART_RX_BUF_SIZE  255
-#define UART_TX_BUF_SIZE  255
+#define UART_RX_BUF_SIZE  250
+#define UART_TX_BUF_SIZE  250
 
 #define UART_BAUDRATE  38400
 #define UART_BSCALE  0
@@ -18,5 +18,5 @@
 //#define UARTF1_ENABLED
 
 
-#define UART_INTLVL  INTLVL_HI
+#define UART_INTLVL  INTLVL_MED
 
