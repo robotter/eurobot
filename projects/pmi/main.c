@@ -48,25 +48,25 @@ static const position_conf_t pos_man_default_conf = {
 };
 
 static const ramp_conf_t ramp_default_conf = {
-  .a_max = 100000.0,
-  .v_max = 1000000.0,
+  .a_max = 10000.0,
+  .v_max = 10000.0,
 };
 
 static const pid_conf_t pid_dist_default_conf = {
-  .kd = 10,
-  .ki = 0,
-  .kp = 2.0,
+  .kd = 0.5,
+  .ki = 0.1,
+  .kp = 5.0,
   .d_alpha = 1.0,
-  .max_integral = 500.0,
+  .max_integral = 5000.0,
   .max_output = 30000.0,
 };
 
 static const pid_conf_t pid_angle_default_conf = {
-  .kd = 0,
-  .ki = 0,
-  .kp = 4.0,
+  .kd = 0.3,
+  .ki = 0.05,
+  .kp = 5.0,
   .d_alpha = 1.0,
-  .max_integral = 500.0,
+  .max_integral = 10000.0,
   .max_output = 30000.0,
 };
 
