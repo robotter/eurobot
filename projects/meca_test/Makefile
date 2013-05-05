@@ -20,5 +20,5 @@ PRINTF_LEVEL = advanced
 CFLAGS += -g -Wextra -Werror
 LDFLAGS += -g
 
-include ../../../robotter.avarix/mk/project.mk
+include ../../avarix/mk/project.mk
 
