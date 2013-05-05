@@ -13,9 +13,10 @@ transactions = register_groups(
 
       Order('asserv_goto_xy', [('x', 'dist'), ('y', 'dist')],
         desc="Move to given absolute position coordinates"),
+      Order('asserv_goto_d', [('d', 'dist')],
+        desc="Move ahead"),
       Order('asserv_goto_a', [('a', 'angle')],
         desc="Move to given absolute angle"),
-
       ]),
 
     # R3D2
@@ -129,8 +130,6 @@ transactions = register_groups(
       # all
       Order('pmi_save_all_conf', [],
         desc="Save all configurations to EEPROM"),
-
       ]),
-
     )
 

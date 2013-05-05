@@ -83,6 +83,12 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
       ROOM_REPLY_ASSERV_GOTO_A(intf, pl);
     } break;
 
+    case ROOM_MID_ASSERV_GOTO_D: {
+      double d = pos_mm_to_tick(&pos_man, pl->asserv_goto_d.d);
+      traj_goto_d(&traj_man, d);
+      ROOM_REPLY_ASSERV_GOTO_D(intf, pl);
+    } break;
+
 
     case ROOM_MID_PMI_POSITION_SET_CONF: {
       INTLVL_DISABLE_BLOCK(CONTROL_SYSTEM_INTLVL) {
