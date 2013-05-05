@@ -136,6 +136,10 @@ transactions = register_groups(
       # all
       Order('pmi_save_all_conf', [],
         desc="Save all configurations to EEPROM"),
+      
+      # get battery information
+      Command('pmi_get_battery_information', [], [('voltage','uint8')],
+        desc="Return battery information"),
       ]),
 
     # Galipeur

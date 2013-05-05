@@ -1,0 +1,15 @@
+
+#include "battery_monitor.h"
+
+#include <avarix.h>
+
+void battery_monitor_init() {
+
+  ADCA.CH0.CTRL = 
+  ADCA.CH0.MUXCTRL = 
+
+  // set ADC reference to 1V and enable ADCA
+  ADCA.REFCTRL = ADC_REFSEL_INT1V_gc;
+  ADCA.CTRLA = ADC_ENABLE_bm;
+
+}

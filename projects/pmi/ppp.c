@@ -174,6 +174,11 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
       ROOM_REPLY_PMI_SAVE_ALL_CONF(intf, pl);
     } break;
 
+    case ROOM_MID_PMI_GET_BATTERY_INFORMATION: {
+
+      ROOM_REPLY_PMI_GET_BATTERY_INFORMATION(intf, pl, 42);
+    } break;
+
     default:
       PPP_LOGF(intf, INFO, "unexpected ROOM message: %u", pl->mid);
       break;

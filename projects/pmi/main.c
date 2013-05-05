@@ -16,6 +16,7 @@
 #include "ramp.h"
 #include "pid.h"
 #include "motors.h"
+#include "battery_monitor.h"
 #include "config.h"
 
 
