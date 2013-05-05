@@ -1,8 +1,27 @@
 #include <avr/eeprom.h>
 #include <avarix/intlvl.h>
+#include <math.h>
 #include "trajectory.h"
 #include "config.h"
 
+#include <perlimpinpin/payload/log.h>
+extern ppp_intf_t pppintf;
+
+static double _fmod_pipi(double x) {
+  return fmod(x+M_PI, 2*M_PI)-M_PI;
+}
+
+static double _compute_angle_consign(traj_t *t, double current, double target)
+{
+  double consign, error;
+  current = pos_tick_to_rad(t->pos, current);
+  target = pos_tick_to_rad(t->pos, target);
+  // compute shortest angle between target and current
+  error = _fmod_pipi(target - current);
+  // add error to current position as consign
+  consign = _fmod_pipi(current+error);
+  return pos_rad_to_tick(t->pos, consign);
+}
 
 void traj_init(traj_t *t, position_t *p)
 {
@@ -51,6 +70,7 @@ void traj_goto_a(traj_t *t, double a)
 
 void traj_goto_xy(traj_t *t, double x, double y)
 {
+  PPP_LOGF(&pppintf, INFO, "GXY %f %f", x, y);
   INTLVL_DISABLE_BLOCK(CONTROL_SYSTEM_INTLVL) {
     t->x_target = x;
     t->y_target = y;
@@ -92,6 +112,7 @@ static void traj_handle_d_move(traj_t *t)
 static void traj_handle_a_move(traj_t *t)
 {
   t->a_out = t->a_target;
+  t->a_out = _compute_angle_consign(t, t->a_cur, t->a_target);
   if(fabs(t->a_out - t->a_cur) < pos_deg_to_tick(t->pos, TRAJECTORY_MARGIN_ANGLE)) {
     t->flags |= TRAJ_FLAG_ENDED;
   }
@@ -109,7 +130,14 @@ static void traj_handle_xy_move(traj_t *t)
     t->flags |= TRAJ_FLAG_ENDED;
   } else {
     // check angle to destination
-    t->a_out = pos_rad_to_tick(t->pos, atan2(dy, dx));
+    double target = pos_rad_to_tick(t->pos, atan2(dy, dx));
+    t->a_out = _compute_angle_consign(t, t->a_cur, target);
+
+    PPP_LOGF(&pppintf, INFO, "%f %f %f",
+      pos_tick_to_rad(t->pos, t->a_cur),
+      pos_tick_to_rad(t->pos, target),
+      pos_tick_to_rad(t->pos, t->a_out));
+
     if(fabs(t->a_out - t->a_cur) < pos_deg_to_tick(t->pos, TRAJECTORY_MARGIN_ANGLE)) {
       // angle is fine, update d target
       t->d_out = t->d_cur + sqrt(dd);

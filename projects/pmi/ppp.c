@@ -89,6 +89,11 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
       ROOM_REPLY_ASSERV_GOTO_D(intf, pl);
     } break;
 
+    case ROOM_MID_ASSERV_STATUS: {
+      bool arrived_a = traj_man.flags & TRAJ_FLAG_ENDED;
+      bool arrived_xy = traj_man.flags & TRAJ_FLAG_ENDED;
+      ROOM_REPLY_ASSERV_STATUS(intf, pl, arrived_a, arrived_xy);
+    } break;
 
     case ROOM_MID_PMI_POSITION_SET_CONF: {
       INTLVL_DISABLE_BLOCK(CONTROL_SYSTEM_INTLVL) {

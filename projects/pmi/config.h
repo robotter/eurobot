@@ -26,9 +26,13 @@
 /// Interrupt level for battery monitoring
 #define BATTERY_MONITORING_INTLVL  INTLVL_MED
 
+/// Rangefinders monitoring period, in microseconds
+#define RANGEFINDERS_MONITORING_PERIOD_US  100000
+/// Interrupt level for rangefinders monitoring
+#define RANGEFINDERS_MONITORING_INTLVL  INTLVL_MED
 
 /// Distance precision margin, in centimers
-#define TRAJECTORY_MARGIN_DIST  2
+#define TRAJECTORY_MARGIN_DIST  5
 /// Angle precision margin, in degrees
 #define TRAJECTORY_MARGIN_ANGLE  5
 

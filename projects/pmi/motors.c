@@ -15,16 +15,15 @@ typedef struct {
 static motor_t motor_left;
 static motor_t motor_right;
 
-
 /// Set left motor rotation direction
 static void motor_left_set_sign(bool sign)
 {
   if(sign) {
-    portpin_outset(&MOTOR_LEFT_ROTATE_A_PP);
-    portpin_outclr(&MOTOR_LEFT_ROTATE_B_PP);
-  } else {
-    portpin_outclr(&MOTOR_LEFT_ROTATE_A_PP);
     portpin_outset(&MOTOR_LEFT_ROTATE_B_PP);
+    portpin_outclr(&MOTOR_LEFT_ROTATE_A_PP);
+  } else {
+    portpin_outclr(&MOTOR_LEFT_ROTATE_B_PP);
+    portpin_outset(&MOTOR_LEFT_ROTATE_A_PP);
   }
 }
 
@@ -32,11 +31,11 @@ static void motor_left_set_sign(bool sign)
 static void motor_right_set_sign(bool sign)
 {
   if(sign) {
-    portpin_outclr(&MOTOR_RIGHT_ROTATE_A_PP);
-    portpin_outset(&MOTOR_RIGHT_ROTATE_B_PP);
-  } else {
-    portpin_outset(&MOTOR_RIGHT_ROTATE_A_PP);
     portpin_outclr(&MOTOR_RIGHT_ROTATE_B_PP);
+    portpin_outset(&MOTOR_RIGHT_ROTATE_A_PP);
+  } else {
+    portpin_outset(&MOTOR_RIGHT_ROTATE_B_PP);
+    portpin_outclr(&MOTOR_RIGHT_ROTATE_A_PP);
   }
 }
 

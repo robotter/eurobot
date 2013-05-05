@@ -17,6 +17,7 @@ transactions = register_groups(
         desc="Move ahead"),
       Order('asserv_goto_a', [('a', 'angle')],
         desc="Move to given absolute angle"),
+      Command('asserv_status', [], [('arrived_a', 'bool'), ('arrived_xy', 'bool')]),
       ]),
 
     # R3D2
@@ -127,6 +128,7 @@ transactions = register_groups(
         ], desc="Set distance PID configuration"),
       Order('pmi_pid_angle_save_conf', [],
         desc="Save angle PID configuration to EEPROM"),
+
       # all
       Order('pmi_save_all_conf', [],
         desc="Save all configurations to EEPROM"),

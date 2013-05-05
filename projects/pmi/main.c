@@ -22,7 +22,7 @@
 extern ppp_payload_handler_t *ppp_filter(ppp_intf_t *intf);
 extern void room_message_handler(ppp_intf_t *intf, room_payload_t *pl);
 
-static ppp_intf_t pppintf;
+ppp_intf_t pppintf;
 
 position_t pos_man;
 traj_t traj_man;
@@ -41,10 +41,10 @@ EEMEM pid_conf_t pid_angle_conf;
 // Default configurations
 
 static const position_conf_t pos_man_default_conf = {
-  .left_wheel_ratio = -1,
-  .right_wheel_ratio = 1,
+  .left_wheel_ratio = 1,
+  .right_wheel_ratio = -1,
   .tick_p_mm = 41.0,
-  .tick_p_180deg = 8274.0,
+  .tick_p_180deg = 8700.0,
 };
 
 static const ramp_conf_t ramp_default_conf = {
@@ -63,7 +63,7 @@ static const pid_conf_t pid_dist_default_conf = {
 
 static const pid_conf_t pid_angle_default_conf = {
   .kd = 0.3,
-  .ki = 0.05,
+  .ki = 0.15,
   .kp = 5.0,
   .d_alpha = 1.0,
   .max_integral = 10000.0,
@@ -112,7 +112,7 @@ void monitor_battery(void)
 }
 
 
-void monitor_rangemeters(void)
+void monitor_rangefinders(void)
 {
   uint8_t buf[2][3];
   i2cm_recv(i2cC, 0x70, buf[0], 3);
@@ -122,6 +122,25 @@ void monitor_rangemeters(void)
     ((uint16_t)buf[1][2] << 8) + buf[1][1],
   };
   (void)dist; //TODO
+
+  if(dist[1] < 0) {
+    portpin_outclr(&LED_GREEN_PP);
+    portpin_outclr(&LED_BLUE_PP);
+    portpin_outtgl(&LED_RED_PP);
+  }
+  else {
+    portpin_outclr(&LED_RED_PP);
+    if(dist[1] > 10) {
+      portpin_outset(&LED_GREEN_PP);
+      portpin_outclr(&LED_BLUE_PP);
+    }
+    else {
+      portpin_outclr(&LED_GREEN_PP);
+      portpin_outset(&LED_BLUE_PP);
+    }
+
+  }
+
 }
 
 
@@ -168,7 +187,7 @@ int main(void)
   // send a system RESET to signal that we have booted
   ppp_send_system_reset(&pppintf);
 
-  // i2c init, for rangemeter
+  // i2c init, for rangefinders
   i2c_init();
 
   // position system
@@ -198,7 +217,8 @@ int main(void)
 
   timer_set_callback(timerC0, 'A', TIMER_US_TO_TICKS(C0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, manage_control_system);
   timer_set_callback(timerC0, 'B', TIMER_US_TO_TICKS(C0,BATTERY_MONITORING_PERIOD_US), BATTERY_MONITORING_INTLVL, monitor_battery);
-  
+  timer_set_callback(timerC0, 'C', TIMER_US_TO_TICKS(C0,RANGEFINDERS_MONITORING_PERIOD_US), RANGEFINDERS_MONITORING_INTLVL, monitor_rangefinders);
+
   /*
    * main loop
    *
