@@ -41,8 +41,8 @@ EEMEM pid_conf_t pid_angle_conf;
 // Default configurations
 
 static const position_conf_t pos_man_default_conf = {
-  .left_wheel_ratio = 1,
-  .right_wheel_ratio = -1,
+  .left_wheel_ratio = -1,
+  .right_wheel_ratio = 1,
   .tick_p_mm = 41.0,
   .tick_p_180deg = 8274.0,
 };
@@ -70,10 +70,7 @@ static const pid_conf_t pid_angle_default_conf = {
   .max_output = 30000.0,
 };
 
-
 static pwm_motor_t servos[5];
-
-
 
 void manage_control_system(void)
 {

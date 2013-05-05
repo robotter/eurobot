@@ -60,7 +60,7 @@ void pid_conf_load(pid_t *p, const pid_conf_t *conf, const pid_conf_t *def)
 {
   eeprom_read_block(&p->conf, conf, sizeof(*conf));
   if(p->conf.magic != EEPROM_MAGIC) {
-    memcpy(&p->conf, &def, sizeof(p->conf));
+    memcpy(&p->conf, def, sizeof(p->conf));
   }
 }
 

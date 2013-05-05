@@ -63,7 +63,7 @@ void ramp_conf_load(ramp_t *r, const ramp_conf_t *conf, const ramp_conf_t *def)
 {
   eeprom_read_block(&r->conf, conf, sizeof(*conf));
   if(r->conf.magic != EEPROM_MAGIC) {
-    memcpy(&r->conf, &def, sizeof(r->conf));
+    memcpy(&r->conf, def, sizeof(r->conf));
   }
 }
 

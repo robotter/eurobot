@@ -45,12 +45,11 @@ void pos_set_encoder_values(position_t *p, int32_t left, int32_t right)
   p->rlast = rcur;
 }
 
-
 void pos_conf_load(position_t *p, const position_conf_t *conf, const position_conf_t *def)
 {
   eeprom_read_block(&p->conf, conf, sizeof(*conf));
   if(p->conf.magic != EEPROM_MAGIC) {
-    memcpy(&p->conf, &def, sizeof(p->conf));
+    memcpy(&p->conf, def, sizeof(p->conf));
   }
 }
 
@@ -61,7 +60,6 @@ void pos_conf_save(position_t *p, position_conf_t *conf)
     eeprom_update_block(&p->conf, conf, sizeof(*conf));
   }
 }
-
 
 void pos_do_computation(position_t *p)
 {
