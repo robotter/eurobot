@@ -109,7 +109,7 @@ static void traj_handle_xy_move(traj_t *t)
     t->flags |= TRAJ_FLAG_ENDED;
   } else {
     // check angle to destination
-    t->a_out = atan2(dy, dx);
+    t->a_out = pos_rad_to_tick(t->pos, atan2(dy, dx));
     if(fabs(t->a_out - t->a_cur) < pos_deg_to_tick(t->pos, TRAJECTORY_MARGIN_ANGLE)) {
       // angle is fine, update d target
       t->d_out = t->d_cur + sqrt(dd);
