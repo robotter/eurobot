@@ -13,14 +13,33 @@ static double _fmod_pipi(double x) {
 
 static double _compute_angle_consign(traj_t *t, double current, double target)
 {
-  double consign, error;
+  double consign;
   current = pos_tick_to_rad(t->pos, current);
   target = pos_tick_to_rad(t->pos, target);
-  // compute shortest angle between target and current
-  error = _fmod_pipi(target - current);
-  // add error to current position as consign
-  consign = _fmod_pipi(current+error);
-  return pos_rad_to_tick(t->pos, consign);
+
+  consign = current - _fmod_pipi(current);
+  target = _fmod_pipi(target);
+
+  double c1 = consign + target;
+  double c2 = c1 + 2 * M_PI;
+  double c3 = c1 - 2 * M_PI;
+
+  if(fabs(c1 - current) < fabs(c2 - current)) {
+    if(fabs(c1 - current) < fabs(c3 - current)) {
+      return pos_rad_to_tick(t->pos, c1);
+    }
+    else {
+      return pos_rad_to_tick(t->pos, c3);
+    }
+  }
+  else {
+    if(fabs(c2 - current) < fabs(c3 - current)) {
+      return pos_rad_to_tick(t->pos, c2);
+    }
+    else {
+      return pos_rad_to_tick(t->pos, c3);
+    }
+  }
 }
 
 void traj_init(traj_t *t, position_t *p)
