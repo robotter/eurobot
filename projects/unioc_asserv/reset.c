@@ -20,7 +20,6 @@
   * \author JD
   */
 #include "reset.h"
-#include "logging.h"
 
 #include <avr/wdt.h>
 

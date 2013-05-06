@@ -25,7 +25,6 @@
 
 #include <avarix.h>
 #include <avarix/intlvl.h>
-#include "logging.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
@@ -60,8 +59,6 @@ void hposition_init( hrobot_position_t* hpos )
 
 void hposition_set( hrobot_position_t* hpos, double x, double y, double alpha)
 {
-  DEBUG(0,"position reset (%1.1f,%1.1f,%1.1f)",x,y,alpha);
-
   INTLVL_DISABLE_BLOCK(INTLVL_LO) {
     hpos->position.x = x;
     hpos->position.y = y;

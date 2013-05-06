@@ -23,7 +23,6 @@
 
 #include <adc.h>
 #include "settings.h"
-#include "logging.h"
 
 #include "avoidance.h"
 

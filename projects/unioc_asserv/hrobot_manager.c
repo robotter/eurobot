@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <avarix/portpin.h>
 
-#include "logging.h"
 #include "cli.h"
 
 #include "settings.h"
