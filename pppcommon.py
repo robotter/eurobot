@@ -13,10 +13,11 @@ from perlimpinpin.io import Connection, HubBase, HubClient
 from perlimpinpin.payload.system import *
 from perlimpinpin.payload.log import *
 from perlimpinpin.payload.room import room_payloads
-import time  # for time()/sleep()
+import time
 import math
 
 import os
+import sys
 import imp
 
 # load transactions
@@ -34,5 +35,69 @@ class addrs:
   meca = 0x12
   r3d2 = 0x13
   pmi = 0x14
+
+
+class RoomHubMixin(object):
+  """
+  Hub mixin with better ROOM handling
+
+  Check for ROOM replies, resend ROOM orders/commands on timeout.
+  Callbacks are executed in the I/O thread.
+
+  Only one callback can be registered for a given destination and response
+  message ID. Sending a new one will override the previous callback.
+  A response to a previously sent similar message may be received and took into
+  account.
+
+  Attributes:
+    room_timeout -- timeout in seconds for ROOM replies
+    room_ntries -- number of retries for sent ROOM messages
+    _room_cbs -- list of callbacks, indexed by (src, mid) of expected response
+
+  """
+
+  room_timeout = 0.2
+  room_ntries = 20
+
+  def __init__(self):
+    self._room_cbs = {}
+
+  def send_room(self, dst, pl, cb=None):
+    """Send a ROOM message, execute a custom callback on response"""
+    frame = Frame(self.address, dst, pl)
+    if cb is not None and pl.response is not None:
+      self._room_cbs[(dst, pl.mid)] = cb
+      self.schedule(self.room_timeout, lambda: self._room_timeout_cb(frame, self.room_ntries))
+    self.send(frame)
+
+  def send_room_wait(self, dst, pl):
+    """Send a ROOM message, wait for its response
+    Return the reply payload.
+    """
+    if pl.response is None:
+      # nothing to wait for
+      self.room(self, dst, pl)
+      return None
+
+    l = []  # nonlocal is not available :(
+    def cb(frame):
+      l.append(frame.payload)
+    self.send_room(self, dst, pl, cb)
+    while not len(l):
+      self.run_one()
+    return l[0]
+
+  def _room_timeout_cb(self, frame, n):
+    """Scheduled callback to resend frame on timeout"""
+    if n == 0:
+      del self._room_cbs[(frame.dst, frame.payload.mid)]
+      raise RuntimeError("room response not received: %r" % frame)
+    self.schedule(self.room_timeout, lambda: self._room_timeout_cb(frame, n-1))
+
+  def payload_handler_room(self, frame):
+    key = (frame.src, frame.payload.mid)
+    if key in self._room_cbs:
+      cb = self._rooms_cbs.pop(key)
+      cb(frame)
 
 
