@@ -47,14 +47,19 @@ static const position_conf_t pos_man_default_conf = {
   .tick_p_180deg = 8700.0,
 };
 
-static const ramp_conf_t ramp_default_conf = {
+static const ramp_conf_t ramp_dist_default_conf = {
   .a_max = 10000.0,
+  .v_max = 50000.0,
+};
+
+static const ramp_conf_t ramp_angle_default_conf = {
+  .a_max = 5000.0,
   .v_max = 10000.0,
 };
 
 static const pid_conf_t pid_dist_default_conf = {
   .kd = 0.5,
-  .ki = 0.1,
+  .ki = 0.2,
   .kp = 5.0,
   .d_alpha = 1.0,
   .max_integral = 5000.0,
@@ -62,8 +67,8 @@ static const pid_conf_t pid_dist_default_conf = {
 };
 
 static const pid_conf_t pid_angle_default_conf = {
-  .kd = 0.3,
-  .ki = 0.15,
+  .kd = 0.5,
+  .ki = 0.3,
   .kp = 5.0,
   .d_alpha = 1.0,
   .max_integral = 10000.0,
@@ -195,9 +200,9 @@ int main(void)
   pos_conf_load(&pos_man, &pos_man_conf, &pos_man_default_conf);
   // control system
   ramp_init(&ramp_dist);
-  ramp_conf_load(&ramp_dist, &ramp_dist_conf, &ramp_default_conf);
+  ramp_conf_load(&ramp_dist, &ramp_dist_conf, &ramp_dist_default_conf);
   ramp_init(&ramp_angle);
-  ramp_conf_load(&ramp_angle, &ramp_angle_conf, &ramp_default_conf);
+  ramp_conf_load(&ramp_angle, &ramp_angle_conf, &ramp_angle_default_conf);
   pid_init(&pid_dist);
   pid_conf_load(&pid_dist, &pid_dist_conf, &pid_dist_default_conf);
   pid_init(&pid_angle);

@@ -89,7 +89,6 @@ void traj_goto_a(traj_t *t, double a)
 
 void traj_goto_xy(traj_t *t, double x, double y)
 {
-  PPP_LOGF(&pppintf, INFO, "GXY %f %f", x, y);
   INTLVL_DISABLE_BLOCK(CONTROL_SYSTEM_INTLVL) {
     t->x_target = x;
     t->y_target = y;
@@ -151,11 +150,6 @@ static void traj_handle_xy_move(traj_t *t)
     // check angle to destination
     double target = pos_rad_to_tick(t->pos, atan2(dy, dx));
     t->a_out = _compute_angle_consign(t, t->a_cur, target);
-
-    PPP_LOGF(&pppintf, INFO, "%f %f %f",
-      pos_tick_to_rad(t->pos, t->a_cur),
-      pos_tick_to_rad(t->pos, target),
-      pos_tick_to_rad(t->pos, t->a_out));
 
     if(fabs(t->a_out - t->a_cur) < pos_deg_to_tick(t->pos, TRAJECTORY_MARGIN_ANGLE)) {
       // angle is fine, update d target
