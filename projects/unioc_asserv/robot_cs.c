@@ -122,8 +122,10 @@ void robot_cs_activate(robot_cs_t* rcs, uint8_t active)
 {
   // must be performed on a interruption free environnement
   INTLVL_DISABLE_BLOCK(INTLVL_LO) {
-    if(!active)
+    if(!active) { 
+      // clear previous motors consign
       hrobot_set_motors(0, 0, 0);
+    }
     else
       rcs->reactivated = 1;
     rcs->active = active;
@@ -153,7 +155,7 @@ void robot_cs_update(void* dummy)
   hrobot_vector_t hvec;
 	robot_cs_t *rcs = dummy;
 
-  // if CS inactivated, just quit
+  // if CS inactivated
   if(!rcs->active)
     return;
 

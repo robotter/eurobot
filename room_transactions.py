@@ -17,6 +17,10 @@ transactions = register_groups(
         desc="Move ahead"),
       Order('asserv_goto_a', [('a', 'angle')],
         desc="Move to given absolute angle"),
+      
+      Order('asserv_activate', [('activate', 'bool')],
+        desc="Activate/deactivate control system"),
+
       Command('asserv_status', [], [('arrived_a', 'bool'), ('arrived_xy', 'bool')]),
       ]),
 
@@ -133,5 +137,13 @@ transactions = register_groups(
       Order('pmi_save_all_conf', [],
         desc="Save all configurations to EEPROM"),
       ]),
+
+    # Galipeur
+    (0xC0, [
+      # position configuration
+      Order('galipeur_force_thrust', [('vx', 'int32'), ('vy', 'int32'), ('omegaz', 'int32')],
+        desc="Apply thrust to motors, asserv MUST BE deactivated"),
+      ]),
+    
     )
 
