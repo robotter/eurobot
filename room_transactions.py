@@ -138,10 +138,9 @@ transactions = register_groups(
         desc="Save all configurations to EEPROM"),
       
       # get battery information
-      Command('pmi_get_battery_information', [], [('voltage','uint8')],
-        desc="Return battery information"),
-      ]),
-
+      Event('pmi_battery_voltage', [('decivolts','uint8')],
+        desc="Broadcast battery voltage"),
+    ]),
     # Galipeur
     (0xC0, [
       # position configuration

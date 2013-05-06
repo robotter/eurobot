@@ -25,6 +25,8 @@
 #define BATTERY_MONITORING_PERIOD_US  100000
 /// Interrupt level for battery monitoring
 #define BATTERY_MONITORING_INTLVL  INTLVL_MED
+/// Minimum voltage at boot
+#define BATTERY_MONITORING_LOW_VOLTAGE_DECIVOLTS 105
 
 /// Rangefinders monitoring period, in microseconds
 #define RANGEFINDERS_MONITORING_PERIOD_US  100000

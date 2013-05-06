@@ -115,6 +115,7 @@ void manage_control_system(void)
 void monitor_battery(void)
 {
   //TODO battery voltage on A3 (analogic input), multiply read value by 7.8
+  battery_monitor_measure();
 }
 
 
@@ -177,8 +178,6 @@ int main(void)
     _delay_ms(100);
     portpin_outtgl(&LED_BLUE_PP);
     _delay_ms(100);
-    portpin_outtgl(&LED_RED_PP);
-    _delay_ms(100);
   }
   portpin_outclr(&LED_BLUE_PP);
   portpin_outclr(&LED_GREEN_PP);
@@ -195,6 +194,33 @@ int main(void)
 
   // i2c init, for rangefinders
   i2c_init();
+
+  // battery monitoring 
+  battery_monitor_init();
+
+  // battery checking
+  int32_t sum = 0;
+  int it;
+  const int nmeasures = 10;
+  for(it=0;it<nmeasures;it++) {
+    sum += battery_monitor_measure();
+  }
+  if(sum/nmeasures < BATTERY_MONITORING_LOW_VOLTAGE_DECIVOLTS) {
+    // do a BATTERY LOW GLOW and wait indefinitely here
+    double t = 0.0;
+    for(;;) {
+      t+=0.015;
+      const int N = 100;
+      for(it=0;it<N;it++) {
+        if(50*(cos(t)+1.0) < it) {
+          portpin_outset(&LED_RED_PP);
+        }
+        else {
+          portpin_outclr(&LED_RED_PP);
+        }
+      }
+    }
+  }
 
   // position system
   pos_init(&pos_man);
