@@ -9,6 +9,8 @@
 typedef struct {
   /// Motor speed (PWM value from 0 to 32167)
   uint16_t motor_speed;
+  /// Motor burst speed, for startup (PWM value from 0 to 32167)
+  uint16_t motor_burst;
   /// Motor stuck timeout, in capture counts
   uint8_t motor_timeout;
   /// Capture angle offset, in radians

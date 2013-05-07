@@ -51,6 +51,7 @@ typedef struct {
 static r3d2_t r3d2 = {
   .conf = {
     .motor_speed = R3D2_MOTOR_SPEED_DEFAULT,
+    .motor_burst = R3D2_MOTOR_BURST_DEFAULT,
     .motor_timeout = R3D2_MOTOR_TIMEOUT_DEFAULT,
     .angle_offset = R3D2_ANGLE_OFFSET_DEFAULT,
     .dist_coef = R3D2_DIST_COEF_DEFAULT,
@@ -60,6 +61,7 @@ static r3d2_t r3d2 = {
 /// R3D2 EEPROM configuration values
 EEMEM r3d2_conf_t eeprom_conf = {
   .motor_speed = R3D2_MOTOR_SPEED_DEFAULT,
+  .motor_burst = R3D2_MOTOR_BURST_DEFAULT,
   .motor_timeout = R3D2_MOTOR_TIMEOUT_DEFAULT,
   .angle_offset = R3D2_ANGLE_OFFSET_DEFAULT,
   .dist_coef = R3D2_DIST_COEF_DEFAULT,
@@ -93,7 +95,7 @@ static void r3d2_start_motor(void)
 {
   // motor need a short burst to start
   r3d2.motor_enabled = true;
-  pwm_motor_set(&r3d2.pwm, R3D2_MOTOR_SPEED_BURST);
+  pwm_motor_set(&r3d2.pwm, r3d2.conf.motor_burst);
   _delay_ms(500);
   pwm_motor_set(&r3d2.pwm, r3d2.conf.motor_speed);
 }

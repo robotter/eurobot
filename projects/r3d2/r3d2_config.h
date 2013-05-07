@@ -3,9 +3,9 @@
 
 
 /// Default motor speed (PWM value from 0 to 32167)
-#define R3D2_MOTOR_SPEED_DEFAULT  13000
-/// Starting motor speed, for burst (PWM value from 0 to 32167)
-#define R3D2_MOTOR_SPEED_BURST  20000
+#define R3D2_MOTOR_SPEED_DEFAULT  4000
+/// Default motor burst speed (PWM value from 0 to 32167)
+#define R3D2_MOTOR_BURST_DEFAULT  10000
 /// Default motor stuck timeout (in capture counts)
 #define R3D2_MOTOR_TIMEOUT_DEFAULT  50
 /// Default capture angle offset, in radians
