@@ -1,3 +1,4 @@
+#include <math.h>
 #include <avarix/intlvl.h>
 #include <avarix/portpin.h>
 #include <clock/clock.h>
@@ -103,14 +104,24 @@ void update_data_cb(void)
 void send_ppp_events_cb(void)
 {
   static uint8_t last_count = 0;
+  // north east south west
+  bool leds[4] = {false, false, false, false};
 
   uint8_t i = 0;
   for(i=0; i<r3d2_data.count; i++) {
-    ROOM_SEND_R3D2_DETECTED(&pppintf, 0xFF, i, r3d2_data.objects[i].angle*1000, r3d2_data.objects[i].dist*1000);
+    const r3d2_object_t *object = r3d2_data.objects+i;
+    ROOM_SEND_R3D2_DETECTED(&pppintf, 0xFF, i, object->angle*1000, object->dist*1000);
+    int8_t iangle = object->angle/M_PI_4;
+    leds[((iangle+1)/2) % 4] = true;
   }
   for(; i<last_count; i++) {
     ROOM_SEND_R3D2_DISAPPEARED(&pppintf, 0xFF, i);
   }
+
+  if(leds[0]) portpin_outset(&LED_WEST_PP); else portpin_outclr(&LED_WEST_PP);
+  if(leds[1]) portpin_outset(&LED_SOUTH_PP); else portpin_outclr(&LED_SOUTH_PP);
+  if(leds[2]) portpin_outset(&LED_NORTH_PP); else portpin_outclr(&LED_NORTH_PP);
+  if(leds[3]) portpin_outset(&LED_EAST_PP); else portpin_outclr(&LED_EAST_PP);
 
   last_count = r3d2_data.count;
 }

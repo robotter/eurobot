@@ -18,12 +18,4 @@
 #define LED_SOUTH_PP  PORTPIN(J,3)
 #define LED_WEST_PP  PORTPIN(A,0)
 
-#define LED_CARDINAL_PPP(n) \
-    ((n) == 0 ? &LED_NORTH_PP : \
-     (n) == 1 ? &LED_EAST_PP : \
-     (n) == 2 ? &LED_SOUTH_PP : \
-     (n) == 3 ? &LED_WEST_PP : \
-     &PORTPIN_NONE)
-
-
 #endif
