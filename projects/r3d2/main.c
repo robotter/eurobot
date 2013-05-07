@@ -13,7 +13,7 @@
 
 
 static r3d2_data_t r3d2_data;
-static ppp_intf_t pppintf;
+ppp_intf_t pppintf;
 
 
 ppp_payload_handler_t *ppp_filter(ppp_intf_t *intf)

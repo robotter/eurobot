@@ -11,7 +11,7 @@
 /// Default capture angle offset, in radians
 #define R3D2_ANGLE_OFFSET_DEFAULT  0.0
 /// Default distance coefficient
-#define R3D2_DIST_COEF_DEFAULT  1.0
+#define R3D2_DIST_COEF_DEFAULT  100.0
 
 
 /// Motor frequency, in hertz

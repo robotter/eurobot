@@ -144,7 +144,7 @@ void r3d2_update(r3d2_data_t *data)
   uint8_t count;
   r3d2_capture_t captures[R3D2_OBJECTS_MAX];
   uint16_t motor_period;
-  ATOMIC_BLOCK(ATOMIC_FORCEON) {
+  INTLVL_DISABLE_ALL_BLOCK() {
     count = r3d2.capture_count;
     for(uint8_t i=0; i<count; i++) {
       captures[i] = r3d2.captures[i];
@@ -163,10 +163,11 @@ void r3d2_update(r3d2_data_t *data)
       angle += 2*M_PI;
     }
 
-    double dist = r3d2.conf.dist_coef * captures[i].len;
-
-    data->objects[i].angle = angle;
-    data->objects[i].dist = dist;
+    double semi_angle = (captures[i].len * M_PI) / motor_period;
+    double dist = r3d2.conf.dist_coef / tan(semi_angle);
+    r3d2_object_t *object = &data->objects[i];
+    object->angle = angle;
+    object->dist = dist;
   }
   // update count last, thus previous count may be used above
   data->count = count;
@@ -205,7 +206,7 @@ void r3d2_calibrate_dist(double dist)
     return;
   }
 
-	r3d2.conf.dist_coef *= dist / data.objects[0].dist;
+  r3d2.conf.dist_coef *= dist / data.objects[0].dist;
 }
 
 
@@ -243,7 +244,7 @@ static struct {
  */
 static void r3d2_capture_swap(void)
 {
-  ATOMIC_BLOCK(ATOMIC_FORCEON) {
+  INTLVL_DISABLE_ALL_BLOCK() {
     // copy capture to r3d2
     r3d2.capture_count = capture_state.index;
     for(uint8_t i=0; i<capture_state.index; i++) {
@@ -272,7 +273,6 @@ ISR(R3D2_MOTOR_INT_VECT)
     r3d2_capture_swap();
   }
 }
-
 
 /// Sensor interrupt routine
 ISR(R3D2_SENSOR_INT_VECT)
