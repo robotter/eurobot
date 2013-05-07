@@ -7,39 +7,24 @@
 #include "acm_defs.h"
 #include "acm_config.h"
 
+
 typedef enum {
-  ACM_SM_INIT = 0,
-  ACM_SM_INACTIVE,
+  ACM_BLUE = 0,
+  ACM_RED,
+} acm_color_t;
 
-  ACM_SM_MAX_OPEN_SECOND_LVL, //2
-  ACM_SM_MAX_WAIT_SECOND_LVL_OPEN,
-  ACM_SM_MAX_OPEN_FIRST_LVL_LEFT,
-  ACM_SM_MAX_WAIT_FIRST_LVL_LEFT_OPEN,
-  ACM_SM_MAX_OPEN_FIRST_LVL_RIGHT,
-  ACM_SM_MAX_WAIT_FIRST_LVL_RIGHT_OPEN,
+typedef enum {
+  ACM_CANDLE_UNKNOWN = 0,
+  ACM_CANDLE_WHITE,
+  ACM_CANDLE_RED,
+  ACM_CANDLE_BLUE,
+} acm_candle_color_t;
 
-  ACM_SM_HOME_MOVE_FIRST_LVL_LEFT, //8
-  ACM_SM_HOME_WAIT_FIRST_LVL_LEFT_HOMED,
-  ACM_SM_HOME_MOVE_FIRST_LVL_RIGHT,
-  ACM_SM_HOME_WAIT_FIRST_LVL_RIGHT_HOMED,
-  ACM_SM_HOME_MOVE_SECOND_LVL,
-  ACM_SM_HOME_WAIT_SECOND_LBL_HOMED,
-
-  ACM_SM_CAKING_MOVE_SECOND_LVL, //14
-  ACM_SM_CAKING_WAIT_SECOND_LVL_MOVED,
-  ACM_SM_CAKING_MOVE_FIRST_LVL_LEFT,
-  ACM_SM_CAKING_WAIT_FIRST_LVL_LEFT_MOVED,
-  ACM_SM_CAKING_MOVE_FIRST_LVL_RIGHT,
-  ACM_SM_CAKING_WAIT_FIRST_LVL_RIGHT_MOVED,
-  ACM_SM_CAKING_RESET_ENCODER_VALUE,
-  ACM_SM_CAKING_WAIT_CANDLES,
-  ACM_SM_CAKING_GET_NEXT_CANDLE_COLOR,
-  ACM_SM_CAKING_UPDATE_ARMS,
-  ACM_SM_CAKING_UPDATE_CANDLE_COLOR,
-
-} acm_sm_state_t;
-
-
+typedef enum{
+  ACM_MODE_HOME,          // arms retracted 
+  ACM_MODE_STALLING,      // arms opened and ready to cake 
+  ACM_MODE_CAKING,        // arms blowing candles automatically
+} acm_arm_mode_t;
 
 typedef struct {
 
@@ -56,6 +41,7 @@ typedef struct {
 
   uint16_t second_lvl_home_pos;
   uint16_t second_lvl_blow_candle_pos;
+  uint16_t second_lvl_blow_last_red_candle;
   uint16_t second_lvl_max_open_pos_blue;
   uint16_t second_lvl_max_open_pos_red;
 
@@ -108,6 +94,11 @@ acm_arm_config_t acm_get_arm_config(const acm_t *s);
 
 // must be called as often as possible
 void acm_update(acm_t *s);
+
+void acm_set_stall_side(acm_t *s, acm_color_t color_side);
+
+/// update global mode for arm
+void acm_set_arm_mode(acm_t *s, acm_arm_mode_t mode);
 
 #endif //ACM_H
 

@@ -187,7 +187,7 @@ void update_acm_candle_color_list(acm_t *s)
   {
     if (s->candle_color[it] != ACM_CANDLE_WHITE)
     {
-      if (it%2 == 0 || it == 1)
+      if (it%2 == 0 )
       {
         s->candle_color[it] = robot_candle_color; 
    //     acm.candle_color[it] = ACM_CANDLE_RED; 

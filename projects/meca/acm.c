@@ -259,7 +259,16 @@ static void acm_move_arm(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
               break;
           }
           break;
+       
+        case ACM_ARM_SECOND_LVL_BLOW_LAST_RED_CANDLE:
+          for( uint8_t it =0; it< ACM_AX12_MAX_TRIES; it++ )
+          {
+            if(!ax12_write_word(s->ax12, s->second_lvl_ax12_id, AX12_ADDR_GOAL_POSITION_L, s->second_lvl_blow_last_red_candle))
+              break;
+          }
+          break;
 
+  
         default:
           return;
       }
@@ -431,8 +440,7 @@ void acm_update_arm_position(acm_t *s)
   uint8_t left_arm_candle_id = (cake_pos_mm - first_lvl_left_arm_enc_offset_mm) / (cake_perimeter_mm / FIRST_LVL_CANDLE_NB);
   uint8_t right_arm_candle_id = (cake_pos_mm + first_lvl_right_arm_enc_offset_mm) / (cake_perimeter_mm / FIRST_LVL_CANDLE_NB);
 
-  double tmp = cake_pos_mm;
-  //printf("enc %li\tpos %.1f\tper %.1f\tlid %u\tflid %u\trid %u\t", enc_pos, cake_pos_mm, cake_perimeter_mm, left_arm_candle_id, left_arm_candle_id_anticipated, right_arm_candle_id);
+  //double tmp = cake_pos_mm;
 
   // add offset to check what next candle will be
   cake_pos_mm += candle_anticipation_offset_mm;
@@ -440,7 +448,7 @@ void acm_update_arm_position(acm_t *s)
   uint8_t left_arm_candle_id_anticipated = (cake_pos_mm - first_lvl_left_arm_enc_offset_mm) / (cake_perimeter_mm / FIRST_LVL_CANDLE_NB);
   uint8_t right_arm_candle_id_anticipated = (cake_pos_mm + first_lvl_right_arm_enc_offset_mm) / (cake_perimeter_mm / FIRST_LVL_CANDLE_NB);
 
-  printf("enc %li\tpos %.1f\tper %.1f\tlid %u\tflid %u\trid %u\tsid %u\t", enc_pos, tmp, cake_perimeter_mm, left_arm_candle_id, left_arm_candle_id_anticipated, right_arm_candle_id, second_lvl_arm_candle_id);
+  //printf("enc %li\tpos %.1f\tper %.1f\tlid %u\tflid %u\trid %u\tsid %u\t", enc_pos, tmp, cake_perimeter_mm, left_arm_candle_id, left_arm_candle_id_anticipated, right_arm_candle_id, second_lvl_arm_candle_id);
 
   // get candle color that we want to blow
   acm_candle_color_t candle_target_color;
@@ -454,14 +462,22 @@ void acm_update_arm_position(acm_t *s)
   }
 
   // update arm position
+
+  // avoid first candle (which is red when robot color is blue)
   if (second_lvl_arm_candle_id == 0 && s->robot_color == ACM_BLUE && s->cake_stall_side == ACM_RED)
   {
     acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_STALLING);
   }
+  // avoid first blue candle (candle n°2 because 
   else if (second_lvl_arm_candle_id <= 1 && s->robot_color == ACM_RED && s->cake_stall_side == ACM_BLUE)
   {
-    //acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_ON_CAKE_AVOID_CANDLE);
     acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_STALLING);
+  }
+  /// XXX TODO check if treshold is reached at SECOND_LVL_CANDLE_NB-1 or SECOND_LVL_CANDLE_NB-2
+  //blow last red candle (not accessible when robot blocked to cake border)
+  else if (second_lvl_arm_candle_id >= SECOND_LVL_CANDLE_NB-1  && s->robot_color == ACM_RED && s->cake_stall_side == ACM_BLUE)
+  {
+    acm_move_arm(s, ACM_ARM_SECOND_LVL, ACM_ARM_SECOND_LVL_BLOW_LAST_RED_CANDLE);
   }
   else
   {
@@ -490,18 +506,6 @@ void acm_update_arm_position(acm_t *s)
   {
     acm_move_arm(s, ACM_ARM_FIRST_LVL_RIGHT, ACM_ARM_ON_CAKE_AVOID_CANDLE);
   }
-
-/*
-/// XXX TODO REPRENDRE CODE ICI
-  // first ball must be attacked with cc motor rotation direction inverted
-  if (arm == ACM_ARM_SECOND_LVL && s->cake_stall_side == ACM_BLUE && s->robot_color == ACM_RED && second_lvl_arm_candle_id <= 2)
-  {
-    acm_update_motor(s, arm, conf, true);
-  }
-  else
-  {
-    acm_update_motor(s, arm, conf, false);
-  }*/
 }
 
 void acm_init(acm_t *s)
@@ -516,6 +520,7 @@ void acm_init(acm_t *s)
 
   s->second_lvl_home_pos = DEFAULT_ACM_SECOND_LVL_HOME_POS;
   s->second_lvl_blow_candle_pos = DEFAULT_ACM_SECOND_LVL_BLOW_CANDLE_POS;
+  s->second_lvl_blow_last_red_candle = DEFAULT_ACM_SECOND_LVL_BLOW_LAST_RED_CANDLE;
   s->second_lvl_max_open_pos_blue = DEFAULT_ACM_SECOND_LVL_MAX_OPEN_POS_BLUE;
   s->second_lvl_max_open_pos_red = DEFAULT_ACM_SECOND_LVL_MAX_OPEN_POS_RED;
 
@@ -744,9 +749,47 @@ void acm_update(acm_t *s)
       s->sm_state = ACM_SM_INACTIVE;
       break;
   }
-
-
-  if (s->sm_state != ACM_SM_INACTIVE)
-    printf("state %u\n", s->sm_state);
 }
+
+
+void acm_set_stall_side(acm_t *s, acm_color_t color_side)
+{
+  s->cake_stall_side = color_side;
+
+  for (uint8_t it=1; it < FIRST_LVL_CANDLE_NB-1; it++)
+  {
+    if (it >= (FIRST_LVL_CANDLE_NB/2 -2) && it <= (FIRST_LVL_CANDLE_NB/2 +2-1) && s->ignore_colors)
+    {
+      s->candle_color[it] = ACM_CANDLE_WHITE;
+    }
+    else
+    {
+      s->candle_color[it] = ACM_CANDLE_UNKNOWN;
+    }
+  }
+
+  // fixed color candle
+  s->candle_color[0] = (s->cake_stall_side == ACM_BLUE ? ACM_CANDLE_BLUE : ACM_CANDLE_RED);
+  s->candle_color[FIRST_LVL_CANDLE_NB -1] = (s->cake_stall_side == ACM_BLUE ? ACM_CANDLE_RED : ACM_CANDLE_BLUE);
+}
+
+void acm_set_arm_mode(acm_t *s, acm_arm_mode_t mode)
+{
+  switch(mode)
+  {
+    case ACM_MODE_HOME: 
+      s->sm_state = ACM_SM_HOME_MOVE_FIRST_LVL_RIGHT;
+      break;
+
+    case ACM_MODE_STALLING:
+      s->sm_state = ACM_SM_MAX_OPEN_FIRST_LVL_LEFT;
+      break;
+
+    case ACM_MODE_CAKING:
+      s->sm_state = ACM_SM_CAKING_MOVE_SECOND_LVL;
+      break;
+  }
+}
+
+
 
