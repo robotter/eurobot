@@ -226,6 +226,15 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
       acm_set_arm_mode(&acm, pl->meca_set_arm_mode.mode);
       ROOM_REPLY_MECA_SET_ARM_MODE(intf, pl);
     } break;
+    case ROOM_MID_ROBOT_COLOR: {
+      if(pl->robot_color.color == 1) {
+        acm.robot_color = ACM_RED;
+      }
+      else if(pl->robot_color.color == 2) {
+        acm.robot_color = ACM_BLUE;
+      }
+    } break;
+
     default:
       PPP_LOGF(intf, INFO, "unexpected ROOM message: %u", pl->mid);
       break;
