@@ -172,8 +172,11 @@ class Match(object):
     self.hub.send_room(addrs.meca, room.meca_set_arm_mode(mode))
 
 
-  def goto_xya(self, x, y, a=None):
+  def goto_xya(self, x, y, a=None, kx=True):
     """Go to x,y,a position, avoid opponents"""
+    if kx:
+      x = x * self.kx
+      a = a * self.kx
     hub = self.hub
     if a is None:
       pl_goto = room.asserv_goto_xy(x, y)
@@ -207,11 +210,18 @@ class Match(object):
     hub = self.hub
     if self.color == COLOR_BLUE:
       self.kx = -1
-      x0, y0, a0 = (-1500 + 200, 120, math.pi*2./3)
+      x0, y0, a0 = (-1.500 + 0.120, 2.000 - 0.150, math.pi/2)
     else:
       self.kx = 1
-      x0, y0, a0 = (1500 - 200, 120, math.pi*-2./3)
+      x0, y0, a0 = (1.500 - 0.120, 2.000 - 0.150, math.pi/6)
     hub.send_room_wait(addrs.prop, room.asserv_set_position(x0, y0, z0))
+
+  def run_homologation(self):
+    hub = self.hub
+
+    self.goto_xya(1.500 - 0.120 - 0500, 2.000 - 0.250, kx=True)
+    time.sleep(100)
+
 
 
 def main():
