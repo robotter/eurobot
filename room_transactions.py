@@ -146,8 +146,9 @@ transactions = register_groups(
       # all
       Order('pmi_save_all_conf', [],
         desc="Save all configurations to EEPROM"),
-      
-      # get battery information
+
+      Order('pmi_go', [],
+        desc="Tell the PMI to start the match"),
       Event('pmi_battery_voltage', [('decivolts','uint8')],
         desc="Broadcast battery voltage"),
     ]),
