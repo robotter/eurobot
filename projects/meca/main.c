@@ -269,6 +269,10 @@ int main(void)
   portpin_dirset(&PORTPIN_TXDN(uart_get_usart(UART_AX12)));
 
   // init arm motors
+  portpin_dirset(&MOTOR0_SIGN_PP);
+  portpin_dirset(&MOTOR1_SIGN_PP);
+  portpin_dirset(&MOTOR2_SIGN_PP);
+  portpin_dirset(&MOTOR3_SIGN_PP);
   pwm_motor_init(arm_motors+0, (TC0_t*)&MOTOR0_TC, MOTOR0_TC_CH, 0);
   pwm_motor_init(arm_motors+2, (TC0_t*)&MOTOR1_TC, MOTOR1_TC_CH, 0);
   pwm_motor_init(arm_motors+1, (TC0_t*)&MOTOR2_TC, MOTOR2_TC_CH, 0);
