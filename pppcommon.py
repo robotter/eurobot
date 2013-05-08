@@ -13,6 +13,9 @@ from perlimpinpin.io import Connection, HubBase, HubClient
 from perlimpinpin.payload.system import *
 from perlimpinpin.payload.log import *
 from perlimpinpin.payload.room import room_payloads
+from perlimpinpin.payload.room import Event as RoomEvent
+from perlimpinpin.payload.room import Order as RoomOrder
+from perlimpinpin.payload.room import Command as RoomCommand
 import time
 import math
 
