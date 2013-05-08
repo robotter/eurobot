@@ -284,6 +284,9 @@ int main(void)
   (void)arm_motor1_pwm_set; // not used
 
   // init cake encoder
+  // dirset/outset MUST BE DONE before aeat init
+  portpin_dirset(&CAKE_ENCODER_CS_PP);
+  portpin_outset(&CAKE_ENCODER_CS_PP);
   aeat_spi_init();
   aeat_init(&cake_enc, CAKE_ENCODER_CS_PP);
 
