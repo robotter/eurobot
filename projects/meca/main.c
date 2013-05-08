@@ -222,7 +222,10 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
       pwm_motor_set(&pwm_balloon, pl->meca_balloon_tap.open ? SERVO_BALLOON_OPEN_POS : SERVO_BALLOON_CLOSE_POS);
       ROOM_REPLY_MECA_BALLOON_TAP(intf, pl);
     } break;
-
+    case ROOM_MID_MECA_SET_ARM_MODE: {
+      acm_set_arm_mode(&acm, pl->meca_set_arm_mode.mode);
+      ROOM_REPLY_MECA_SET_ARM_MODE(intf, pl);
+    } break;
     default:
       PPP_LOGF(intf, INFO, "unexpected ROOM message: %u", pl->mid);
       break;

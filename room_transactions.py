@@ -69,6 +69,9 @@ transactions = register_groups(
       Command('meca_get_cake_angle', [], [('a', 'angle')],
         desc="Get angle position along the cake"),
 
+      Order('meca_set_arm_mode', [('mode', 'uint8')],
+        desc="Set arm mode for caking"),
+
       ]),
 
     # AX-12
