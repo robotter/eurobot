@@ -38,6 +38,28 @@ void ccom_update(ccom_t *s)
       s->cmu_cam_ready = (cmu_cam_data & (1<< ccom_bit_pos_camera_ready) ? true : false);
 
       s->lightning_led_on = (cmu_cam_data & (1<< ccom_bit_pos_lightning_led_status) ? true : false);
+
+      PORTA.OUTTGL = _BV(0);
+      if (s->cmu_cam_ready)
+      {
+        PORTA.OUTSET = _BV(1);
+      }
+
+      if (s->candle_color == ACM_CANDLE_UNKNOWN)
+      {
+        PORTA.OUTCLR = _BV(2);
+        PORTA.OUTCLR = _BV(3);
+      }
+      else if (s->candle_color == ACM_CANDLE_RED)
+      {
+        PORTA.OUTSET = _BV(2);
+        PORTA.OUTCLR = _BV(3);
+      }
+      else if (s->candle_color == ACM_CANDLE_BLUE)
+      {
+        PORTA.OUTSET = _BV(2);
+        PORTA.OUTSET = _BV(3);
+      }
     }
   }
 }
