@@ -137,6 +137,7 @@ class Match(object):
       time.sleep(self.match_timer_duration)
       led_set(0, 0)
       led_set(1, 0)
+      self.hub.send_room_wait(addrs.meca, room.meca_balloon_tap(1))
       print "end of match"
       self.hub.killall()
       os._exit(0)
