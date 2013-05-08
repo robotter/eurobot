@@ -69,7 +69,7 @@ class RoomHubMixin(object):
     """Send a ROOM message, execute a custom callback on response"""
     frame = Frame(self.address, dst, pl)
     if cb is not None and pl.response is not None:
-      self._room_cbs[(dst, pl.mid)] = cb
+      self._room_cbs[(dst, pl.response.mid)] = cb
       self.schedule(self.room_timeout, lambda: self._room_timeout_cb(frame, self.room_ntries))
     self.send(frame)
 
@@ -79,13 +79,13 @@ class RoomHubMixin(object):
     """
     if pl.response is None:
       # nothing to wait for
-      self.room(self, dst, pl)
+      self.send(dst, pl)
       return None
 
     l = []  # nonlocal is not available :(
     def cb(frame):
       l.append(frame.payload)
-    self.send_room(self, dst, pl, cb)
+    self.send_room(dst, pl, cb)
     while not len(l):
       self.run_one()
     return l[0]
@@ -97,14 +97,14 @@ class RoomHubMixin(object):
     if pl.response is None:
       # nothing to wait for
       for dst in dsts:
-        self.room(self, dst, pl)
+        self.send(dst, pl)
       return None
 
     d = {}  # nonlocal is not available :(
     def cb(frame):
       l[frame.src] = frame.payload
     for dst in dsts:
-      self.send_room(self, dst, pl, cb)
+      self.send_room(dst, pl, cb)
     while len(d) < len(dsts):
       self.run_one()
     return d
@@ -112,14 +112,14 @@ class RoomHubMixin(object):
   def _room_timeout_cb(self, frame, n):
     """Scheduled callback to resend frame on timeout"""
     if n == 0:
-      del self._room_cbs[(frame.dst, frame.payload.mid)]
+      del self._room_cbs[(frame.dst, frame.payload.response.mid)]
       raise RuntimeError("room response not received: %r" % frame)
     self.schedule(self.room_timeout, lambda: self._room_timeout_cb(frame, n-1))
 
   def payload_handler_room(self, frame):
     key = (frame.src, frame.payload.mid)
     if key in self._room_cbs:
-      cb = self._rooms_cbs.pop(key)
+      cb = self._room_cbs.pop(key)
       cb(frame)
 
 

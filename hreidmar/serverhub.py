@@ -14,7 +14,7 @@ hreidmar_nodes = [
   (0x11, '/dev/ttySAC1'),  # prop
   (0x12, '/dev/ttySAC2'),  # meca
   (0x13, '/dev/ttySAC3'),  # r3d2
-  #(0x14, '/dev/ttyUSB0'),  # pmi
+  (0x14, '/dev/ttyUSB0'),  # pmi
 ]
 
 
@@ -43,14 +43,14 @@ class HreidmarHub(HubBase):
       con = Connection(Serial(src, 38400))
       self.add_connection(con)
       self.network[addr] = con
-      self.board_cons.add(addr)
+      self.board_cons.add(con)
     if port is not None:
       self.server = HubTCPServer(('', port), None)
       self.server_thread = threading.Thread(target=self.server.serve_forever)
       self.server_thread.daemon = True
       self.server.hub = self
     else:
-      self.server is None
+      self.server = None
     self.node_name = 'hreidmarhub'
 
   def start(self):
@@ -81,7 +81,7 @@ class HreidmarHub(HubBase):
       # don't broadcast logs to boards
       # don't broadcast events from boards to other boards
       #TODO this is a hack
-      if con in self.board_cons or isinstance(pl, PayloadLog):
+      if con in self.board_cons or isinstance(frame.payload, PayloadLog):
         return [c for c in self.cons if c != con and c not in self.board_cons]
       else:
         return [c for c in self.cons if c != con]

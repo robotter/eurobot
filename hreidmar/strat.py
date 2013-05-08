@@ -1,13 +1,17 @@
 #!/usr/bin/env python2.7
 import sys
 import os
+import traceback
+import time
+import threading
+import signal
 # expand PYTHONPATH to be able to find everything
 _this_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(_this_dir)
 sys.path.append(os.path.dirname(_this_dir))
 
 from pppcommon import *
-from serverhub import HreidmarHub
+from serverhub import HreidmarHub, hreidmar_nodes
 
 COLOR_RED = 1
 COLOR_BLUE = 2
@@ -28,7 +32,7 @@ class StratHub(HreidmarHub, RoomHubMixin):
     RoomHubMixin.__init__(self)
 
     # (angle, dist) pair
-    r3d2_objects = [None, None]
+    self.r3d2_objects = [None, None]
 
   def wait(self, dt):
     """Wait for a given period, in seconds"""
@@ -49,11 +53,11 @@ class StratHub(HreidmarHub, RoomHubMixin):
       params = pl.params
       # R3D2 detection
       if pl.mname == 'r3d2_detected':
-        r3d2_objects[params.i] = (params.a, params.r)
+        self.r3d2_objects[params.i] = (params.a, params.r)
       elif pl.mname == 'r3d2_disappeared':
-        r3d2_objects[params.i] = None
+        self.r3d2_objects[params.i] = None
     else:
-      RoomHubMixin.payload_handler_room(frame)
+      RoomHubMixin.payload_handler_room(self, frame)
 
 
 def led_set(n, v):
@@ -126,8 +130,8 @@ class Match(object):
       if color2 != self.color:
         self.color = color2
         print "changing color to %s ..." % color2name[self.color]
-        self.hub.send_room_wait_multiple(board_addrs, room.robot_color(self.color))
-        print "OK"
+        self.hub.send_room_wait(addrs.meca, room.robot_color(self.color))
+        print "ready"
     self.color = self.get_color()
     print "start match with color %s" % color2name[self.color]
 
@@ -176,33 +180,39 @@ class Match(object):
     """Go to x,y,a position, avoid opponents"""
     if kx:
       x = x * self.kx
-      a = a * self.kx
+      if a is not None and kx == -1:
+        a = pi*2./3 - a
     hub = self.hub
     if a is None:
       pl_goto = room.asserv_goto_xy(x, y)
     else:
       pl_goto = room.asserv_goto_xya(x, y, a)
 
-    status_r = []  # nonlocal is not available :(
+    status_l = []  # nonlocal is not available :(
     def cb_status(frame):
-      status_r.append(frame.payload)
+      status_l.append(frame.payload)
 
     hub.send_room_wait(addrs.prop, pl_goto)
-    hub.send_room(addrs.prop, room.asserv_status(), cb)
+    hub.send_room(addrs.prop, room.asserv_status(), cb_status)
     while True:
-      # stop when r3d2 detects something close
-      while hub.r3d2_objects[0] is not None and hub.r3d2_objects[0][0] < self.r3d2_avoid_distance:
-        self.run_one()
-
-      if len(l):
+      if len(status_l):
         # check returned asserv status
-        r = l.pop()
+        r = status_l.pop()
         if r.arrived_xy and (a is None or r.arrived_a):
           return
         else:
-          hub.send_room(addrs.prop, room.asserv_status(), cb)
+          hub.send_room(addrs.prop, room.asserv_status(), cb_status)
 
-      self.run_one()
+      # stop when r3d2 detects something close
+      if hub.r3d2_objects[0] is not None and hub.r3d2_objects[0][0] < self.r3d2_avoid_distance:
+        print "opponent detected at %r" % hub.r3d2_objects[0]
+        hub.send_room(addrs.prop, room.asserv_activate(False))
+        while hub.r3d2_objects[0] is not None and hub.r3d2_objects[0][0] < self.r3d2_avoid_distance:
+          hub.run_one()
+        print "opponent moved away"
+        hub.send_room_wait(addrs.prop, pl_goto)
+
+      hub.run_one()
 
 
   def run(self):
@@ -210,17 +220,25 @@ class Match(object):
     hub = self.hub
     if self.color == COLOR_BLUE:
       self.kx = -1
-      x0, y0, a0 = (-1.500 + 0.120, 2.000 - 0.150, math.pi/2)
+      x0, y0, a0 = (-1.500 + 0.120, 2.000 - 0.150, pi/6)
     else:
       self.kx = 1
-      x0, y0, a0 = (1.500 - 0.120, 2.000 - 0.150, math.pi/6)
-    hub.send_room_wait(addrs.prop, room.asserv_set_position(x0, y0, z0))
+      x0, y0, a0 = (1.500 - 0.120, 2.000 - 0.150, pi/2)
+    hub.send_room_wait(addrs.prop, room.asserv_set_position(x0, y0, a0))
+    try:
+      hub.send_room_wait(addrs.pmi, room.pmi_go())
+    except Exception as e:
+      print "no response to pmi_go: %s" % e
+
+    self.run_homologation()
+
 
   def run_homologation(self):
     hub = self.hub
 
-    self.goto_xya(1.500 - 0.120 - 0500, 2.000 - 0.250, kx=True)
-    time.sleep(100)
+    self.goto_xya(1.500 - 0.120 - 0.500, 2.000 - 0.250, kx=True)
+    while True:
+      hub.run_one()
 
 
 
@@ -228,17 +246,19 @@ def main():
   import argparse
 
   parser = argparse.ArgumentParser()
-  parser.add_argument('port', type=int,
+  parser.add_argument('port', type=int, nargs='?',
       help="TCP server port")
   args = parser.parse_args()
 
-  hub = HreidmarHub(args.port)
-  match = Match()
+  hub = StratHub(args.port)
+  hub.start()
+  match = Match(hub)
   try:
-    match.start(hub)
+    match.start()
   except Exception:
     hub.killall()
   finally:
+    traceback.print_exc()
     hub.stop()
 
 
