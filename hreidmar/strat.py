@@ -18,6 +18,8 @@ color2name = {
 
 pi = math.pi
 
+board_addrs = [ x[0] for x in hreidmar_nodes ]
+
 
 class StratHub(HreidmarHub, RoomHubMixin):
 
@@ -123,7 +125,9 @@ class Match(object):
       color2 = self.get_color()
       if color2 != self.color:
         self.color = color2
-        print "changed color to %s" % color2name[self.color]
+        print "changing color to %s ..." % color2name[self.color]
+        self.hub.send_room_wait_multiple(board_addrs, room.robot_color(self.color))
+        print "OK"
     self.color = self.get_color()
     print "start match with color %s" % color2name[self.color]
 

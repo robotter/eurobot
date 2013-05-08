@@ -233,6 +233,7 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
       else if(pl->robot_color.color == 2) {
         acm.robot_color = ACM_BLUE;
       }
+      ROOM_REPLY_ROBOT_COLOR(intf, pl);
     } break;
 
     default:

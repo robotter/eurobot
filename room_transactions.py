@@ -7,7 +7,8 @@ transactions = register_groups(
     # General
     (0x00, [
       # 1 for red, 2 for blue
-      Event('robot_color', [('color', 'uint8')],
+      # Sent (potentially several times) before the match starts
+      Order('robot_color', [('color', 'uint8')],
         desc="Announce robot color"),
       ]),
 
