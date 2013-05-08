@@ -142,11 +142,11 @@ static void acm_update_motor(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
         case ACM_ARM_ON_CAKE_BLOW_CANDLE:
           if (s->cake_stall_side == ACM_BLUE)
           {
-            pwm = -s->motor_pwm_on_cake;
+            pwm = -s->motor_pwm_on_cake/2;
           }
           else
           {
-            pwm = s->motor_pwm_on_cake;
+            pwm = s->motor_pwm_on_cake/2;
           }
           break;
 
