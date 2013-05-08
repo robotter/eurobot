@@ -549,18 +549,7 @@ void acm_init(acm_t *s)
   s->sm_state = ACM_SM_INIT;
   s->arm_config = ACM_ARM_HOMED;
 
-  /// TODO remove this debug
-  for (uint8_t it=0; it < FIRST_LVL_CANDLE_NB; it++)
-  {
-    if (it >= (FIRST_LVL_CANDLE_NB/2 -2) && it <= (FIRST_LVL_CANDLE_NB/2 +2-1) && s->ignore_colors)
-    {
-      s->candle_color[it] = ACM_CANDLE_WHITE;
-    }
-    else
-    {
-      s->candle_color[it] = ACM_CANDLE_UNKNOWN;
-    }
-  }
+  acm_set_stall_side(s, s->cake_stall_side);
 }
 
 
@@ -771,6 +760,35 @@ void acm_set_stall_side(acm_t *s, acm_color_t color_side)
   // fixed color candle
   s->candle_color[0] = (s->cake_stall_side == ACM_BLUE ? ACM_CANDLE_BLUE : ACM_CANDLE_RED);
   s->candle_color[FIRST_LVL_CANDLE_NB -1] = (s->cake_stall_side == ACM_BLUE ? ACM_CANDLE_RED : ACM_CANDLE_BLUE);
+
+//// HACK for homologation
+  acm_candle_color_t robot_candle_color, advers_candle_color;
+  if (s->cake_stall_side == ACM_BLUE)
+  {
+    robot_candle_color = ACM_CANDLE_BLUE;
+    advers_candle_color = ACM_CANDLE_RED;
+  }
+  else
+  {
+    robot_candle_color = ACM_CANDLE_RED;
+    advers_candle_color = ACM_CANDLE_BLUE;
+  }
+  
+  for (uint8_t it= 0; it < FIRST_LVL_CANDLE_NB; it ++)
+  {
+    if (s->candle_color[it] != ACM_CANDLE_WHITE)
+    {
+      if (it%2 == 0 )
+      {
+        s->candle_color[it] = robot_candle_color; 
+   //     acm.candle_color[it] = ACM_CANDLE_RED; 
+      }
+      else
+      {
+        s->candle_color[it] = advers_candle_color; 
+      }
+    }
+  }
 }
 
 void acm_set_arm_mode(acm_t *s, acm_arm_mode_t mode)

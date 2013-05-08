@@ -229,11 +229,11 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
     case ROOM_MID_ROBOT_COLOR: {
       if(pl->robot_color.color == 1) {
         acm.robot_color = ACM_RED;
-        acm.cake_stall_side = ACM_RED;
+        acm_set_stall_side(&acm, ACM_RED);
       }
       else if(pl->robot_color.color == 2) {
         acm.robot_color = ACM_BLUE;
-        acm.cake_stall_side = ACM_BLUE;
+        acm_set_stall_side(&acm, ACM_BLUE);
       }
       ROOM_REPLY_ROBOT_COLOR(intf, pl);
     } break;
