@@ -103,7 +103,6 @@ void update_data_cb(void)
 
 void send_ppp_events_cb(void)
 {
-  static uint8_t last_count = 0;
   // north east south west
   bool leds[4] = {false, false, false, false};
 
@@ -114,7 +113,7 @@ void send_ppp_events_cb(void)
     int8_t iangle = object->angle/M_PI_4;
     leds[((iangle+1)/2) % 4] = true;
   }
-  for(; i<last_count; i++) {
+  for(; i<R3D2_OBJECTS_MAX; i++) {
     ROOM_SEND_R3D2_DISAPPEARED(&pppintf, 0xFF, i);
   }
 
@@ -122,8 +121,6 @@ void send_ppp_events_cb(void)
   if(leds[1]) portpin_outset(&LED_SOUTH_PP); else portpin_outclr(&LED_SOUTH_PP);
   if(leds[2]) portpin_outset(&LED_NORTH_PP); else portpin_outclr(&LED_NORTH_PP);
   if(leds[3]) portpin_outset(&LED_EAST_PP); else portpin_outclr(&LED_EAST_PP);
-
-  last_count = r3d2_data.count;
 }
 
 
