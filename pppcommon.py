@@ -90,6 +90,25 @@ class RoomHubMixin(object):
       self.run_one()
     return l[0]
 
+  def send_room_wait_multiple(self, dsts, pl):
+    """Send a ROOM message to multiple targets, wait for their response
+    Return the reply payloads as a map indexed by dst.
+    """
+    if pl.response is None:
+      # nothing to wait for
+      for dst in dsts:
+        self.room(self, dst, pl)
+      return None
+
+    d = {}  # nonlocal is not available :(
+    def cb(frame):
+      l[frame.src] = frame.payload
+    for dst in dsts:
+      self.send_room(self, dst, pl, cb)
+    while len(d) < len(dsts):
+      self.run_one()
+    return d
+
   def _room_timeout_cb(self, frame, n):
     """Scheduled callback to resend frame on timeout"""
     if n == 0:
