@@ -10,11 +10,15 @@
 #include <perlimpinpin/payload/room.h>
 #include <perlimpinpin/payload/log.h>
 #include "acm.h"
+#include "ccom.h"
+#include "cake.h"
 #include "config.h"
 
 
 static pwm_motor_t pwm_balloon;
 
+static ppp_intf_t pppintf;
+static ccom_t cmu_cam_com;
 
 /// current time in microseconds
 static volatile uint32_t uptime;
@@ -87,6 +91,20 @@ static int ax12_recv_char(void)
     }
   }
 }
+
+
+/// Send a character to CMUcam
+static void cmu_cam_send_char(uint8_t c)
+{
+  uart_send(UART_CAM, c);
+}
+
+/// Receive a character from CMUcam
+static int cmu_cam_recv_char(void)
+{
+  return uart_recv_nowait(UART_CAM);
+}
+
 
 
 static ax12_t ax12 = {
@@ -314,10 +332,16 @@ int main(void)
   timer_set_callback(timerF0, 'B', TIMER_US_TO_TICKS(F0,CAKE_ENCODER_UPDATE_PERIOD_US), CAKE_ENCODER_INTLVL, cake_encoder_update);
   aeat_update(&cake_enc);
 
+  // init communication with CMUcam
+  cmu_cam_com.uart_recv_no_wait = cmu_cam_recv_char;
+  cmu_cam_com.uart_send = cmu_cam_send_char;
+  ccom_init(&cmu_cam_com);
+
   // main loop
   for(;;) {
     ppp_intf_update(&pppintf);
     acm_update(&acm);
+    ccom_update(&cmu_cam_com);
   }
 }
 

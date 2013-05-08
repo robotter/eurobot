@@ -11,7 +11,8 @@
 // Communication
 #define UARTF0_ENABLED
 // Cam
-//#define UARTF1_ENABLED
+#define UARTF1_ENABLED
+#define UARTF1_BAUDRATE  38400
 
 
 #define UART_INTLVL  INTLVL_HI
