@@ -78,8 +78,10 @@ class HreidmarHub(HubBase):
       print "register address 0x%02X with connection %r" % (frame.src, con)
       self.network[frame.src] = con
     if frame.dst == 0xff:
-      # hack: don't broadcast logs to boards
-      if isinstance(pl, PayloadLog):
+      # don't broadcast logs to boards
+      # don't broadcast events from boards to other boards
+      #TODO this is a hack
+      if con in self.board_cons or isinstance(pl, PayloadLog):
         return [c for c in self.cons if c != con and c not in self.board_cons]
       else:
         return [c for c in self.cons if c != con]
