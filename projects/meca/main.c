@@ -9,21 +9,30 @@
 #include <perlimpinpin/payload/system.h>
 #include <perlimpinpin/payload/room.h>
 #include <perlimpinpin/payload/log.h>
-#include "cake.h"
+#include "acm.h"
 #include "config.h"
 
 
 static pwm_motor_t pwm_balloon;
-static ppp_intf_t pppintf;
 
 
 /// current time in microseconds
-volatile uint32_t uptime;
+static volatile uint32_t uptime;
 
 /// Called on uptime timer tick
 void uptime_update(void)
 {
   uptime += UPTIME_TICK_US;
+}
+
+/// Get uptime value
+uint32_t get_uptime_us(void)
+{
+  uint32_t tmp;
+  INTLVL_DISABLE_ALL_BLOCK() {
+    tmp = uptime;
+  }
+  return tmp;
 }
 
 
@@ -67,13 +76,13 @@ static int8_t ax12_send_char(uint8_t c)
 /// Receive a character from AX-12
 static int ax12_recv_char(void)
 {
-  uint32_t tend = uptime + AX12_TIMEOUT_US;
+  uint32_t tend = get_uptime_us() + AX12_TIMEOUT_US;
   for(;;) {
     int c = uart_recv_nowait(UART_AX12);
     if(c != -1) {
       return c;
     }
-    if(tend <= uptime) {
+    if(tend <= get_uptime_us()) {
       return -1; // timeout
     }
   }
@@ -86,6 +95,74 @@ static ax12_t ax12 = {
   .set_state = ax12_set_state,
 };
 
+
+// arm motors
+static pwm_motor_t arm_motors[4];
+
+static void arm_motor0_pwm_set(int16_t val)
+{
+  if(val >= 0) {
+    portpin_outclr(&MOTOR0_SIGN_PP);
+    pwm_motor_set(arm_motors+0, val);
+  } else {
+    portpin_outset(&MOTOR0_SIGN_PP);
+    pwm_motor_set(arm_motors+0, PWM_MOTOR_MAX + val);
+  }
+}
+
+static void arm_motor1_pwm_set(int16_t val)
+{
+  if(val >= 0) {
+    portpin_outclr(&MOTOR1_SIGN_PP);
+    pwm_motor_set(arm_motors+1, val);
+  } else {
+    portpin_outset(&MOTOR1_SIGN_PP);
+    pwm_motor_set(arm_motors+1, PWM_MOTOR_MAX + val);
+  }
+}
+
+static void arm_motor2_pwm_set(int16_t val)
+{
+  if(val >= 0) {
+    portpin_outclr(&MOTOR2_SIGN_PP);
+    pwm_motor_set(arm_motors+2, val);
+  } else {
+    portpin_outset(&MOTOR2_SIGN_PP);
+    pwm_motor_set(arm_motors+2, PWM_MOTOR_MAX + val);
+  }
+}
+
+static void arm_motor3_pwm_set(int16_t val)
+{
+  if(val >= 0) {
+    portpin_outclr(&MOTOR3_SIGN_PP);
+    pwm_motor_set(arm_motors+3, val);
+  } else {
+    portpin_outset(&MOTOR3_SIGN_PP);
+    pwm_motor_set(arm_motors+3, PWM_MOTOR_MAX + val);
+  }
+}
+
+
+// caking
+aeat_t cake_enc;
+acm_t acm = {
+  .ax12 = &ax12,
+  .encoder = &cake_enc,
+  .set_second_lvl_motor_pwm = arm_motor3_pwm_set,
+  .set_first_lvl_left_motor_pwm = arm_motor0_pwm_set,
+  .set_first_lvl_right_motor_pwm = arm_motor2_pwm_set,
+};
+
+static void cake_encoder_update(void)
+{
+  aeat_update(&cake_enc);
+}
+
+
+// Perlimpinpin
+
+static ppp_intf_t pppintf;
 
 
 ppp_payload_handler_t *ppp_filter(ppp_intf_t *intf)
@@ -141,13 +218,6 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
     } break;
 
     // rule specific
-    case ROOM_MID_MECA_SET_CAKE_ANGLE: {
-      cake_set_angle(pl->meca_set_cake_angle.a);
-      ROOM_REPLY_MECA_SET_CAKE_ANGLE(intf, pl);
-    } break;
-    case ROOM_MID_MECA_GET_CAKE_ANGLE: {
-      ROOM_REPLY_MECA_GET_CAKE_ANGLE(intf, pl, cake_get_angle());
-    } break;
     case ROOM_MID_MECA_BALLOON_TAP: {
       pwm_motor_set(&pwm_balloon, pl->meca_balloon_tap.open ? SERVO_BALLOON_OPEN_POS : SERVO_BALLOON_CLOSE_POS);
       ROOM_REPLY_MECA_BALLOON_TAP(intf, pl);
@@ -169,8 +239,12 @@ int main(void)
   CPU_SREG |= CPU_I_bm;
   INTLVL_ENABLE_ALL();
 
-  // timer
-  timer_set_callback(timerC0, 'A', TIMER_US_TO_TICKS(C0,UPTIME_TICK_US), INTLVL_LO, uptime_update);
+  portpin_dirset(&LED_RUN_PP);
+  portpin_dirset(&LED_ERROR_PP);
+  portpin_dirset(&LED_COM_PP);
+  portpin_outclr(&LED_RUN_PP);
+  portpin_outclr(&LED_ERROR_PP);
+  portpin_outclr(&LED_COM_PP);
 
   // init PPP
   pppintf.filter = ppp_filter;
@@ -183,7 +257,7 @@ int main(void)
   ppp_send_system_reset(&pppintf);
 
   // balloon servo, for the funny action
-  pwm_servo_init(&pwm_balloon, &TCD0, 'A');
+  pwm_servo_init(&pwm_balloon, &SERVO_BALLOON_TC, SERVO_BALLOON_TC_CH);
   pwm_motor_set(&pwm_balloon, SERVO_BALLOON_CLOSE_POS);
 
   // init AX-12
@@ -191,9 +265,37 @@ int main(void)
   portpin_outclr(&AX12_DIR_PP);
   portpin_dirset(&PORTPIN_TXDN(uart_get_usart(UART_AX12)));
 
+  // init arm motors
+  pwm_motor_init(arm_motors+0, (TC0_t*)&MOTOR0_TC, MOTOR0_TC_CH, 0);
+  pwm_motor_init(arm_motors+2, (TC0_t*)&MOTOR1_TC, MOTOR1_TC_CH, 0);
+  pwm_motor_init(arm_motors+1, (TC0_t*)&MOTOR2_TC, MOTOR2_TC_CH, 0);
+  pwm_motor_init(arm_motors+3, (TC0_t*)&MOTOR3_TC, MOTOR3_TC_CH, 0);
+  pwm_motor_set_frequency(arm_motors+0, 5000);
+  pwm_motor_set_frequency(arm_motors+1, 5000);
+  pwm_motor_set_frequency(arm_motors+2, 5000);
+  pwm_motor_set_frequency(arm_motors+3, 5000);
+  pwm_motor_set(arm_motors+0, 0);
+  pwm_motor_set(arm_motors+1, 0);
+  pwm_motor_set(arm_motors+2, 0);
+  pwm_motor_set(arm_motors+3, 0);
+  (void)arm_motor1_pwm_set; // not used
+
+  // init cake encoder
+  aeat_spi_init();
+  aeat_init(&cake_enc, CAKE_ENCODER_CS_PP);
+
+  // init caking management
+  acm_init(&acm);
+
+  // timer
+  timer_set_callback(timerF0, 'A', TIMER_US_TO_TICKS(F0,UPTIME_TICK_US), UPTIME_INTLVL, uptime_update);
+  timer_set_callback(timerF0, 'B', TIMER_US_TO_TICKS(F0,CAKE_ENCODER_UPDATE_PERIOD_US), CAKE_ENCODER_INTLVL, cake_encoder_update);
+  aeat_update(&cake_enc);
+
   // main loop
   for(;;) {
     ppp_intf_update(&pppintf);
+    acm_update(&acm);
   }
 }
 

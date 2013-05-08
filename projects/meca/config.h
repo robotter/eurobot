@@ -2,8 +2,8 @@
 #define CONFIG_H
 
 /*
- * TCC0: scheduling (timer module)
  * TCD0: balloon servomotor
+ * TCF0: scheduling (timer module)
  */
 
 
@@ -16,15 +16,23 @@
 
 // Tick period of uptime counter, in microseconds
 #define UPTIME_TICK_US  1000
+// Interrupt level of tick interrupt
+#define UPTIME_INTLVL  INTLVL_HI
+
+// Cake encoder update period, in microseconds
+#define CAKE_ENCODER_UPDATE_PERIOD_US  20000
+// Cake encoder update interrupt level
+#define CAKE_ENCODER_INTLVL  INTLVL_MED
 
 // AX-12 timeout for state switch, in microseconds
 #define AX12_TIMEOUT_US  10000
 
 
 // Funny action
-#define SERVO_BALLOON_PP  SERVO_ANA0_PP
+#define SERVO_BALLOON_TC  TCD0  //TODO
+#define SERVO_BALLOON_TC_CH  'A'  //TODO
 #define SERVO_BALLOON_OPEN_POS  0  //TODO
-#define SERVO_BALLOON_CLOSE_POS  0  //TODO
+#define SERVO_BALLOON_CLOSE_POS  2000
 
 
 // pinout
@@ -36,16 +44,20 @@
 
 #define AX12_DIR_PP  PORTPIN(C,5)
 
-#define ENCODER_CS_PP  PORTPIN(E,4)
+#define CAKE_ENCODER_CS_PP  PORTPIN(E,4)
 
-#define SENSOR0_PP  PORTPIN(D,4)
-#define SENSOR1_PP  PORTPIN(D,6)
-#define SENSOR2_PP  PORTPIN(E,0)
-#define SENSOR3_PP  PORTPIN(E,2)
-#define MOTOR0_PP  PORTPIN(D,5)
-#define MOTOR1_PP  PORTPIN(D,7)
-#define MOTOR2_PP  PORTPIN(E,1)
-#define MOTOR3_PP  PORTPIN(E,3)
+#define MOTOR0_TC  TCD1
+#define MOTOR1_TC  TCD1
+#define MOTOR2_TC  TCE0
+#define MOTOR3_TC  TCE0
+#define MOTOR0_TC_CH  'B'
+#define MOTOR1_TC_CH  'D'
+#define MOTOR2_TC_CH  'B'
+#define MOTOR3_TC_CH  'D'
+#define MOTOR0_SIGN_PP  PORTPIN(D,4)
+#define MOTOR1_SIGN_PP  PORTPIN(D,6)
+#define MOTOR2_SIGN_PP  PORTPIN(E,0)
+#define MOTOR3_SIGN_PP  PORTPIN(E,2)
 
 // analog servos
 #define SERVO_ANA0_PP  PORTPIN(D,0)
