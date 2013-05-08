@@ -11,6 +11,7 @@
 #include <timer/timer.h>
 #include <pwm/motor.h>
 #include <i2c/i2c.h>
+#include <string.h>
 #include "position.h"
 #include "trajectory.h"
 #include "ramp.h"
@@ -38,6 +39,12 @@ EEMEM ramp_conf_t ramp_dist_conf;
 EEMEM ramp_conf_t ramp_angle_conf;
 EEMEM pid_conf_t pid_dist_conf;
 EEMEM pid_conf_t pid_angle_conf;
+
+volatile int16_t us_rangefinder_distances[2] = {-1, -1};
+
+volatile bool match_is_over = false;
+volatile bool match_started = false;
+volatile bool debug_rangefinder_using_leds = false;
 
 // Default configurations
 
@@ -130,26 +137,50 @@ void monitor_rangefinders(void)
   };
   (void)dist; //TODO
 
-  if(dist[1] < 0) {
-    portpin_outclr(&LED_GREEN_PP);
-    portpin_outclr(&LED_BLUE_PP);
-    portpin_outtgl(&LED_RED_PP);
+  int i;
+  for(i=0;i<2;i++) {
+    if(dist[i] < 0) 
+      // on invalid distance (-1) bypass lowpass filter
+      us_rangefinder_distances[i] = dist[i];
+    else
+      us_rangefinder_distances[i] = dist[i];// 0.6*us_rangefinder_distances[i] + dist[i]*0.4;
   }
-  else {
-    portpin_outclr(&LED_RED_PP);
-    if(dist[1] > 10) {
-      portpin_outset(&LED_GREEN_PP);
+
+  if(debug_rangefinder_using_leds) {
+    if(us_rangefinder_distances[1] < 0) {
+      portpin_outclr(&LED_GREEN_PP);
       portpin_outclr(&LED_BLUE_PP);
+      portpin_outtgl(&LED_RED_PP);
     }
     else {
-      portpin_outclr(&LED_GREEN_PP);
-      portpin_outset(&LED_BLUE_PP);
+      portpin_outclr(&LED_RED_PP);
+      if(us_rangefinder_distances[1] > 20) {
+        portpin_outset(&LED_GREEN_PP);
+        portpin_outclr(&LED_BLUE_PP);
+      }
+      else {
+        portpin_outclr(&LED_GREEN_PP);
+        portpin_outset(&LED_BLUE_PP);
+      }
     }
-
   }
-
 }
 
+void main_update(void) {
+  // called every MAIN_PERIOD_US
+  
+  // check 89s
+  static int match_timer = 0; 
+  if(match_started) {
+    match_timer++;
+    if(match_timer > 850) {
+      PPP_LOGF(&pppintf, INFO, "MATCH IS OVER");
+      match_is_over = true;
+    }
+  }
+  // main loop update
+  ppp_intf_update(&pppintf);
+}
 
 int main(void)
 {
@@ -198,6 +229,10 @@ int main(void)
   // battery monitoring 
   battery_monitor_init();
 
+  portpin_outset(&LED_RED_PP);
+  portpin_outset(&LED_GREEN_PP);
+  portpin_outset(&LED_BLUE_PP);
+
   // battery checking
   int32_t sum = 0;
   int it;
@@ -208,6 +243,9 @@ int main(void)
   if(sum/nmeasures < BATTERY_MONITORING_LOW_VOLTAGE_DECIVOLTS) {
     // do a BATTERY LOW GLOW and wait indefinitely here
     double t = 0.0;
+    portpin_outclr(&LED_RED_PP);
+    portpin_outclr(&LED_GREEN_PP);
+    portpin_outclr(&LED_BLUE_PP);
     for(;;) {
       t+=0.015;
       const int N = 100;
@@ -250,16 +288,69 @@ int main(void)
   timer_set_callback(timerC0, 'A', TIMER_US_TO_TICKS(C0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, manage_control_system);
   timer_set_callback(timerC0, 'B', TIMER_US_TO_TICKS(C0,BATTERY_MONITORING_PERIOD_US), BATTERY_MONITORING_INTLVL, monitor_battery);
   timer_set_callback(timerC0, 'C', TIMER_US_TO_TICKS(C0,RANGEFINDERS_MONITORING_PERIOD_US), RANGEFINDERS_MONITORING_INTLVL, monitor_rangefinders);
+  timer_set_callback(timerC0, 'D', TIMER_US_TO_TICKS(C0,MAIN_PERIOD_US), MAIN_INTLVL, main_update);
 
   /*
    * main loop
    *
-   * There are two "threads", excluding low-level ones from modules:
-   *  - main: just below, PPP (order handling, ...)
-   *  - asserv: manage_control_system() call
    */
+  
+  pwm_motor_set(&servos[4], ((int32_t)600*32767 / 20000));
+  pwm_motor_set(&servos[1], ((int32_t)1500*32767 / 20000));
+
+  _delay_ms(500);
+
+  portpin_outclr(&LED_GREEN_PP);
+  portpin_outclr(&LED_RED_PP);
+  portpin_outclr(&LED_BLUE_PP);
+  double tt = 0.0;
+  while(!match_started) {
+    tt += 0.003;
+    int i;
+    const int N = 50;
+    for(i=0;i<N;i++) {
+      if(0.5*N*(1.0+cos(tt)) < i )
+        portpin_outset(&LED_GREEN_PP);
+      else
+        portpin_outclr(&LED_GREEN_PP);
+    }
+    portpin_outset(&LED_GREEN_PP);
+  }
+
+  debug_rangefinder_using_leds = true;
+
+  bool blocked = false;
+  traj_goto_xy(&traj_man, pos_mm_to_tick(&pos_man,1000), 0.0);
+  double t = 0;
+  while(!(traj_done(&traj_man) && !blocked)) {
+    if(match_is_over) 
+      break;
+    int16_t d = us_rangefinder_distances[1];
+    if((d > 0)&&(d < 20)) {
+      pwm_motor_set(&servos[4], ((int32_t)(1500 - 450*(1.0+cos(t)) )*32767 / 20000));
+      pwm_motor_set(&servos[1], ((int32_t)(550  + 450*(1.0+sin(t)) )*32767 / 20000));
+      t+=0.1;
+      ramp_reset(&ramp_dist, traj_man.d_cur);
+      ramp_reset(&ramp_angle, traj_man.a_cur);
+      traj_goto_d(&traj_man, 0);
+      blocked = true;
+    } else {
+      pwm_motor_set(&servos[4], ((int32_t)600*32767 / 20000));
+      pwm_motor_set(&servos[1], ((int32_t)1500*32767 / 20000));
+
+      traj_goto_xy(&traj_man, pos_mm_to_tick(&pos_man,1000), 0.0);
+      blocked = false;
+    }
+    _delay_ms(10);
+  }
+
+  motors_brake(true);
+  timer_set_callback(timerC0, 'A', TIMER_US_TO_TICKS(C0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, NULL);
+  motors_set_consign(0,0);
+
   for(;;) {
-    ppp_intf_update(&pppintf);
+    PPP_LOGF(&pppintf, INFO, "MATCH OVER, I'M DONE WITH THAT SHIT !");
+    _delay_ms(1000);
   }
 }
 

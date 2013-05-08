@@ -22,6 +22,7 @@ extern EEMEM ramp_conf_t ramp_angle_conf;
 extern EEMEM pid_conf_t pid_dist_conf;
 extern EEMEM pid_conf_t pid_angle_conf;
 
+extern volatile bool match_started;
 
 ppp_payload_handler_t *ppp_filter(ppp_intf_t *intf)
 {
@@ -172,6 +173,11 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
       pid_conf_save(&pid_dist, &pid_dist_conf);
       pid_conf_save(&pid_angle, &pid_angle_conf);
       ROOM_REPLY_PMI_SAVE_ALL_CONF(intf, pl);
+    } break;
+
+    case ROOM_MID_PMI_GO: {
+      match_started = true;
+      ROOM_REPLY_PMI_GO(intf, pl);
     } break;
 
     default:

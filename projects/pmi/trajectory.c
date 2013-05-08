@@ -7,6 +7,10 @@
 #include <perlimpinpin/payload/log.h>
 extern ppp_intf_t pppintf;
 
+#include "ramp.h"
+extern ramp_t ramp_dist;
+extern ramp_t ramp_angle;
+
 static double _fmod_pipi(double x) {
   return fmod(x+M_PI, 2*M_PI)-M_PI;
 }

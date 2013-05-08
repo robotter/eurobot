@@ -33,12 +33,15 @@
 /// Interrupt level for rangefinders monitoring
 #define RANGEFINDERS_MONITORING_INTLVL  INTLVL_MED
 
-/// Distance precision margin, in centimers
-#define TRAJECTORY_MARGIN_DIST  5
+// main update period in us
+#define MAIN_PERIOD_US 100000
+// interrupt level for main update
+#define MAIN_INTLVL INTLVL_HI
+
+/// Distance precision margin, in mm
+#define TRAJECTORY_MARGIN_DIST  10
 /// Angle precision margin, in degrees
 #define TRAJECTORY_MARGIN_ANGLE  5
-
-
 
 // pinout
 

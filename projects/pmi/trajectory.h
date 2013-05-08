@@ -2,6 +2,7 @@
 #define TRAJECTORY_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "position.h"
 
 #define TRAJ_FLAG_PAUSE  (1 << 0)
@@ -30,7 +31,7 @@ typedef struct {
 
   position_t *pos;
   traj_cons_t cons;
-  uint8_t flags;
+  volatile uint8_t flags;
 
   double d_cur;
   double a_cur;
@@ -60,13 +61,14 @@ void traj_goto_a(traj_t *t, double a);
 void traj_goto_xy(traj_t *t, double x, double y);
 void traj_goto_xya(traj_t *t, double x, double y, double a);
 
+static inline bool traj_done(traj_t *t) { return t->flags & TRAJ_FLAG_ENDED; }
+
 /// Compute outputs
 void traj_do_computation(traj_t *t);
 
 // Output accessors
 static inline double traj_get_d_output(const traj_t * t) { return t->d_out; }
 static inline double traj_get_a_output(const traj_t * t) { return t->a_out; }
-
 
 /// Load trajectory configuration from EEPROM
 void traj_conf_load(traj_t *t, const traj_conf_t *conf);
