@@ -4,6 +4,13 @@ from perlimpinpin.payload.room.transaction import *
 
 transactions = register_groups(
 
+    # General
+    (0x00, [
+      # 1 for red, 2 for blue
+      Event('robot_color', [('color', 'uint8')],
+        desc="Announce robot color"),
+      ]),
+
     # Robot movement
     (0x10, [
       Command('asserv_get_position', [], [('x', 'dist'), ('y', 'dist'), ('a', 'angle')],
