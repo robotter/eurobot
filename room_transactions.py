@@ -21,10 +21,14 @@ transactions = register_groups(
 
       Order('asserv_goto_xy', [('x', 'dist'), ('y', 'dist')],
         desc="Move to given absolute position coordinates"),
+      Order('asserv_goto_xy_rel', [('x','dist'), ('y','dist')],
+        desc="Move to given relative position coordinates"),
       Order('asserv_goto_d', [('d', 'dist')],
         desc="Move ahead"),
       Order('asserv_goto_a', [('a', 'angle')],
         desc="Move to given absolute angle"),
+      Order('asserv_goto_a_rel', [('a', 'angle')],
+        desc="Move to given relative angle"),
       
       Order('asserv_activate', [('activate', 'bool')],
         desc="Activate/deactivate control system"),
@@ -158,7 +162,21 @@ transactions = register_groups(
       # position configuration
       Order('galipeur_force_thrust', [('vx', 'int32'), ('vy', 'int32'), ('omegaz', 'int32')],
         desc="Apply thrust to motors, asserv MUST BE deactivated"),
+      # 
+      Order('galipeur_set_a_speed', 
+        [('speed','float'), ('acc','float')]),
+      Order('galipeur_set_xy_cruise_speed',
+        [('speed','float'), ('acc','float')]),
+      Order('galipeur_set_xy_steering_speed',
+        [('speed','float'), ('acc','float')]),
+      Order('galipeur_set_xy_stop_speed',
+        [('speed','float'), ('acc','float')]),
+      Order('galipeur_set_windows',
+        [('steering_xy_win','float'), 
+          ('stop_xy_win','float'),
+          ('stop_a_win','float')]),
       ]),
+
     
     )
 
