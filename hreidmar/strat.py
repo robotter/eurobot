@@ -33,6 +33,7 @@ class StratHub(HreidmarHub, RoomHubMixin):
 
     # (angle, dist) pair
     self.r3d2_objects = [None, None]
+    self.cake_completed = None
 
   def wait(self, dt):
     """Wait for a given period, in seconds"""
@@ -56,6 +57,8 @@ class StratHub(HreidmarHub, RoomHubMixin):
         self.r3d2_objects[params.i] = (params.a, params.r)
       elif pl.mname == 'r3d2_disappeared':
         self.r3d2_objects[params.i] = None
+      elif pl.mname == 'meca_cake_completed':
+        self.cake_completed = True
     else:
       RoomHubMixin.payload_handler_room(self, frame)
 
@@ -176,6 +179,11 @@ class Match(object):
     self.hub.send_room_wait(addrs.meca, room.meca_set_arm_mode(mode))
 
 
+  def opponent_detected(self):
+    """Return True if an opponent is detected"""
+    return any(o is not None and o[1] < self.r3d2_avoid_distance for o in hub.r3d2_objects)
+
+
   def goto_xya(self, x, y, a=None):
     """Go to x,y,a position, avoid opponents"""
     hub = self.hub
@@ -201,12 +209,12 @@ class Match(object):
           hub.send_room(addrs.prop, room.asserv_status(), cb_status)
 
       # stop when r3d2 detects something close
-      if hub.r3d2_objects[0] is not None and hub.r3d2_objects[0][1] < self.r3d2_avoid_distance:
+      if self.opponent_detected():
         print "opponent detected at %r" % (hub.r3d2_objects[0],)
         pl_pos = hub.send_room_wait(addrs.prop, room.asserv_get_position())
         hub.send_room_wait(addrs.prop, room.asserv_goto_xy(pl_pos.params.x, pl_pos.params.y))
         #hub.send_room(addrs.prop, room.asserv_activate(False))
-        while hub.r3d2_objects[0] is not None and hub.r3d2_objects[0][1] < self.r3d2_avoid_distance:
+        while self.opponent_detected():
           hub.run_one()
         print "opponent moved away"
         #hub.send_room_wait(addrs.prop, room.asserv_activate(True))
@@ -214,8 +222,24 @@ class Match(object):
 
       hub.run_one()
 
-  def thrusting(d, a, omegaz):
-    self.hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(d*math.cos(a), d*math.sin(a), omegaz))
+  def thrusting(self, d, a, omegaz, caking=False):
+    hub = self.hub
+    pl = room.galipeur_force_thrust(d*math.cos(a), d*math.sin(a), omegaz)
+    hub.send_room_wait(addrs.prop, pl)
+    if not dist:
+      return
+
+    hub.cake_completed = False
+    while not hub.cake_completed or hub.cake_completed:
+      # stop when r3d2 detects something close
+      if self.opponent_detected():
+        print "opponent detected at: %r" % (hub.r3d2_objects,)
+        hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
+        while self.opponent_detected():
+          hub.run_one()
+        print "opponent moved away"
+        hub.send_room_wait(addrs.prop, pl)
+      hub.run_one()
 
 
   def run(self):
@@ -248,8 +272,6 @@ class Match(object):
     hub = self.hub
     kx = self.kx
 
-    #TODO avoidance while thrusting
-
     if kx == 1:
       print "left the starting area"
       self.goto_xya(-0.1, 0.1)
@@ -273,8 +295,7 @@ class Match(object):
       print "change arm mode to caking"
       self.set_arm_mode('caking')
       print "go along the cake"
-      self.thrusting(40e6, math.radians(70), -1e6)
-      hub.wait(12.0)
+      self.thrusting(40e6, math.radians(70), -1e6, True)
 
       print "re-enable asserv"
       hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
@@ -310,8 +331,7 @@ class Match(object):
       print "change arm mode to caking"
       self.set_arm_mode('caking')
       print "go along the cake"
-      self.thrusting(40e6, math.radians(0), 1e6)
-      hub.wait(10.0)
+      self.thrusting(40e6, math.radians(0), 1e6, True)
 
       print "re-enable asserv"
       hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
