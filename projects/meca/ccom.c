@@ -13,7 +13,7 @@ void ccom_init(ccom_t *s)
 
 void ccom_update(ccom_t *s)
 {
-  int c = s->uart_recv_no_wait();
+  int c = (s->uart_recv_no_wait)();
 
   if (c!= -1)
   {
@@ -39,6 +39,8 @@ void ccom_update(ccom_t *s)
 
       s->lightning_led_on = (cmu_cam_data & (1<< ccom_bit_pos_lightning_led_status) ? true : false);
 
+
+      PORTA.DIRSET = 0x0F;
       PORTA.OUTTGL = _BV(0);
       if (s->cmu_cam_ready)
       {
@@ -69,7 +71,7 @@ bool ccom_is_camera_ready(ccom_t *s)
   return s->cmu_cam_ready;
 }
 
-acm_color_t ccom_get_candle_color(ccom_t *s)
+acm_candle_color_t ccom_get_candle_color(ccom_t *s)
 {
   return s->candle_color;
 }

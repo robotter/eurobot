@@ -91,7 +91,6 @@ static int ax12_recv_char(void)
   }
 }
 
-
 /// Send a character to CMUcam
 static void cmu_cam_send_char(uint8_t c)
 {
@@ -103,8 +102,6 @@ static int cmu_cam_recv_char(void)
 {
   return uart_recv_nowait(UART_CAM);
 }
-
-
 
 static ax12_t ax12 = {
   .send = ax12_send_char,
@@ -200,6 +197,7 @@ ppp_payload_handler_t *ppp_filter(ppp_intf_t *intf)
 
 void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
 {
+  portpin_outtgl(&LED_COM_PP);
   switch(pl->mid) {
     // AX-12
     case ROOM_MID_AX12_READ_BYTE: {
@@ -332,15 +330,16 @@ int main(void)
   aeat_update(&cake_enc);
 
   // init communication with CMUcam
+  ccom_init(&cmu_cam_com);
   cmu_cam_com.uart_recv_no_wait = cmu_cam_recv_char;
   cmu_cam_com.uart_send = cmu_cam_send_char;
-  ccom_init(&cmu_cam_com);
-
+  
   // main loop
   for(;;) {
     ppp_intf_update(&pppintf);
     acm_update(&acm);
     ccom_update(&cmu_cam_com);
+    portpin_outtgl(&LED_RUN_PP);
   }
 }
 

@@ -7,6 +7,7 @@
 #include <encoder/aeat/aeat.h>
 #include <math.h>
 #include "../meca/acm.h"
+#include "../meca/ccom.h"
 
 /// use this define to have advanced 
 #define USE_CAKE_ADVANCED_PROCESSING
@@ -24,6 +25,7 @@
 #define AX12_RX_PIN_bp   6 
 
 #define UART_AX12  uartC1
+#define UART_CAM   uartF1
 
 
 // Tick period of uptime counter, in microseconds
@@ -207,6 +209,37 @@ void update_acm_candle_color_list(acm_t *s)
       printf("\n");
 }
 
+
+static void return_candle_config(acm_t *s)
+{
+for (uint8_t it= 0; it < FIRST_LVL_CANDLE_NB; it ++)
+  {
+    if(s->candle_color[it] == ACM_CANDLE_WHITE)
+      printf(" %u W | ", it);
+    else if(s->candle_color[it] == ACM_CANDLE_BLUE)
+      printf(" %u B | ", it);
+    else if(s->candle_color[it] == ACM_CANDLE_RED)
+      printf(" %u R | ", it);
+    else if(s->candle_color[it] == ACM_CANDLE_UNKNOWN)
+      printf(" %u u | ", it);
+  }
+      printf("\n");
+}
+
+static ccom_t cmu_cam_com;
+
+/// Send a character to CMUcam
+static void cmu_cam_send_char(uint8_t c)
+{
+  uart_send(UART_CAM, c);
+}
+
+/// Receive a character from CMUcam
+static int cmu_cam_recv_char(void)
+{
+  return uart_recv_nowait(UART_CAM);
+}
+
 int main(void) {
 
   clock_init();
@@ -310,6 +343,11 @@ int main(void) {
   (void)cc_motor_3_pwm_set;
   (void)update_analog_servos;
 
+  // init communication with CMUcam
+  ccom_init(&cmu_cam_com);
+  cmu_cam_com.uart_recv_no_wait = cmu_cam_recv_char;
+  cmu_cam_com.uart_send = cmu_cam_send_char;
+  
   acm_t acm;
   acm_init(&acm);
   acm.ax12 = &ax12;
@@ -317,15 +355,17 @@ int main(void) {
   acm.set_second_lvl_motor_pwm = cc_motor_3_pwm_set;
   acm.set_first_lvl_left_motor_pwm = cc_motor_0_pwm_set;
   acm.set_first_lvl_right_motor_pwm = cc_motor_2_pwm_set;
-  
-  /// debug 
-  update_acm_candle_color_list(&acm);
+  acm.camera = &cmu_cam_com;
 
-  while(1) {
+  /// debug 
+//  update_acm_candle_color_list(&acm);
+
+while(1) {
 #ifdef USE_CAKE_ADVANCED_PROCESSING
     aeat_update(&cake_enc);
     acm_update(&acm);
     int c = uart_recv_nowait(uartF0);
+    ccom_update(&cmu_cam_com);
     if(c != -1) 
     {
     printf("test");
@@ -340,13 +380,13 @@ int main(void) {
                    break;
         case 's': if (acm.cake_stall_side == ACM_BLUE)
                    {
-                    acm.cake_stall_side = ACM_RED;
+                    acm_set_stall_side(&acm, ACM_RED);
                    }
                    else
                    {
-                    acm.cake_stall_side = ACM_BLUE;
+                    acm_set_stall_side(&acm, ACM_BLUE);
                    }
-                   update_acm_candle_color_list(&acm);
+                   //update_acm_candle_color_list(&acm);
                    break;
         case 'c': if (acm.robot_color == ACM_BLUE)
                    {
@@ -356,8 +396,11 @@ int main(void) {
                    {
                     acm.robot_color = ACM_BLUE;
                    }
-                   update_acm_candle_color_list(&acm);
+                   //update_acm_candle_color_list(&acm);
                    break;
+        case 'i': return_candle_config(&acm);
+          break;
+
         default : break;
       }
       PORTK.OUTTGL = _BV(2);

@@ -1,7 +1,7 @@
 
 ## Project configuration
 
-SRCS = $(wildcard *.c) ../meca/acm.c
+SRCS = $(wildcard *.c) ../meca/acm.c ../meca/ccom.c
 ASRCS =
 TARGET = main
 MODULES = uart clock pwm ax12 timer encoder/aeat

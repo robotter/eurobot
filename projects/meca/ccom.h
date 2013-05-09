@@ -3,7 +3,8 @@
 
 #include <avarix.h>
 #include <uart/uart.h>
-#include "acm.h"
+#include "candle_defs.h"
+#include <stdbool.h>
 
 typedef struct
 {
@@ -31,7 +32,7 @@ void ccom_update(ccom_t *s);
 
 bool ccom_is_camera_ready(ccom_t *s);
 
-acm_color_t ccom_get_candle_color(ccom_t *s);
+acm_candle_color_t ccom_get_candle_color(ccom_t *s);
 
 
 #endif //CCOM_H
