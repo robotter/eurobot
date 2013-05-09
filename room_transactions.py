@@ -83,6 +83,9 @@ transactions = register_groups(
 
       Order('meca_set_arm_mode', [('mode', 'uint8')],
         desc="Set arm mode for caking"),
+      Event('meca_cake_completed', [],
+        desc="Signal when caking is finished"),
+
 
       ]),
 

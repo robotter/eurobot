@@ -258,6 +258,12 @@ void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
   }
 }
 
+void cake_complete_event(void)
+{
+  ROOM_SEND_MECA_CAKE_COMPLETED(&pppintf, 0xff); 
+}
+
+
 
 int main(void)
 {

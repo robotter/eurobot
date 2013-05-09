@@ -8,6 +8,8 @@
 
 //extern ppp_intf_t pppintf;
 
+void cake_complete_event(void);
+
 uint32_t get_uptime_us(void);
 
 static bool acm_arm_in_position(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
@@ -516,7 +518,10 @@ void acm_update_arm_position(acm_t *s)
   if ((right_arm_candle_id == (FIRST_LVL_CANDLE_NB-1) && s->cake_stall_side == ACM_BLUE) || (left_arm_candle_id == (FIRST_LVL_CANDLE_NB-1) && s->cake_stall_side == ACM_RED))
   {
     s->cake_completed = true;
+    cake_complete_event(); /// ppp event
   }
+
+  
 }
 
 bool update_candle_color_list(acm_t *s)
@@ -800,7 +805,8 @@ void acm_update(acm_t *s)
       break;
     case ACM_SM_CAKING_UPDATE_ARMS:
       acm_update_arm_position(s);
-      s->sm_state = ACM_SM_CAKING_UPDATE_CANDLE_COLOR;
+      //s->sm_state = ACM_SM_CAKING_UPDATE_CANDLE_COLOR;
+      s->sm_state = ACM_SM_CAKING_WAIT_CANDLES; // CAM burnt
       PORTK.OUTSET = _BV(0);
       break;
     case ACM_SM_CAKING_UPDATE_CANDLE_COLOR:
@@ -830,7 +836,9 @@ void acm_set_stall_side(acm_t *s, acm_color_t color_side)
     }
     else
     {
+      /// HACK to blow every candle
       s->candle_color[it] = ACM_CANDLE_UNKNOWN;
+      s->candle_color[it] = ACM_CANDLE_WHITE;
     }
     s->blue_color_cam_return_cnt[it] = 0;
     s->red_color_cam_return_cnt[it] = 0;
