@@ -435,7 +435,7 @@ void acm_update_arm_position(acm_t *s)
     second_lvl_arm_red_side_avoid_red_candle_pos_offset_mm = -s->second_lvl_arm_red_side_avoid_red_candle_pos_offset_mm;
     second_lvl_arm_blue_side_avoid_blue_candle_pos_offset_mm = 0.0;
     first_lvl_left_arm_enc_offset_mm = -s->first_lvl_left_arm_enc_offset_mm;
-    first_lvl_right_arm_enc_offset_mm = -s->first_lvl_left_arm_enc_offset_mm;
+    first_lvl_right_arm_enc_offset_mm = -s->first_lvl_right_arm_enc_offset_mm;
   }
 
 
@@ -444,15 +444,11 @@ void acm_update_arm_position(acm_t *s)
   uint8_t left_arm_candle_id = (cake_pos_mm - first_lvl_left_arm_enc_offset_mm) / (cake_perimeter_mm / FIRST_LVL_CANDLE_NB);
   uint8_t right_arm_candle_id = (cake_pos_mm + first_lvl_right_arm_enc_offset_mm) / (cake_perimeter_mm / FIRST_LVL_CANDLE_NB);
 
-  double tmp = cake_pos_mm;
-
   // add offset to check what next candle will be
   cake_pos_mm += candle_anticipation_offset_mm;
 
   uint8_t left_arm_candle_id_anticipated = (cake_pos_mm - first_lvl_left_arm_enc_offset_mm) / (cake_perimeter_mm / FIRST_LVL_CANDLE_NB);
   uint8_t right_arm_candle_id_anticipated = (cake_pos_mm + first_lvl_right_arm_enc_offset_mm) / (cake_perimeter_mm / FIRST_LVL_CANDLE_NB);
-
-  printf("enc %li\tpos %.1f\tper %.1f\tlid %u\tflid %u\trid %u\tsid %u\n", enc_pos, tmp, cake_perimeter_mm, left_arm_candle_id, left_arm_candle_id_anticipated, right_arm_candle_id, second_lvl_arm_candle_id);
 
   // get candle color that we want to blow
   acm_candle_color_t candle_target_color;
@@ -465,8 +461,7 @@ void acm_update_arm_position(acm_t *s)
     candle_target_color = ACM_CANDLE_RED;
   }
 
-  // update arm position
-
+//printf("lid %u\trid %u\n", left_arm_candle_id, right_arm_candle_id);
   // avoid first candle (which is red when robot color is blue)
   if (second_lvl_arm_candle_id == 0 && s->robot_color == ACM_BLUE && s->cake_stall_side == ACM_RED)
   {
@@ -526,36 +521,52 @@ bool update_candle_color_list(acm_t *s)
   if (s->candle_color[candle_id] == ACM_CANDLE_UNKNOWN)
   {
 
-  /*
+    /*
     // position is in the center of the candle
     double optimal_capture_cam_pos_mm = ((double)candle_id + 0.5) *(cake_perimeter_mm/FIRST_LVL_CANDLE_NB);
 
     printf("id%u \t%.1f\t%.1f\t", candle_id, optimal_capture_cam_pos_mm, s->cake_pos_mm);
     if (( s->cake_pos_mm <= (optimal_capture_cam_pos_mm + s->cam_update_candle_window_mm/2)) && (s->cake_pos_mm > (optimal_capture_cam_pos_mm - s->cam_update_candle_window_mm/2)) )
     {
-      acm_candle_color_t color = ccom_get_candle_color(s->camera);
-      printf("%u", color);
-      if (color == ACM_CANDLE_RED || color == ACM_CANDLE_BLUE)
-      {
-        acm_candle_color_t opposite_color = (color == ACM_CANDLE_BLUE ? ACM_CANDLE_RED: ACM_CANDLE_BLUE);
+    acm_candle_color_t color = ccom_get_candle_color(s->camera);
+    printf("%u", color);
+    if (color == ACM_CANDLE_RED || color == ACM_CANDLE_BLUE)
+    {
+    acm_candle_color_t opposite_color = (color == ACM_CANDLE_BLUE ? ACM_CANDLE_RED: ACM_CANDLE_BLUE);
 
-        // update candle color and opposite
-        s->candle_color[candle_id] = color;
-        s->candle_color[FIRST_LVL_CANDLE_NB - candle_id - 1] = opposite_color; 
-      }
+    // update candle color and opposite
+    s->candle_color[candle_id] = color;
+    s->candle_color[FIRST_LVL_CANDLE_NB - candle_id - 1] = opposite_color; 
+    }
     }
     printf("\n");
-    
-    */
+
+*/
 
     acm_candle_color_t color = ccom_get_candle_color(s->camera);
     if (color == ACM_CANDLE_RED || color == ACM_CANDLE_BLUE)
     {
-      acm_candle_color_t opposite_color = (color == ACM_CANDLE_BLUE ? ACM_CANDLE_RED: ACM_CANDLE_BLUE);
+      if ( color == ACM_CANDLE_BLUE)
+      {
+        s->blue_color_cam_return_cnt[candle_id] ++;
+      }
+      else
+      {
+        s->red_color_cam_return_cnt[candle_id] ++;
+      }
 
-      // update candle color and opposite
-      s->candle_color[candle_id] = color;
-      s->candle_color[FIRST_LVL_CANDLE_NB - candle_id - 1] = opposite_color; 
+      if (s->blue_color_cam_return_cnt[candle_id] >= 3)
+      {
+        s->candle_color[candle_id] = ACM_CANDLE_BLUE;
+        s->candle_color[FIRST_LVL_CANDLE_NB - candle_id - 1] = ACM_CANDLE_RED;
+
+      }
+      else if (s->red_color_cam_return_cnt[candle_id] >= 3)
+      {
+        s->candle_color[candle_id] = ACM_CANDLE_RED;
+          s->candle_color[FIRST_LVL_CANDLE_NB - candle_id - 1] = ACM_CANDLE_BLUE ;
+
+      }
     }
 
     return true;
@@ -816,6 +827,8 @@ void acm_set_stall_side(acm_t *s, acm_color_t color_side)
     {
       s->candle_color[it] = ACM_CANDLE_UNKNOWN;
     }
+    s->blue_color_cam_return_cnt[it] = 0;
+    s->red_color_cam_return_cnt[it] = 0;
   }
 
   // fixed color candle

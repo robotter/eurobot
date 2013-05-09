@@ -83,6 +83,10 @@ typedef struct {
   acm_arm_config_t arm_config; // arm configuration
   acm_sm_state_t sm_state; // state machine state
   acm_candle_color_t candle_color[FIRST_LVL_CANDLE_NB];
+  uint16_t blue_color_cam_return_cnt[FIRST_LVL_CANDLE_NB];
+  uint16_t red_color_cam_return_cnt[FIRST_LVL_CANDLE_NB];
+
+  
   int32_t previous_enc_value; // encoder value at previous call
   uint32_t last_ax12_order_timestamp;
 

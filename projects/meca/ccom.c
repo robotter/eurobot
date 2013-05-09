@@ -74,4 +74,7 @@ bool ccom_is_camera_ready(ccom_t *s)
 acm_candle_color_t ccom_get_candle_color(ccom_t *s)
 {
   return s->candle_color;
+  acm_candle_color_t color = s->candle_color;
+  s->candle_color = ACM_CANDLE_UNKNOWN;
+  return color;
 }
