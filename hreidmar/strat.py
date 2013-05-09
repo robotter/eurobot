@@ -109,10 +109,16 @@ class Match(object):
     return not bool(int(v))
 
   def robot_init(self):
+    hub = self.hub
     self.set_arm_mode('close')
-    #TODO configure asserv parameters
-    #TODO configure r3d2 (?)
-    return
+
+    hub.send_room_wait(addrs.prop, room.galipeur_set_a_speed(600, 100))
+    hub.send_room_wait(addrs.prop, room.galipeur_set_xy_cruise_speed(10, 0.05))
+    hub.send_room_wait(addrs.prop, room.galipeur_set_xy_steering_speed(5, 0.05))
+    hub.send_room_wait(addrs.prop, room.galipeur_set_xy_stop_speed(1, 0.05))
+    hub.send_room_wait(addrs.prop, room.galipeur_set_windows(50, 5, 0.03))
+
+    hub.send_room_wait(addrs.r3d2, room.r3d2_set_conf(4000, 50, 0.573, 11))
 
   def wait_start(self):
     """Wait for the beginning of the match"""
