@@ -130,7 +130,7 @@ class Match(object):
       if color2 != self.color:
         self.color = color2
         print "changing color to %s ..." % color2name[self.color]
-        self.hub.send_room_wait(addrs.meca, room.robot_color(self.color))
+        self.hub.send_room(addrs.meca, room.robot_color(self.color), None)
         print "ready"
     self.color = self.get_color()
     print "start match with color %s" % color2name[self.color]
@@ -173,7 +173,7 @@ class Match(object):
         'open': 1,
         'caking': 2,
         }.get(mode, 0)
-    self.hub.send_room(addrs.meca, room.meca_set_arm_mode(mode))
+    self.hub.send_room(addrs.meca, room.meca_set_arm_mode(mode), None)
 
 
   def goto_xya(self, x, y, a=None, kx=True):
@@ -193,7 +193,7 @@ class Match(object):
     def cb_status(frame):
       status_l.append(frame.payload)
 
-    hub.send_room_wait(addrs.prop, pl_goto)
+    hub.send_room(addrs.prop, pl_goto, None)
     hub.send_room(addrs.prop, room.asserv_status(), cb_status)
     while True:
       if len(status_l):
@@ -209,10 +209,12 @@ class Match(object):
         print "opponent detected at %r" % (hub.r3d2_objects[0],)
         pl_pos = hub.send_room_wait(addrs.prop, room.asserv_get_position())
         hub.send_room_wait(addrs.prop, room.asserv_goto_xy(pl_pos.params.x, pl_pos.params.y))
+        #hub.send_room(addrs.prop, room.asserv_activate(False))
         while hub.r3d2_objects[0] is not None and hub.r3d2_objects[0][1] < self.r3d2_avoid_distance:
           hub.run_one()
         print "opponent moved away"
-        hub.send_room_wait(addrs.prop, pl_goto)
+        #hub.send_room_wait(addrs.prop, room.asserv_activate(True))
+        hub.send_room(addrs.prop, pl_goto, None)
 
       hub.run_one()
 
@@ -226,7 +228,7 @@ class Match(object):
     else:
       self.kx = 1
       x0, y0, a0 = (1.500 - 0.120, 2.000 - 0.150, pi/2)
-    hub.send_room_wait(addrs.prop, room.asserv_set_position(x0, y0, a0))
+    #hub.send_room_wait(addrs.prop, room.asserv_set_position(x0, y0, a0))
     try:
       hub.send_room_wait(addrs.pmi, room.pmi_go())
     except Exception as e:
@@ -238,7 +240,11 @@ class Match(object):
   def run_homologation(self):
     hub = self.hub
 
-    self.goto_xya(1.500 - 0.120 - 0.500, 2.000 - 0.250, kx=True)
+    if self.kx == 1:
+      self.goto_xya(-0.5, 1.0, kx=False)
+    else:
+      self.goto_xya(0.5, -1.0, kx=False)
+    #self.goto_xya(1.500 - 0.120 - 0.500, 2.000 - 0.250, kx=True)
     print "wait for end of match"
     while True:
       hub.run_one()
