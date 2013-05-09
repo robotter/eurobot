@@ -78,19 +78,18 @@ typedef struct {
   
   double cam_update_candle_window_mm;
 
-
   /// acm internal variables
   acm_arm_config_t arm_config; // arm configuration
   acm_sm_state_t sm_state; // state machine state
   acm_candle_color_t candle_color[FIRST_LVL_CANDLE_NB];
   uint16_t blue_color_cam_return_cnt[FIRST_LVL_CANDLE_NB];
   uint16_t red_color_cam_return_cnt[FIRST_LVL_CANDLE_NB];
-
   
   int32_t previous_enc_value; // encoder value at previous call
   uint32_t last_ax12_order_timestamp;
 
-  double cake_pos_mm; /// position on the cake in mm
+  double cake_pos_mm;     /// position on the cake in mm
+  bool cake_completed;    /// cake travel ended
 } acm_t;
 
 void acm_init(acm_t *s);
@@ -107,6 +106,9 @@ void acm_set_stall_side(acm_t *s, acm_color_t color_side);
 
 /// update global mode for arm
 void acm_set_arm_mode(acm_t *s, acm_arm_mode_t mode);
+
+/// return true if robot is on the other side of the cake
+bool acm_cake_completed(acm_t*s);
 
 #endif //ACM_H
 

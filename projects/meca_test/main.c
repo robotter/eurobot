@@ -111,7 +111,7 @@ static void cc_motor_3_pwm_set(int16_t val)
   else
   {
     PORTE.OUTSET = _BV(2);
-    pwm_motor_set(cc_motor+3, PWM_MOTOR_MAX + val); 
+    pwm_motor_set(cc_motor+3, -val); 
   }
 }
 
@@ -342,7 +342,7 @@ int main(void) {
   (void)cc_motor_2_pwm_set;
   (void)cc_motor_3_pwm_set;
   (void)update_analog_servos;
-
+  (void)return_candle_config;
   // init communication with CMUcam
   ccom_init(&cmu_cam_com);
   cmu_cam_com.uart_recv_no_wait = cmu_cam_recv_char;
@@ -520,9 +520,10 @@ while(1) {
       {
         ax12_pos[it] &= 0x3ff;
       }
-      t_ax12_move(&ax12, 2, ax12_pos[0]);
+      /*t_ax12_move(&ax12, 2, ax12_pos[0]);
       t_ax12_move(&ax12, 3, ax12_pos[1]);
       t_ax12_move(&ax12, 4, ax12_pos[2]);
+      */
       pwm_motor_set(&pwm_servos[2], pos);
       printf("servos %4i\t mot0 %5i\t mot1 %5i\t mot2 %5i\t mot3 %5i\tax12_2 %u\tax12_3 %u\tax12_4 %u\n",pos, motor_pwm[0], motor_pwm[1], motor_pwm[2], motor_pwm[3], ax12_pos[0], ax12_pos[1], ax12_pos[2]); 
     } 

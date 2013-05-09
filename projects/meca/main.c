@@ -16,7 +16,6 @@
 
 static pwm_motor_t pwm_balloon;
 
-static ppp_intf_t pppintf;
 static ccom_t cmu_cam_com;
 
 /// current time in microseconds
@@ -176,7 +175,7 @@ static void cake_encoder_update(void)
 
 // Perlimpinpin
 
-static ppp_intf_t pppintf;
+ppp_intf_t pppintf;
 
 
 ppp_payload_handler_t *ppp_filter(ppp_intf_t *intf)

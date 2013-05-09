@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <math.h>
 
+//#include <perlimpinpin/payload/log.h>
+
+//extern ppp_intf_t pppintf;
 
 uint32_t get_uptime_us(void);
 
@@ -142,11 +145,11 @@ static void acm_update_motor(acm_t *s, acm_arm_t arm, acm_arm_config_t conf)
         case ACM_ARM_ON_CAKE_BLOW_CANDLE:
           if (s->cake_stall_side == ACM_BLUE)
           {
-            pwm = -s->motor_pwm_on_cake/2;
+            pwm = -s->motor_pwm_on_cake;
           }
           else
           {
-            pwm = s->motor_pwm_on_cake/2;
+            pwm = s->motor_pwm_on_cake;
           }
           break;
 
@@ -438,7 +441,6 @@ void acm_update_arm_position(acm_t *s)
     first_lvl_right_arm_enc_offset_mm = -s->first_lvl_right_arm_enc_offset_mm;
   }
 
-
   // get ax12 candle position for each arm
   uint8_t second_lvl_arm_candle_id = (cake_pos_mm - (second_lvl_arm_enc_offset_mm - second_lvl_arm_red_side_avoid_red_candle_pos_offset_mm - second_lvl_arm_blue_side_avoid_blue_candle_pos_offset_mm )) / (cake_perimeter_mm / SECOND_LVL_CANDLE_NB);
   uint8_t left_arm_candle_id = (cake_pos_mm - first_lvl_left_arm_enc_offset_mm) / (cake_perimeter_mm / FIRST_LVL_CANDLE_NB);
@@ -510,14 +512,17 @@ void acm_update_arm_position(acm_t *s)
   {
     acm_move_arm(s, ACM_ARM_FIRST_LVL_RIGHT, ACM_ARM_ON_CAKE_AVOID_CANDLE);
   }
+
+  if ((right_arm_candle_id == (FIRST_LVL_CANDLE_NB-1) && s->cake_stall_side == ACM_BLUE) || (left_arm_candle_id == (FIRST_LVL_CANDLE_NB-1) && s->cake_stall_side == ACM_RED))
+  {
+    s->cake_completed = true;
+  }
 }
 
 bool update_candle_color_list(acm_t *s)
 {
   double cake_perimeter_mm = s->cake_radius * M_PI;
-  uint8_t candle_id = s->cake_pos_mm / (cake_perimeter_mm/FIRST_LVL_CANDLE_NB);
-
-
+  uint8_t candle_id = (uint8_t)(fabs(s->cake_pos_mm) / (double)(cake_perimeter_mm/FIRST_LVL_CANDLE_NB));
   if (s->candle_color[candle_id] == ACM_CANDLE_UNKNOWN)
   {
 
@@ -555,17 +560,16 @@ bool update_candle_color_list(acm_t *s)
         s->red_color_cam_return_cnt[candle_id] ++;
       }
 
-      if (s->blue_color_cam_return_cnt[candle_id] >= 3)
+      if (s->blue_color_cam_return_cnt[candle_id] >= DEFAULT_ACM_COLOR_VALID_THRESHOLD)
       {
         s->candle_color[candle_id] = ACM_CANDLE_BLUE;
         s->candle_color[FIRST_LVL_CANDLE_NB - candle_id - 1] = ACM_CANDLE_RED;
 
       }
-      else if (s->red_color_cam_return_cnt[candle_id] >= 3)
+      else if (s->red_color_cam_return_cnt[candle_id] >= DEFAULT_ACM_COLOR_VALID_THRESHOLD)
       {
         s->candle_color[candle_id] = ACM_CANDLE_RED;
-          s->candle_color[FIRST_LVL_CANDLE_NB - candle_id - 1] = ACM_CANDLE_BLUE ;
-
+        s->candle_color[FIRST_LVL_CANDLE_NB - candle_id - 1] = ACM_CANDLE_BLUE ;
       }
     }
 
@@ -800,7 +804,6 @@ void acm_update(acm_t *s)
       PORTK.OUTSET = _BV(0);
       break;
     case ACM_SM_CAKING_UPDATE_CANDLE_COLOR:
-      /// TODO add update list of candles
       update_candle_color_list(s);
       s->sm_state = ACM_SM_CAKING_WAIT_CANDLES;
       PORTK.OUTCLR = _BV(0);
@@ -815,6 +818,8 @@ void acm_update(acm_t *s)
 
 void acm_set_stall_side(acm_t *s, acm_color_t color_side)
 {
+  // we specify stall 
+  s->cake_completed = false;
   s->cake_stall_side = color_side;
 
   for (uint8_t it=1; it < FIRST_LVL_CANDLE_NB-1; it++)
@@ -884,5 +889,8 @@ void acm_set_arm_mode(acm_t *s, acm_arm_mode_t mode)
   }
 }
 
-
+bool acm_cake_completed(acm_t*s)
+{
+  return s->cake_completed;
+}
 
