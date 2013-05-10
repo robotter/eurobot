@@ -359,7 +359,7 @@ class Match(object):
 
       print "push glasses"
       d, a = 2.09, pi/6
-      self.goto_xya(d*math.cos(a), d*math.sin(a))
+      self.goto_xya(d*math.cos(a), d*math.sin(a), avoid_angles=(-pi*5./6, pi/3))
 
     else:
       print "left the starting area"
@@ -406,7 +406,7 @@ class Match(object):
 
       print "push glasses"
       d, a = 2.09, pi/6
-      self.goto_xya(d*math.cos(a), d*math.sin(a))
+      self.goto_xya(d*math.cos(a), d*math.sin(a), avoid_angles=(-pi*5./6, pi/3))
 
 
 def main():
