@@ -41,7 +41,10 @@ class StratHub(HreidmarHub, RoomHubMixin):
     """Overload run_one() to handle funny action"""
     if self.end_time and self.end_actions:
       if time.time() >= self.end_time:
-        self.end_actions()
+        cb = self.end_actions
+        self.end_actions = None
+        cb()
+    HreidmarHub.run_one(self, timeout)
 
   def wait(self, dt):
     """Wait for a given period, in seconds"""
@@ -105,7 +108,7 @@ class Match(object):
     signal.signal(signal.SIGINT, signal_handler)
     self.robot_init()
     self.wait_start()
-    self.hub.end_time = time.time() + match_timer_duration
+    self.hub.end_time = time.time() + self.match_timer_duration
     self.run()
     print "end of run()"
     self.hub.killall()
@@ -198,6 +201,8 @@ class Match(object):
     if avoid_angles is None:
       return any(o is not None and o[1] < self.r3d2_avoid_distance for o in self.hub.r3d2_objects)
     else:
+      if any(o is not None and o[1] < self.r3d2_avoid_distance for o in self.hub.r3d2_objects):
+        print "r3d2_objects:", self.hub.r3d2_objects, avoid_angles
       a0, a1 = avoid_angles
       return any(o is not None and o[1] < self.r3d2_avoid_distance and a0 < o[0] < a1 for o in self.hub.r3d2_objects)
 
@@ -237,11 +242,11 @@ class Match(object):
       if self.opponent_detected(avoid_angles):
         print "opponent detected at %r" % (hub.r3d2_objects[0],)
         hub.send_room_wait(addrs.prop, room.asserv_goto_xy_rel(0, 0))
-        #hub.send_room(addrs.prop, room.asserv_activate(False))
+        hub.send_room(addrs.prop, room.asserv_activate(False))
         while self.opponent_detected(avoid_angles):
           hub.run_one()
         print "opponent moved away"
-        #hub.send_room_wait(addrs.prop, room.asserv_activate(True))
+        hub.send_room_wait(addrs.prop, room.asserv_activate(True))
         do_goto()
 
       hub.run_one()
@@ -330,7 +335,7 @@ class Match(object):
       self.set_arm_mode('caking')
       hub.wait(0.5)
       print "go along the cake"
-      self.thrusting(40e6, math.radians(70), -1e6, True)
+      self.thrusting(40e6, math.radians(70), -0.8e6, True)
 
       #print "back from the cake"
       #self.thrusting(40e6, -pi, 0)
@@ -359,7 +364,37 @@ class Match(object):
 
       print "push glasses"
       d, a = 2.09, pi/6
-      self.goto_xya(d*math.cos(a), d*math.sin(a), avoid_angles=(-pi*5./6, pi/3))
+      x, y = d*math.cos(a), d*math.sin(a)
+      self.goto_xya(x, y, avoid_angles=(0, pi/3))
+
+      print "go back for gifts"
+      d, a = -0.25, pi/6
+      x, y = x + d*math.cos(a), y + d*math.sin(a)
+      self.goto_xya(x, y)
+
+      print "go toward gift 1"
+      hub.send_room_wait(addrs.meca, room.ax12_move(3, 900, 0x2FF))
+      d, a = 1, pi/6-pi/2
+      x, y = x + d*math.cos(a), y + d*math.sin(a)
+      self.goto_xya(x, y, -pi/2)
+      hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
+
+      for igift in (2, 3, 4):
+        print "gift %d step 1" % igift
+        d, a = 0.15, pi/6+pi
+        x, y = x + d*math.cos(a), y + d*math.sin(a)
+        self.goto_xya(x, y)
+
+        print "gift %d step 2" % igift
+        d, a = 0.61, -pi/3
+        x, y = x + d*math.cos(a), y + d*math.sin(a)
+        self.goto_xya(x, y)
+
+        print "gift %d step 3" % igift
+        d, a = 0.16, pi/6
+        x, y = x + d*math.cos(a), y + d*math.sin(a)
+        self.goto_xya(x, y)
+        hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
 
     else:
       print "left the starting area"
@@ -385,7 +420,7 @@ class Match(object):
       self.set_arm_mode('caking')
       hub.wait(0.5)
       print "go along the cake"
-      self.thrusting(40e6, math.radians(0), 1e6, True)
+      self.thrusting(40e6, math.radians(0), 0.8e6, True)
 
       print "re-enable asserv"
       hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
@@ -406,7 +441,38 @@ class Match(object):
 
       print "push glasses"
       d, a = 2.09, pi/6
-      self.goto_xya(d*math.cos(a), d*math.sin(a), avoid_angles=(-pi*5./6, pi/3))
+      x, y = d*math.cos(a), d*math.sin(a)
+      self.goto_xya(x, y, avoid_angles=(0, pi/3))
+
+      print "go back for gifts"
+      d, a = -0.25, pi/6
+      x, y = x + d*math.cos(a), y + d*math.sin(a)
+      self.goto_xya(x, y)
+
+      print "go toward gift 1"
+      hub.send_room_wait(addrs.meca, room.ax12_move(2, 320, 0x2FF))
+      hub.send_room_wait(addrs.meca, room.ax12_move(4, 100, 0x2FF))
+      d, a = 1, pi/6+pi/2
+      x, y = x + d*math.cos(a), y + d*math.sin(a)
+      self.goto_xya(x, y, pi*2./3) #TODO same for red?
+      hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
+
+      for igift in (2, 3, 4):
+        print "gift %d step 1" % igift
+        d, a = 0.15, pi/6+pi
+        x, y = x + d*math.cos(a), y + d*math.sin(a)
+        self.goto_xya(x, y)
+
+        print "gift %d step 2" % igift
+        d, a = 0.61, pi/6+pi/2
+        x, y = x + d*math.cos(a), y + d*math.sin(a)
+        self.goto_xya(x, y)
+
+        print "gift %d step 3" % igift
+        d, a = 0.16, pi/6
+        x, y = x + d*math.cos(a), y + d*math.sin(a)
+        self.goto_xya(x, y)
+        hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
 
 
 def main():
