@@ -276,6 +276,9 @@ class Match(object):
         print "no response to pmi_go: %s" % e
 
     self.run_caking()
+
+    print "disable asserv"
+    hub.send_room_wait(addrs.prop, room.asserv_activate(False))
     print "wait for end of match"
     while True:
       self.hub.run_one()
@@ -394,17 +397,14 @@ class Match(object):
       d, a = 2.05, pi/6
       self.goto_xya(d*math.cos(a), d*math.sin(a))
 
-      print "go to first gift 1"
-      d, a = 1.80, pi/6
-      x, y = d*math.cos(a), d*math.sin(a)
-      self.goto_xya(x, y)
-      print "go to first gift 2"
-      d, a = 0.9, pi/6+pi/2
-      x, y = x + d*math.cos(a), y + d*math.sin(a)
-      self.goto_xya(x, y, pi/2)
-
-      print "disable asserv"
-      hub.send_room_wait(addrs.prop, room.asserv_activate(False))
+      #print "go to first gift 1"
+      #d, a = 1.80, pi/6
+      #x, y = d*math.cos(a), d*math.sin(a)
+      #self.goto_xya(x, y)
+      #print "go to first gift 2"
+      #d, a = 0.9, pi/6+pi/2
+      #x, y = x + d*math.cos(a), y + d*math.sin(a)
+      #self.goto_xya(x, y, pi/2)
 
 
 def main():
