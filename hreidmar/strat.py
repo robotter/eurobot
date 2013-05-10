@@ -34,6 +34,14 @@ class StratHub(HreidmarHub, RoomHubMixin):
     # (angle, dist) pair
     self.r3d2_objects = [None, None]
     self.cake_completed = None
+    self.end_time = None
+    self.end_actions = None
+
+  def run_one(self, timeout=None):
+    """Overload run_one() to handle funny action"""
+    if self.end_time and self.end_actions:
+      if time.time() >= self.end_time:
+        self.end_actions()
 
   def wait(self, dt):
     """Wait for a given period, in seconds"""
@@ -97,7 +105,7 @@ class Match(object):
     signal.signal(signal.SIGINT, signal_handler)
     self.robot_init()
     self.wait_start()
-    self.start_timer_thread()
+    self.hub.end_time = time.time() + match_timer_duration
     self.run()
     print "end of run()"
     self.hub.killall()
@@ -144,28 +152,20 @@ class Match(object):
     self.color = self.get_color()
     print "start match with color %s" % color2name[self.color]
 
-  def start_timer_thread(self):
-    def match_timer():
-      import os
-      time.sleep(self.match_timer_duration)
-      led_set(0, 0)
-      led_set(1, 0)
-      print "blow up balloon"
-      self.hub.send_room_wait(addrs.meca, room.meca_balloon_tap(1))
-      print "end of match"
-      self.hub.killall()
-      print "stop asserv"
-      self.hub.send_room(addrs.prop, room.asserv_activate(False))
-      hub.send_room(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
-      print "stop meca"
-      #self.hub.send_room(addrs.meca, room.meca_set_arm_mode(0))
-
-      os._exit(0)
-
-    self.timer_thread = threading.Thread(target=match_timer)
-    self.timer_thread.daemon = True
-    print "start match timer thread"
-    self.timer_thread.start()
+  def end_actions(self):
+    led_set(0, 0)
+    led_set(1, 0)
+    print "blow up balloon"
+    self.hub.send_room_wait(addrs.meca, room.meca_balloon_tap(1))
+    print "end of match"
+    self.hub.killall()
+    print "stop asserv"
+    self.hub.send_room(addrs.prop, room.asserv_activate(False))
+    hub.send_room(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
+    print "stop meca"
+    #self.hub.send_room(addrs.meca, room.meca_set_arm_mode(0))
+    import os
+    os._exit(0)
 
   @classmethod
   def get_color(self):
@@ -376,13 +376,6 @@ class Match(object):
       print "go along the cake"
       self.thrusting(40e6, math.radians(0), 1e6, True)
 
-      #print "back from the cake"
-      #self.thrusting(40e6, -pi, 0)
-      #hub.wait(0.5)
-      #print "close arms"
-      #hub.send_room_wait(addrs.prop, room.galipeur_force_thrust(0, 0, 0))
-      #self.set_arm_mode('close')
-
       print "re-enable asserv"
       hub.send_room_wait(addrs.prop, room.asserv_set_position(0, 0, 0))
       hub.send_room_wait(addrs.prop, room.asserv_activate(True))
@@ -404,15 +397,6 @@ class Match(object):
       d, a = 2.09, pi/6
       self.goto_xya(d*math.cos(a), d*math.sin(a))
 
-      #print "go to first gift 1"
-      #d, a = 1.80, pi/6
-      #x, y = d*math.cos(a), d*math.sin(a)
-      #self.goto_xya(x, y)
-      #print "go to first gift 2"
-      #d, a = 0.9, pi/6+pi/2
-      #x, y = x + d*math.cos(a), y + d*math.sin(a)
-      #self.goto_xya(x, y, pi/2)
-
 
 def main():
   import argparse
@@ -426,6 +410,7 @@ def main():
   hub.start()
   hub.room_ntries = 5000
   match = Match(hub)
+  hub.end_actions = match.end_actions
   try:
     match.start()
   except Exception:
