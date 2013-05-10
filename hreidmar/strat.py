@@ -275,10 +275,17 @@ class Match(object):
       except Exception as e:
         print "no response to pmi_go: %s" % e
 
-    self.run_caking()
+    try:
+      self.run_caking()
+    except Exception as e:
+      print "run exception"
+      traceback.print_exc()
 
     print "disable asserv"
-    hub.send_room_wait(addrs.prop, room.asserv_activate(False))
+    try:
+      hub.send_room_wait(addrs.prop, room.asserv_activate(False))
+    except Exception as e:
+      traceback.print_exc()
     print "wait for end of match"
     while True:
       self.hub.run_one()
