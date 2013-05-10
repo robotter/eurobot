@@ -193,12 +193,16 @@ class Match(object):
     self.hub.send_room_wait(addrs.meca, room.meca_set_arm_mode(mode))
 
 
-  def opponent_detected(self):
+  def opponent_detected(self, avoid_angles=None):
     """Return True if an opponent is detected"""
-    return any(o is not None and o[1] < self.r3d2_avoid_distance for o in self.hub.r3d2_objects)
+    if avoid_angles is None:
+      return any(o is not None and o[1] < self.r3d2_avoid_distance for o in self.hub.r3d2_objects)
+    else:
+      a0, a1 = avoid_angles
+      return any(o is not None and o[1] < self.r3d2_avoid_distance and a0 < o[0] < a1 for o in self.hub.r3d2_objects)
 
 
-  def goto_xya(self, x, y, a=None):
+  def goto_xya(self, x, y, a=None, avoid_angles=None):
     """Go to x,y,a position, avoid opponents"""
     hub = self.hub
     def do_goto():
@@ -210,6 +214,13 @@ class Match(object):
     status_l = []  # nonlocal is not available :(
     def cb_status(frame):
       status_l.append(frame.payload)
+
+    # scale avoid_angles to [0;2pi]
+    if avoid_angles is not None:
+      a0, a1 = avoid_angles
+      a0 = a0 % (2*pi)
+      a1 = a1 % (2*pi)
+      avoid_angles = min(a0, a1), max(a0, a1)
 
     do_goto()
     hub.send_room(addrs.prop, room.asserv_status(), cb_status)
@@ -223,11 +234,11 @@ class Match(object):
           hub.send_room(addrs.prop, room.asserv_status(), cb_status)
 
       # stop when r3d2 detects something close
-      if self.opponent_detected():
+      if self.opponent_detected(avoid_angles):
         print "opponent detected at %r" % (hub.r3d2_objects[0],)
         hub.send_room_wait(addrs.prop, room.asserv_goto_xy_rel(0, 0))
         #hub.send_room(addrs.prop, room.asserv_activate(False))
-        while self.opponent_detected():
+        while self.opponent_detected(avoid_angles):
           hub.run_one()
         print "opponent moved away"
         #hub.send_room_wait(addrs.prop, room.asserv_activate(True))
