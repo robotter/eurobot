@@ -36,9 +36,6 @@
 
 #include "settings.h"
 
-// error code
-#define MAIN_ERROR 0x30a
-
 // ROME interface
 rome_intf_t rome;
 // ROME messages handler
