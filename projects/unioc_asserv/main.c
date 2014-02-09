@@ -23,12 +23,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <uart/uart.h>
+#include <rome/rome.h>
 #include <math.h>
 #include <timer/timer.h>
-#include <perlimpinpin/perlimpinpin.h>
-#include <perlimpinpin/payload/system.h>
-#include <perlimpinpin/payload/room.h>
-#include <perlimpinpin/payload/log.h>
 
 #include "hrobot_manager.h"
 #include "cs.h"
@@ -40,9 +37,14 @@
 #include "settings.h"
 
 // error code
-#define MAIN_ERROR 0x30
+#define MAIN_ERROR 0x30a
 
+// ROME interface
+rome_intf_t rome;
+// ROME messages handler
+void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
 
+}
 
 // CSs cpu usage in percent (0-100)
 extern uint8_t cs_cpuUsage;
@@ -51,11 +53,6 @@ void vcs_update(void)
 {
   cs_update(NULL);
 }
-
-
-ppp_intf_t pppintf;
-ppp_payload_handler_t *ppp_filter(ppp_intf_t *intf);
-void room_message_handler(ppp_intf_t *intf, room_payload_t *pl);
 
 
 int main(void)
@@ -76,24 +73,18 @@ int main(void)
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
-  // PPP init
-  pppintf.filter = ppp_filter;
-  pppintf.uart = uartE0;
-  pppintf.addr = 0x11;
-  ppp_intf_init(&pppintf);
-  room_set_message_handler(room_message_handler);
-  // send a system RESET to signal that we have booted
-  ppp_send_system_reset(&pppintf);
+  // Initialize ROME
+  rome_intf_init(&rome);
+  rome.uart = uartE0;
+  rome.handler = rome_handler;
 
-  // Some advertisment :p
-  PPP_LOG(&pppintf, NOTICE, "Robotter 2013 - Galipeur - SUPER-UNIOC-NG PROPULSION");
-  PPP_LOG(&pppintf, NOTICE, "Compiled "__DATE__" at "__TIME__".");
+  // XXX PPP_LOG(&pppintf, NOTICE, "Robotter 2013 - Galipeur - SUPER-UNIOC-NG PROPULSION");
+  // XXX PPP_LOG(&pppintf, NOTICE, "Compiled "__DATE__" at "__TIME__".");
 
   //--------------------------------------------------------
   // CS
   //--------------------------------------------------------
 
-  PPP_LOG(&pppintf, NOTICE, "Initializing CS");
   cs_initialize();
 
   // remove break
@@ -102,7 +93,7 @@ int main(void)
   //----------------------------------------------------------------------
 
   for(;;) {
-    ppp_intf_update(&pppintf);
+    // XXX ppp_intf_update(&pppintf);
   }
 }
 

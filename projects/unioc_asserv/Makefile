@@ -4,7 +4,7 @@
 SRCS = $(filter-out avoidance%, $(wildcard *.c))
 ASRCS =
 TARGET = main
-MODULES = uart clock pwm encoder/quadra timer perlimpinpin
+MODULES = uart clock pwm encoder/quadra timer rome
 
 ## Target configuration
 MCU = atxmega128a1
@@ -21,8 +21,7 @@ PRINTF_LEVEL = advanced
 CFLAGS += -g -Wextra -Werror
 LDFLAGS += -g
 
-ROOM_TRANSACTIONS = ../../room_transactions.py
-export ROOM_TRANSACTIONS
+export ROME_MESSAGES=../../rome_messages.py
 
 include ../../avarix/mk/project.mk
 
