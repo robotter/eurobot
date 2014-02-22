@@ -25,12 +25,15 @@
 
 #include <avarix.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "cs.h"
 #include "robot_cs.h"
 #include "htrajectory.h"
 #include "motor_encoders.h"
 #include "hrobot_manager.h"
+#include "adxrs/adxrs.h"
 // XXX NDJD : bring me back me ADC module is done
 //#include "avoidance.h"
 
@@ -56,6 +59,11 @@ void cs_initialize(void)
 
   // Initilialize motor encoders
   motor_encoders_init();
+
+  // Initialize z gyro
+  adxrs_init(PORTPIN(K,0));
+  adxrs_startup();
+  adxrs_capture_start(6.7e-8);
 
   // Initialize position manager
   hposition_init( &position );

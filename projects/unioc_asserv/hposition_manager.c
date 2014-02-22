@@ -34,6 +34,7 @@
 #include "settings.h"
 #include "motor_encoders.h"
 #include "robot_cs.h"
+#include "adxrs/adxrs.h"
 
 #include "hposition_manager.h"
 #include "hposition_manager_config.h"
@@ -115,7 +116,7 @@ void hposition_update(void *dummy)
   hrobot_vector_t vec;
   double _ca,_sa;
   hrobot_position_t* hpos  = dummy;
-
+  
   int16_t *vectors  = NULL;
   int16_t *pvectors = NULL;
   double *matrix    = NULL;
@@ -168,7 +169,7 @@ void hposition_update(void *dummy)
   // Integrate speed in robot coordinates to position
   vec.x = hpos->position.x + dp[HROBOT_DX]*_ca - dp[HROBOT_DY]*_sa;
   vec.y = hpos->position.y + dp[HROBOT_DX]*_sa + dp[HROBOT_DY]*_ca;
-	vec.alpha += dp[HROBOT_DA];
+	vec.alpha = adxrs_get_angle();
 
   //------------------------------------
   // Latch computed values to accessors

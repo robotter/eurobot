@@ -36,6 +36,13 @@
 
 #include "settings.h"
 
+#include "adxrs/adxrs.h"
+
+// XXX
+extern int _debug,_debug2,_debug3;
+extern motor_encoders_t encoders;
+extern hrobot_system_t system;
+
 // ROME interface
 rome_intf_t rome;
 // ROME messages handler
@@ -46,8 +53,10 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
 // CSs cpu usage in percent (0-100)
 extern uint8_t cs_cpuUsage;
 
+int up_cnt = 0;
 void vcs_update(void)
 {
+  up_cnt++;
   cs_update(NULL);
 }
 
@@ -65,16 +74,17 @@ int main(void)
 
   // Initialize Timer
   timer_init();
+  //XXX
   timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, vcs_update);
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
   // Initialize ROME
-  rome_intf_init(&rome);
-  rome.uart = uartE0;
-  rome.handler = rome_handler;
-
+  //rome_intf_init(&rome);
+  //rome.uart = uartE0;
+  //rome.handler = rome_handler;
+  
   // XXX PPP_LOG(&pppintf, NOTICE, "Robotter 2013 - Galipeur - SUPER-UNIOC-NG PROPULSION");
   // XXX PPP_LOG(&pppintf, NOTICE, "Compiled "__DATE__" at "__TIME__".");
 
@@ -88,9 +98,10 @@ int main(void)
   hrobot_break(0);
 
   //----------------------------------------------------------------------
-
+  int32_t i = 0;
   for(;;) {
-    // XXX ppp_intf_update(&pppintf);
+    i++;
+    _delay_ms(20);
   }
 }
 

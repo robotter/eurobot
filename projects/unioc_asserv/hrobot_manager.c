@@ -72,17 +72,17 @@ void hrobot_init()
     pwm_motor_set_frequency(system.pwms+it, SETTING_PWM_FREQUENCY_KHZ*1000);
 
   //set break as output
-  PORTF.DIRSET = _BV(6)|_BV(7);
+  PORTH.DIRSET = _BV(4)|_BV(5);
   PORTA.DIRSET = _BV(6);
 
   // configure break pps
-  system.breaks[0] = PORTPIN(F,6);
-  system.breaks[1] = PORTPIN(F,7);
+  system.breaks[0] = PORTPIN(H,4);
+  system.breaks[1] = PORTPIN(H,5);
   system.breaks[2] = PORTPIN(A,6);
   // configure sign pps
-  system.signs[0] = PORTPIN(F,3);
-  system.signs[1] = PORTPIN(F,4);
-  system.signs[2] = PORTPIN(F,5);
+  system.signs[0] = PORTPIN(H,1);
+  system.signs[1] = PORTPIN(H,2);
+  system.signs[2] = PORTPIN(H,3);
   for(it=0; it<3; it++)
     portpin_dirset(system.signs+it);
 
