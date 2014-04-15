@@ -4,7 +4,7 @@
 SRCS = $(wildcard *.c)
 ASRCS =
 TARGET = main
-MODULES = uart pwm perlimpinpin timer
+MODULES = uart pwm timer rome
 
 
 ## Target configuration
