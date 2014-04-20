@@ -36,6 +36,8 @@
 #include "robot_cs.h"
 #include "adxrs/adxrs.h"
 
+#include <stdio.h>
+
 #include "hposition_manager.h"
 #include "hposition_manager_config.h"
 
@@ -124,6 +126,7 @@ void hposition_update(void *dummy)
   // access motor encoders values
   motor_encoders_update();
   vectors = motor_encoders_get_value();
+
   // first time update => update vector, quit
   if( hpos->firstUpdate )
   {
@@ -132,7 +135,6 @@ void hposition_update(void *dummy)
     hpos->firstUpdate = 0;
     return;
   }
-
   // set vectors & matrix
   pvectors = hpos->pvectors;
   matrix = hrobot_motors_invmatrix;
@@ -142,6 +144,7 @@ void hposition_update(void *dummy)
   for(k=0;k<3;k++)
     dp[k] = 0.0;
 
+  bool is_moving = false;
   // for each encoder coordinate
   for(i=0;i<3;i++)
   {
@@ -149,7 +152,10 @@ void hposition_update(void *dummy)
     v = vectors[i] - pvectors[i];
     // update previous ADNS vectors
     pvectors[i] = vectors[i];
-    
+ 
+    if(v > 0)
+      is_moving = true;
+
     // for each robot coordinate (x,y,a) compute a dx of mouvement
     for(k=0;k<3;k++)
       dp[k] += matrix[i+k*3]*v;
@@ -165,6 +171,9 @@ void hposition_update(void *dummy)
   _ca = cos(vec.alpha);
   _sa = sin(vec.alpha);
  
+  // put gyro in calibration mode
+  adxrs_calibration_mode(false);//!is_moving);
+
   //--------------------------------------------------
   // Integrate speed in robot coordinates to position
   vec.x = hpos->position.x + dp[HROBOT_DX]*_ca - dp[HROBOT_DY]*_sa;

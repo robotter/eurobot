@@ -42,6 +42,10 @@
 extern int _debug,_debug2,_debug3;
 extern motor_encoders_t encoders;
 extern hrobot_system_t system;
+int dummy;
+
+portpin_t leds[4];
+
 
 // ROME interface
 rome_intf_t rome;
@@ -60,11 +64,22 @@ void vcs_update(void)
   cs_update(NULL);
 }
 
+#define ZGYRO_SCALE -1.1214e-6
+
+void _adxrs_update(void) {
+  portpin_outset(leds+0);
+  adxrs_capture_manual(ZGYRO_SCALE);
+  portpin_outset(leds+1);
+}
 
 int main(void)
 {
   // Booting
-
+  for(int k=0;k<4;k++) {
+    leds[k] = PORTPIN(Q,k);
+    portpin_dirset(leds+k);
+    portpin_outclr(leds+k);
+  }
   // Initialize clocks
   clock_init();
 
@@ -75,7 +90,7 @@ int main(void)
   // Initialize Timer
   timer_init();
   //XXX
-  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, vcs_update);
+  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0, CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, vcs_update);
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
@@ -91,8 +106,9 @@ int main(void)
   //--------------------------------------------------------
   // CS
   //--------------------------------------------------------
-
   cs_initialize();
+
+  timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0, ADXRS_PERIOD_US), ADXRS_INTLVL, _adxrs_update);
 
   // remove break
   hrobot_break(0);
@@ -100,8 +116,22 @@ int main(void)
   //----------------------------------------------------------------------
   int32_t i = 0;
   for(;;) {
-    i++;
-    _delay_ms(20);
+    (void)i;
+    htrajectory_gotoXY_R(&trajectory,500,0);
+    htrajectory_gotoA(&trajectory,0);
+    while(!htrajectory_doneXY(&trajectory));
+
+    htrajectory_gotoXY_R(&trajectory,0,500);
+    htrajectory_gotoA(&trajectory,0.5*M_PI);
+    while(!htrajectory_doneXY(&trajectory));
+
+    htrajectory_gotoXY_R(&trajectory,-500,0);
+    htrajectory_gotoA(&trajectory,0);
+    while(!htrajectory_doneXY(&trajectory));
+
+    htrajectory_gotoXY_R(&trajectory,0,-500);
+    htrajectory_gotoA(&trajectory,0.5*M_PI);
+    while(!htrajectory_doneXY(&trajectory));
   }
 }
 

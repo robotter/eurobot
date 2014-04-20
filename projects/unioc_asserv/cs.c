@@ -63,7 +63,7 @@ void cs_initialize(void)
   // Initialize z gyro
   adxrs_init(PORTPIN(K,0));
   adxrs_startup();
-  adxrs_capture_start(6.7e-8);
+  adxrs_capture_manual(0);
 
   // Initialize position manager
   hposition_init( &position );

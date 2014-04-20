@@ -111,6 +111,9 @@
 #define CONTROL_SYSTEM_PERIOD_US  15000
 /// Interrupt level for control system update
 #define CONTROL_SYSTEM_INTLVL  INTLVL_LO
+// ADXRS updated period, in microseconds
+#define ADXRS_PERIOD_US  10000
+#define ADXRS_INTLVL INTLVL_MED
 
 // -- position manager --
 
