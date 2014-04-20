@@ -25,6 +25,7 @@ static struct pid_filter pid_arm;
 static struct ramp_filter rampf;
 static pwm_motor_t pwm_arm;
 static portpin_t sign_arm;
+static portpin_t break_arm;
 static quadra_t quadra_arm;
 
 typedef enum {
@@ -75,7 +76,7 @@ static void set_arm_motor_consign(void *dummy, int32_t consign) {
 }
 
 static int32_t get_arm_position(void *dummy) {
-  return - quadra_get_value(&quadra_arm) - arm.upper_arm_offset;
+  return quadra_get_value(&quadra_arm) - arm.upper_arm_offset;
 }
 
 static void _arm_lower_set_position(lower_arm_t arm, int16_t position) {
@@ -94,16 +95,20 @@ static void _arm_upper_set_position(int16_t position) {
 void arm_init() {
 
   // arm 
-  sign_arm = PORTPIN(E,1);
+  sign_arm = PORTPIN(E,2);
   portpin_dirset(&sign_arm);
+  // break
+  break_arm = PORTPIN(E,3);
+  portpin_dirset(&break_arm);
+  portpin_outclr(&break_arm);
 
-  pwm_motor_init(&pwm_arm, &TCE0, 'A', _set_arm_motor_sign);
+  pwm_motor_init(&pwm_arm, &TCD0, 'D', _set_arm_motor_sign);
   pwm_motor_set_frequency(&pwm_arm, 20000);
 
-  quadra_init(&quadra_arm,  &TCC1, 0, PORTPIN(C,0), PORTPIN(C,1), 8);
+  quadra_init(&quadra_arm,  &TCC1, 0, PORTPIN(E,0), PORTPIN(E,1), 8);
 
   pid_init(&pid_arm);
-  pid_set_gains(&pid_arm, 500, 40, 1000);
+  pid_set_gains(&pid_arm, 500, 20, 100);
   pid_set_maximums(&pid_arm, 0, 70000, 0);
   pid_set_out_shift(&pid_arm, 8);
 
@@ -169,6 +174,13 @@ void arm_update() {
   static int _ds = 0; _ds++;
   if((_ds%2000) == 0) {
     arm.count++;
+
+    static int _old_state = 0;
+    if(_old_state != arm.state) {
+      printf("AS %d -> %d\n",_old_state,arm.state);
+      _old_state = arm.state;
+    }
+
     switch(arm.state) {
       case ARM_STATE_INIT:
         break;
@@ -201,14 +213,15 @@ void arm_update() {
           
           // reset position
           arm.upper_arm_offset = arm_position + UPPER_ARM_POSITION_OFFSET;
-          // reset CS and PID
-          pid_reset(&pid_arm);
-          cs_manage(&cs_arm);
+
           // set arm position to neutral
           _arm_lower_set_position(LA_ELBOW, 0);
           _arm_lower_set_position(LA_WRIST, 0);
-          _arm_upper_set_position(0);
+          _arm_upper_set_position(-10000);
           arm.motor_is_active = true;
+          // reset CS and PID
+          pid_reset(&pid_arm);
+          cs_manage(&cs_arm);
           // switch state to running
           arm.state = ARM_STATE_RUNNING;
         }

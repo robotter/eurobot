@@ -8,12 +8,9 @@
 #include <ax12/ax12.h>
 #include <timer/timer.h>
 #include <math.h>
-#include <perlimpinpin/perlimpinpin.h>
-#include <perlimpinpin/payload/system.h>
-#include <perlimpinpin/payload/room.h>
-#include <perlimpinpin/payload/log.h>
 #include "config.h"
 #include "arm.h"
+#include "barometer.h"
 
 /// current time in microseconds
 static volatile uint32_t uptime;
@@ -92,67 +89,6 @@ void update(void)
   uptime += UPDATE_TICK_US;
 }
 
-// Perlimpinpin
-ppp_intf_t pppintf;
-
-ppp_payload_handler_t *ppp_filter(ppp_intf_t *intf)
-{
-  if(intf->rstate.header.dst != 0xFF && intf->rstate.header.dst != intf->addr) {
-    return NULL;
-  }
-  switch(intf->rstate.header.pltype) {
-    case PPP_TYPE_SYSTEM:
-      return ppp_payload_handler_system;
-    case PPP_TYPE_ROOM:
-      return ppp_payload_handler_room;
-    default:
-      return NULL;
-  }
-}
-
-void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
-{
-  portpin_outtgl(&LED_COM_PP);
-  switch(pl->mid) {
-    // AX-12
-    case ROOM_MID_AX12_READ_BYTE: {
-      uint8_t data = 0xFF;
-      uint8_t error = ax12_read_byte(&ax12, pl->ax12_read_byte.id, pl->ax12_read_byte.addr, &data);
-      ROOM_REPLY_AX12_READ_BYTE(intf, pl, data, error);
-    } break;
-    case ROOM_MID_AX12_READ_WORD: {
-      uint16_t data = 0xFFFF;
-      uint8_t error = ax12_read_word(&ax12, pl->ax12_read_word.id, pl->ax12_read_word.addr, &data);
-      ROOM_REPLY_AX12_READ_BYTE(intf, pl, data, error);
-    } break;
-    case ROOM_MID_AX12_WRITE_BYTE: {
-      uint8_t error = ax12_write_byte(&ax12, pl->ax12_write_byte.id, pl->ax12_write_byte.addr, pl->ax12_write_byte.data);
-      ROOM_REPLY_AX12_WRITE_BYTE(intf, pl, error);
-    } break;
-    case ROOM_MID_AX12_WRITE_WORD: {
-      uint8_t error = ax12_write_word(&ax12, pl->ax12_write_word.id, pl->ax12_write_word.addr, pl->ax12_write_word.data);
-      ROOM_REPLY_AX12_WRITE_WORD(intf, pl, error);
-    } break;
-    case ROOM_MID_AX12_MOVE: {
-      // GOAL_POSITION and MOVING_SPEED are low-endian and contiguous
-      // it allows to directly use the ROOM payload buffer
-      ax12_write_mem(&ax12, pl->ax12_move.id, AX12_ADDR_GOAL_POSITION_L, 4, (uint8_t*)&pl->ax12_move.pos);
-      ROOM_REPLY_AX12_MOVE(intf, pl);
-    } break;
-    case ROOM_MID_AX12_STATE: {
-      uint16_t pos = 0xFFFF;
-      ax12_read_word(&ax12, pl->ax12_state.id, AX12_ADDR_PRESENT_POSITION_L, &pos);
-      uint8_t moving = 0;
-      ax12_read_byte(&ax12, pl->ax12_state.id, AX12_ADDR_MOVING, &moving);
-      ROOM_REPLY_AX12_STATE(intf, pl, pos, moving);
-    } break;
-
-    default:
-      PPP_LOGF(intf, INFO, "unexpected ROOM message: %u", pl->mid);
-      break;
-  }
-}
-
 int main(void)
 {
   clock_init();
@@ -161,6 +97,13 @@ int main(void)
   uart_fopen(UART_PPP);
   CPU_SREG |= CPU_I_bm;
   INTLVL_ENABLE_ALL();
+
+  // intialize barometers
+  barometer_t baro0, baro1;
+  // ADCA4
+  barometer_init(&baro0, &ADCA, ADC_CH_MUXPOS_PIN4_gc);
+  // ADCA5
+  barometer_init(&baro1, &ADCA, ADC_CH_MUXPOS_PIN5_gc);
 
   arm_init();
 
@@ -171,22 +114,10 @@ int main(void)
   portpin_outclr(&LED_ERROR_PP);
   portpin_outclr(&LED_COM_PP);
 
-  // init PPP
-  /*
-  pppintf.filter = ppp_filter;
-  pppintf.uart = UART_PPP;
-  pppintf.addr = PPP_ADDR;
-
-  ppp_intf_init(&pppintf);
-  room_set_message_handler(room_message_handler);
-  // send a system RESET to signal that we have booted
-  ppp_send_system_reset(&pppintf);
-  */
-
   // timer
   timer_set_callback(timerF0, 'A', TIMER_US_TO_TICKS(F0,UPDATE_TICK_US), UPTIME_INTLVL, update);
 
-  printf("**REBOOT**");
+  printf("**REBOOT**\n");
  
   // startup arm calibration
   arm_start_calibration();
@@ -195,8 +126,11 @@ int main(void)
   double t = 0.0;
   int idx = 0;
   for(;;) {
-    arm_update();
 
+    arm_update();
+    
+    (void)t;(void)idx;
+    #if 0
     static int _ds = 0; _ds++;
     if((_ds%1000) == 0) {
       t+= 0.1;
@@ -206,22 +140,22 @@ int main(void)
         uint8_t addr = idx/15;
 
         if(addr > 5)
-          addr = 5;
-        printf("addr = %d\n",addr);
+          idx = 0;
         const int32_t consign[][3] = {
             {0, 0, 0},
             {-1780, 267, 60},
             {-5290, 197, 36},
             {-1780, 267, 60},
             {-5602, -310, -220},
-            {-12146, -510, 127},
+            {-12000, -500, 127},
             };
         
+        printf("%ld %ld %ld\n",consign[addr][0], consign[addr][1], consign[addr][2]);
         arm_set_position(A_UPPER, consign[addr][0]);
         arm_set_position(A_ELBOW, consign[addr][1]);
         arm_set_position(A_WRIST, consign[addr][2]);
 
-        /*
+        #if 0
         arm_activate_debug();
         arm_debug_t debug;
         arm_get_debug(&debug);
@@ -229,8 +163,7 @@ int main(void)
           debug.upper,
           debug.elbow,
           debug.wrist);
-        */
-
+        #endif
 
         // 0 0 0 
         // -1780 267 60
@@ -243,8 +176,7 @@ int main(void)
 
       portpin_outtgl(&LED_COM_PP);
     }
-
-    //ppp_intf_update(&pppintf);
+    #endif
     portpin_outtgl(&LED_RUN_PP);
   }
 }

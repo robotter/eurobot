@@ -4,7 +4,7 @@
 SRCS = $(wildcard *.c)
 ASRCS =
 TARGET = main
-MODULES = uart pwm perlimpinpin ax12 timer encoder/quadra
+MODULES = uart pwm ax12 timer encoder/quadra rome
 
 
 ## Target configuration
@@ -23,8 +23,7 @@ PRINTF_LEVEL = standard
 CFLAGS += -g -Wextra -Werror
 LDFLAGS += -g
 
-ROOM_TRANSACTIONS = ../../room_transactions.py
-export ROOM_TRANSACTIONS
+export ROME_MESSAGES=../../rome_messages.py
 
 include ../../avarix/mk/project.mk
 
