@@ -6,7 +6,7 @@
 #include <timer/timer.h>
 #include "led_config.h"
 #include "com_config.h"
-#include "led.h"
+#include "rgb_led.h"
 
 
 
@@ -20,7 +20,7 @@ int main(void)
   INTLVL_ENABLE_ALL();
 
   // initialise leds and RGB led
-  led_init();
+  rgb_led_Init();
 
  // timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,20000), INTLVL_LO, update_data_cb);
  // timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0,200000), INTLVL_LO, send_ppp_events_cb);
