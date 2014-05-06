@@ -1,0 +1,10 @@
+#ifndef OBJECT_DEF_H
+#define OBJECT_DEF_H
+
+
+typedef enum{
+  APDS9800_NO_OBJECT = 0u,
+  APDS9800_OBJECT_DETECTED
+} OBJECT_t;
+
+#endif //OBJECT_DEF_H

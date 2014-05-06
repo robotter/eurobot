@@ -17,28 +17,28 @@ void Apds9800_send_one_pulse(apds9800_t *s);
 /*------------------------- global function ---------------------------*/
 
 
-void APDS9800_SetProximityEnablePort(apds9800_t *s, portpin_t port)
+void APDS9800_SetProximityEnablePort(apds9800_t *s, portpin_t *port)
 {
   if (s != NULL)
   {
-    s->EnablePort = port;
+    s->EnablePort = *port;
   }
 }
 
-void APDS9800_SetIrLedPort(apds9800_t *s, portpin_t port)
+void APDS9800_SetIrLedPort(apds9800_t *s, portpin_t *port)
 {
   if (s != NULL)
   {
-    s->IrLedPwmPort = port;
+    s->IrLedPwmPort = *port;
   }
 }
 
 
-void APDS9800_SetProximityOutputPort(apds9800_t *s, portpin_t port)
+void APDS9800_SetProximityOutputPort(apds9800_t *s, portpin_t *port)
 {
   if (s != NULL)
   {
-    s->PSDoutPort = port;
+    s->PSDoutPort = *port;
   }
 }
 
@@ -58,7 +58,7 @@ void APDS9800_SetProximityLedPulseThresholdNb(apds9800_t *s, uint16_t threshold)
   } 
 }
 
-void APDS9800_IsObjectPresent(apds9800_t *s, apds9800_object_t *ObjectFound)
+void APDS9800_IsObjectPresent(apds9800_t *s, OBJECT_t *ObjectFound)
 {
   if (ObjectFound != NULL)
   {

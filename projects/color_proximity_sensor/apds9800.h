@@ -2,11 +2,7 @@
 #define APDS9800_H
 
 #include <avarix/portpin.h>
-
-typedef enum{
-  APDS9800_NO_OBJECT = 0u,
-  APDS9800_OBJECT_DETECTED
-} apds9800_object_t;
+#include "object_def.h"
 
 typedef struct{
   portpin_t EnablePort;
@@ -22,7 +18,7 @@ typedef struct{
  * @param s structure of the apds9800
  * @param port the port of the µC connected to PS_ENB of the APDS9800
  */
-void APDS9800_SetProximityEnablePort(apds9800_t *s, portpin_t port);
+void APDS9800_SetProximityEnablePort(apds9800_t *s, portpin_t *port);
 
 /*
  * @brief set the port of connected to the LEDON of the apds9800
@@ -30,7 +26,7 @@ void APDS9800_SetProximityEnablePort(apds9800_t *s, portpin_t port);
  * @param s structure of the apds9800
  * @param port the port of the µC connected to LEDON of the APDS9800
  */
-void APDS9800_SetIrLedPort(apds9800_t *s, portpin_t port);
+void APDS9800_SetIrLedPort(apds9800_t *s, portpin_t *port);
 
 /*
  * @brief set the port of connected to the PS_DOUT of the apds9800
@@ -38,7 +34,7 @@ void APDS9800_SetIrLedPort(apds9800_t *s, portpin_t port);
  * @param s structure of the apds9800
  * @param port the port of the µC connected to PS_DOUT of the APDS9800
  */
-void APDS9800_SetProximityOutputPort(apds9800_t *s, portpin_t port);
+void APDS9800_SetProximityOutputPort(apds9800_t *s, portpin_t *port);
 
 /* @brief initialise the ports of the apds9800
  * @warning must be called after apds9800_setProximityEnablePort, apds9800_setIrLedPort and apds9800_setProximityOutputPort functions
@@ -57,7 +53,7 @@ void APDS9800_SetProximityLedPulseThresholdNb(apds9800_t *s, uint16_t threshold)
  * @param s structure of the apds9800
  * @param ObjectFound pointer, value returne indicates if object is present or not (
  */
-void APDS9800_IsObjectPresent(apds9800_t *s, apds9800_object_t *ObjectFound);
+void APDS9800_IsObjectPresent(apds9800_t *s, OBJECT_t *ObjectFound);
 
 /* @brief return ambient light level  
  * @param s structure of the apds9800
