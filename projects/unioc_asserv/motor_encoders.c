@@ -25,6 +25,8 @@
 #include <encoder/quadra/quadra.h>
 #include "motor_encoders.h"
 
+#include "motors_scales.h"
+
 // encoders singleton
 motor_encoders_t encoders;
 
@@ -47,9 +49,17 @@ void motor_encoders_init() {
 
 int16_t* motor_encoders_get_value()
 {
+#if defined(BUILD_GALIPEUR)
+  const int16_t sign = 1;
+#elif defined(BUILD_GALIPETTE)
+  const int16_t sign = -1;
+#else
+# error "Please define either BUILD_GALIPEUR or BUILD_GALIPETTE"
+#endif
+
   uint8_t it;
   for(it=0;it<3;it++)
-    encoders.vectors[it] = (int16_t)quadra_get_value(encoders.quadras+it);
+    encoders.vectors[it] = sign*(int16_t)(quadra_get_value(encoders.quadras+it)/motors_scales[it]);
 /*  for(it=3;it<6;it++)
     encoders.vectors[it] = 0;*/
   return encoders.vectors;

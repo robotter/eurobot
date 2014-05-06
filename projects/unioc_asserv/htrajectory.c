@@ -39,7 +39,7 @@
 /* -- private functions -- */
 
 /** \brief Compute normalized error vector to current point */
-inline vect_xy_t computeNormalizedError( vect_xy_t point, vect_xy_t carrot )
+static inline vect_xy_t computeNormalizedError( vect_xy_t point, vect_xy_t carrot )
 { 
   vect_xy_t error;
   double errorLength;

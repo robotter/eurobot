@@ -64,12 +64,18 @@ void vcs_update(void)
   cs_update(NULL);
 }
 
-#define ZGYRO_SCALE -1.1214e-6
+
+#define BASE_ZGYRO_SCALE 1.1214e-6
+#if defined(BUILD_GALIPEUR)
+#define ZGYRO_SCALE -1.0*BASE_ZGYRO_SCALE
+#elif defined(BUILD_GALIPETTE)
+#define ZGYRO_SCALE 1.0*BASE_ZGYRO_SCALE
+#else
+# error "Please define either BUILD_GALIPEUR or BUILD_GALIPETTE"
+#endif
 
 void _adxrs_update(void) {
-  portpin_outset(leds+0);
   adxrs_capture_manual(ZGYRO_SCALE);
-  portpin_outset(leds+1);
 }
 
 int main(void)
@@ -89,16 +95,15 @@ int main(void)
 
   // Initialize Timer
   timer_init();
-  //XXX
   timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0, CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, vcs_update);
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
   // Initialize ROME
-  //rome_intf_init(&rome);
-  //rome.uart = uartE0;
-  //rome.handler = rome_handler;
+  rome_intf_init(&rome);
+  rome.uart = uartD0;
+  rome.handler = rome_handler;
   
   // XXX PPP_LOG(&pppintf, NOTICE, "Robotter 2013 - Galipeur - SUPER-UNIOC-NG PROPULSION");
   // XXX PPP_LOG(&pppintf, NOTICE, "Compiled "__DATE__" at "__TIME__".");
@@ -108,13 +113,27 @@ int main(void)
   //--------------------------------------------------------
   cs_initialize();
 
+  // setup ADXRS update task
   timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0, ADXRS_PERIOD_US), ADXRS_INTLVL, _adxrs_update);
 
   // remove break
   hrobot_break(0);
 
+  _delay_ms(500);
+  printf("-- reboot --\n");
   //----------------------------------------------------------------------
   int32_t i = 0;
+  for(;;) {
+    vect_xy_t p;
+    hposition_get_xy(&position, &p);
+    double alpha;
+    hposition_get_a(&position, &alpha);
+    //ROME_SEND_ASSERV_TM_XYA(&rome, p.x, p.y, alpha);
+    
+    printf("%f %f %f\n", p.x, p.y, alpha);
+    _delay_ms(100);
+  }
+
   for(;;) {
     (void)i;
     htrajectory_gotoXY_R(&trajectory,500,0);
