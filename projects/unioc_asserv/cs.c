@@ -92,8 +92,6 @@ void cs_initialize(void)
                             SETTING_POSITION_INIT_Y,
                             SETTING_POSITION_INIT_A);
 
-  adxrs_calibration_mode(true);
-
   // Initialize avoidance system
   // XXX NDJD : bring me back me ADC module is done
   //avoidance_init(&avoidance);

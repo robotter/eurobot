@@ -67,9 +67,8 @@ void vcs_update(void)
 }
 
 
-#define BASE_ZGYRO_SCALE 1.1214e-6
 #if defined(BUILD_GALIPEUR)
-#define ZGYRO_SCALE -1.0*BASE_ZGYRO_SCALE
+#define ZGYRO_SCALE 2*1.1214e-6
 #elif defined(BUILD_GALIPETTE)
 #define ZGYRO_SCALE 2.1964e-6//1.335e-6//1.0*BASE_ZGYRO_SCALE
 #else
@@ -120,31 +119,28 @@ int main(void)
   timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0, ADXRS_PERIOD_US), ADXRS_INTLVL, _adxrs_update);
 
   // remove break
-  //hrobot_break(0);
+  hrobot_break(0);
 
-  _delay_ms(500);
-  _delay_ms(500);
-  _delay_ms(500);
-  _delay_ms(500);
-  adxrs_calibration_mode(true);
+  //adxrs_calibration_mode(true);
+  //_delay_ms(2000);
+  //adxrs_calibration_mode(false);
   printf("-- reboot --\n");
   //----------------------------------------------------------------------
   int32_t i = 0;
   init1 = 0x42;
   
+  /*
   for(;;) {
-    hrobot_break(1);
     vect_xy_t p;
     hposition_get_xy(&position, &p);
     double alpha;
     hposition_get_a(&position, &alpha);
     //ROME_SEND_ASSERV_TM_XYA(&rome, p.x, p.y, alpha);
     
-    printf("i0 %u i1 %u x %f y %f a %f\r\n",init0, init1, p.x, p.y, alpha*180.0/M_PI);
+    printf("(%d) x %f y %f a %f\r\n", adxrs_calibration_offset(), p.x, p.y, alpha*180.0/M_PI);
     _delay_ms(100);
-    fn = 0;
-    *fn();
-  }
+  }*/
+  
 
   for(;;) {
     (void)i;
@@ -152,7 +148,7 @@ int main(void)
     htrajectory_gotoA(&trajectory,0);
     while(!htrajectory_doneXY(&trajectory));
 
-    htrajectory_gotoXY_R(&trajectory,0,500);
+    htrajectory_gotoXY_R(&trajectory,0,1000);
     htrajectory_gotoA(&trajectory,0.5*M_PI);
     while(!htrajectory_doneXY(&trajectory));
 
@@ -160,7 +156,7 @@ int main(void)
     htrajectory_gotoA(&trajectory,0);
     while(!htrajectory_doneXY(&trajectory));
 
-    htrajectory_gotoXY_R(&trajectory,0,-500);
+    htrajectory_gotoXY_R(&trajectory,0,-1000);
     htrajectory_gotoA(&trajectory,0.5*M_PI);
     while(!htrajectory_doneXY(&trajectory));
   }

@@ -85,12 +85,12 @@
 
 // -- quadramp angle --
 
-#define SETTING_QRAMP_A_SPEED (500)
-#define SETTING_QRAMP_A_ACC   (100)
+#define SETTING_QRAMP_A_SPEED (10)
+#define SETTING_QRAMP_A_ACC   (10)
 
 // -- trajectory manager --
 
-#define SETTING_TRAJECTORY_A_SPEED (600.0)
+#define SETTING_TRAJECTORY_A_SPEED (200.0)
 #define SETTING_TRAJECTORY_A_ACC   (100.0)
 
 #define SETTING_TRAJECTORY_XYCRUISE_SPEED (20.0)

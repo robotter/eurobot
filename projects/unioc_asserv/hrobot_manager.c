@@ -36,7 +36,7 @@
 #include "hrobot_manager.h"
 #include "hrobot_manager_config.h"
 
-#include "motors_scales.h"
+#include "scales.h"
 
 // hrobot system singleton
 hrobot_system_t system;

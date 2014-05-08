@@ -25,7 +25,7 @@
 #include <encoder/quadra/quadra.h>
 #include "motor_encoders.h"
 
-#include "motors_scales.h"
+#include "scales.h"
 
 // encoders singleton
 motor_encoders_t encoders;
@@ -59,7 +59,7 @@ int16_t* motor_encoders_get_value()
 
   uint8_t it;
   for(it=0;it<3;it++)
-    encoders.vectors[it] = sign*(int16_t)(quadra_get_value(encoders.quadras+it)/motors_scales[it]);
+    encoders.vectors[it] = sign*(int16_t)(quadra_get_value(encoders.quadras+it)*encoders_scales[it]);
 /*  for(it=3;it<6;it++)
     encoders.vectors[it] = 0;*/
   return encoders.vectors;
