@@ -18,7 +18,7 @@
 //@{
 
 /// Enable I2Cx in master mode
-#define I2CEMASTER
+#define I2CE_MASTER
 /// Enable I2Cx in slave mode
 //#define I2Cx_SLAVE
 

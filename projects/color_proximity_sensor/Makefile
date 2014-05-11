@@ -1,7 +1,7 @@
 
 ## Project configuration
 
-SRCS = $(wildcard *.c) rgb_led.c tcs3772x.c apds9800.c battery_monitor.c adc.c
+SRCS = $(wildcard *.c) rgb_led.c tcs3772x.c apds9800.c battery_monitor.c adc.c proximity_color_sensor_fsm.c
 ASRCS =
 TARGET = main
 MODULES = uart pwm timer i2c clock
@@ -9,7 +9,7 @@ MODULES = uart pwm timer i2c clock
 
 ## Target configuration
 
-MCU = atxmega32d4
+MCU = atxmega64d4
 
 
 ## Build configuration
