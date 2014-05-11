@@ -41,6 +41,8 @@
 #include "hposition_manager.h"
 #include "hposition_manager_config.h"
 
+#include "telemetry.h"
+
 // robot CSs
 extern robot_cs_t robot_cs;
 extern struct quadramp_filter qramp_angle;
@@ -66,6 +68,7 @@ void hposition_set( hrobot_position_t* hpos, double x, double y, double alpha)
     hpos->position.x = x;
     hpos->position.y = y;
     hpos->position.alpha = alpha;
+    adxrs_set_angle(alpha);
 
     // set actual position to RCSs
     robot_cs_set_xy_consigns( &robot_cs, RCS_MM_TO_CSUNIT*x,
@@ -172,6 +175,8 @@ void hposition_update(void *dummy)
   _sa = sin(vec.alpha);
  
   // put gyro in calibration mode
+  // XXX NDJD : is_moving will be used... later XXX
+  (void)is_moving;
   adxrs_calibration_mode(false);//!is_moving);
 
   //--------------------------------------------------
@@ -187,6 +192,10 @@ void hposition_update(void *dummy)
     hpos->position.y = vec.y;
     hpos->position.alpha = vec.alpha;
   }
+
+  // update telemetry
+  TM_DL_XYA(hpos->position.x, hpos->position.y, 1000*hpos->position.alpha);
+
   return;
 }
 

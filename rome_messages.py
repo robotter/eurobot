@@ -16,6 +16,9 @@ register_messages(
     ('asserv_turn',        [('a','angle')]),
     # turn robot heading by a 
     ('asserv_turn_rel',    [('a','angle')]),
+    
+    # autoset robot
+    ('asserv_autoset', [('side','uint8'),('x','float'),('y','float')]),
 
     # __ SETTERS __
     # set robot current position (will force and reset position system to this position)
@@ -45,9 +48,17 @@ register_messages(
     ('asserv_tm_y_pid', [('input','int32'),('error','int32'),('out','int32')]),
     ('asserv_tm_a_pid', [('input','int32'),('error','int32'),('out','int32')]),
     # htrajectory internal state
+    ('asserv_tm_htraj_done', [('xy','uint8'),('a','uint8')]),
+    ('asserv_tm_htraj_autoset_done', [('b','uint8')]),
     ('asserv_tm_htraj_state',      [('state','uint8')]),
-    ('asserv_tm_htraj_carrot_xya', [('x','dist'),('y','dist'),('a','angle')]),
+    ('asserv_tm_htraj_carrot_xy', [('x','dist'),('y','dist')]),
     ('asserv_tm_htraj_speed',      [('speed','float')]),
     ('asserv_tm_htraj_path_index', [('i','uint8'),('size','uint8')]),
+    # motors consigns
+    ('asserv_tm_motors', [('m1','int32'),('m2','int32'),('m3','int32')]),
+
+    # __ DEBUG __
+    # all purposes debug message
+    ('asserv_debug', [('v','uint16')]),
     ]),
 )

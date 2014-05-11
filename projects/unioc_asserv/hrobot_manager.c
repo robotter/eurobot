@@ -38,6 +38,8 @@
 
 #include "scales.h"
 
+#include "telemetry.h"
+
 // hrobot system singleton
 hrobot_system_t system;
 
@@ -129,6 +131,7 @@ void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega)
   uint8_t k,i;
   float dp[3];
   float v[3];
+  int16_t motors[3];
 
   v[0] = vx/(float)RCS_MM_TO_CSUNIT;
   v[1] = vy/(float)RCS_MM_TO_CSUNIT;
@@ -145,11 +148,16 @@ void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega)
   // for each motor
   for(i=0;i<3;i++)
   {
-    float v = dp[i] * motors_scales[i];
+    float v = dp[i];
     if(v > 32767) v = 32767;
     if(v < -32768) v = -32768;
+    v *= motors_scales[i];
+    motors[i] = (int16_t)v;
     pwm_motor_set(system.pwms+i, (int16_t)v);
   }
   
+  // update telemetry
+  TM_DL_MOTORS(motors[0], motors[1], motors[2]);
+
   return;
 }

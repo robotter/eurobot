@@ -32,6 +32,8 @@
 #include <quadramp.h>
 #include "settings.h"
 
+#include "telemetry.h"
+
 // control system managers
 struct cs csm_x;
 struct cs csm_y;
@@ -180,6 +182,20 @@ void robot_cs_update(void* dummy)
   cs_manage(&csm_x);
   cs_manage(&csm_y);
   cs_manage(&csm_angle);
+
+  // update telemetries
+  TM_DL_X_PID(
+    cs_get_filtered_consign(&csm_x),
+    cs_get_error(&csm_x),
+    cs_get_out(&csm_x));
+  TM_DL_Y_PID(
+    cs_get_filtered_consign(&csm_y),
+    cs_get_error(&csm_y),
+    cs_get_out(&csm_y));
+  TM_DL_A_PID(
+    cs_get_filtered_consign(&csm_angle),
+    cs_get_error(&csm_angle),
+    cs_get_out(&csm_angle));
 
   // transform output vector from table coords to robot coords
   vx_t     = cs_get_out(&csm_x);

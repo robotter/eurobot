@@ -53,7 +53,115 @@ portpin_t leds[4];
 rome_intf_t rome;
 // ROME messages handler
 void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
+  switch((uint8_t)frame->mid) {
 
+    case ROME_MID_ASSERV_ACTIVATE: {
+      uint8_t b = frame->asserv_activate.activate;
+      // TODO
+      break;
+    }
+    case ROME_MID_ASSERV_AUTOSET: {
+      uint8_t side = frame->asserv_autoset.side;
+      float x = frame->asserv_autoset.x;
+      float y = frame->asserv_autoset.y;
+      htrajectory_autoset(&trajectory, side, x, y);
+      break;
+    }
+    case ROME_MID_ASSERV_GOTO_XY: {
+      float x = frame->asserv_goto_xy.x;
+      float y = frame->asserv_goto_xy.y;
+      float a = (frame->asserv_goto_xy.a)/1000.0;
+      htrajectory_gotoXY(&trajectory, x, y);
+      htrajectory_gotoA(&trajectory, a);
+      break;
+    }
+    case ROME_MID_ASSERV_GOTO_XY_REL: {
+      float x = frame->asserv_goto_xy_rel.x;
+      float y = frame->asserv_goto_xy_rel.y;
+      float a = (frame->asserv_goto_xy_rel.a)/1000.0;
+      htrajectory_gotoXY_R(&trajectory, x, y);
+      htrajectory_gotoA_R(&trajectory, a);
+      break;
+    }
+    case ROME_MID_ASSERV_ADVANCE: {
+      int16_t d = frame->asserv_advance.d;
+      break;
+    }
+    case ROME_MID_ASSERV_TURN: {
+      int16_t a = frame->asserv_turn.a;
+      break;
+    }
+    case ROME_MID_ASSERV_TURN_REL: {
+      int16_t a = frame->asserv_turn_rel.a;
+      break;
+    }
+    case ROME_MID_ASSERV_SET_XYA: {
+      int16_t x = frame->asserv_set_xya.x;
+      int16_t y = frame->asserv_set_xya.y;
+      int16_t a = (frame->asserv_set_xya.a)/1000.0;
+      hposition_set(&position,x,y,a);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_XY: {
+      double a;
+      hposition_get_a(&position, &a);
+      int16_t x = frame->asserv_set_xya.x;
+      int16_t y = frame->asserv_set_xya.y;
+      hposition_set(&position,x,y,a);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_A: {
+      vect_xy_t xy;
+      hposition_get_xy(&position,&xy);
+      int16_t a = (frame->asserv_set_xya.a)/1000.0;
+      hposition_set(&position, xy.x, xy.y, a);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_X_PID: {
+      break;
+    }
+    case ROME_MID_ASSERV_SET_Y_PID: {
+      break;
+    }
+    case ROME_MID_ASSERV_SET_A_PID: {
+      break;
+    }
+    case ROME_MID_ASSERV_SET_A_QRAMP: {
+      break;
+    }
+    case ROME_MID_ASSERV_SET_HTRAJ_XY_CRUISE: {
+      float speed = frame->asserv_set_htraj_xy_cruise.speed;
+      float acc   = frame->asserv_set_htraj_xy_cruise.acc;
+      htrajectory_setXYCruiseSpeed(&trajectory, speed, acc);
+      ROME_SEND_ASSERV_SET_HTRAJ_XY_CRUISE(intf, speed, acc);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_HTRAJ_XY_STEERING: {
+      float speed = frame->asserv_set_htraj_xy_steering.speed;
+      float acc   = frame->asserv_set_htraj_xy_steering.acc;
+      htrajectory_setXYSteeringSpeed(&trajectory, speed, acc);
+      ROME_SEND_ASSERV_SET_HTRAJ_XY_STEERING(intf, speed, acc);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_HTRAJ_XY_STOP: {
+      float speed = frame->asserv_set_htraj_xy_stop.speed;
+      float acc   = frame->asserv_set_htraj_xy_stop.acc;
+      htrajectory_setXYStopSpeed(&trajectory, speed, acc);
+      ROME_SEND_ASSERV_SET_HTRAJ_XY_STOP(intf, speed, acc);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_HTRAJ_XYSTEERING_WINDOW: {
+      break;
+    }
+    case ROME_MID_ASSERV_SET_HTRAJ_XYSTOP_WINDOW: {
+      break;
+    }
+    case ROME_MID_ASSERV_SET_HTRAJ_ASTOP_WINDOW: {
+      break;
+    }
+    default:
+      break;
+  }
 }
 
 // CSs cpu usage in percent (0-100)
@@ -107,9 +215,6 @@ int main(void)
   rome.uart = uartD0;
   rome.handler = rome_handler;
   
-  // XXX PPP_LOG(&pppintf, NOTICE, "Robotter 2013 - Galipeur - SUPER-UNIOC-NG PROPULSION");
-  // XXX PPP_LOG(&pppintf, NOTICE, "Compiled "__DATE__" at "__TIME__".");
-
   //--------------------------------------------------------
   // CS
   //--------------------------------------------------------
@@ -126,39 +231,9 @@ int main(void)
   //adxrs_calibration_mode(false);
   printf("-- reboot --\n");
   //----------------------------------------------------------------------
-  int32_t i = 0;
-  init1 = 0x42;
-  
-  /*
   for(;;) {
-    vect_xy_t p;
-    hposition_get_xy(&position, &p);
-    double alpha;
-    hposition_get_a(&position, &alpha);
-    //ROME_SEND_ASSERV_TM_XYA(&rome, p.x, p.y, alpha);
-    
-    printf("(%d) x %f y %f a %f\r\n", adxrs_calibration_offset(), p.x, p.y, alpha*180.0/M_PI);
-    _delay_ms(100);
-  }*/
-  
-
-  for(;;) {
-    (void)i;
-    htrajectory_gotoXY_R(&trajectory,500,0);
-    htrajectory_gotoA(&trajectory,0);
-    while(!htrajectory_doneXY(&trajectory));
-
-    htrajectory_gotoXY_R(&trajectory,0,1000);
-    htrajectory_gotoA(&trajectory,0.5*M_PI);
-    while(!htrajectory_doneXY(&trajectory));
-
-    htrajectory_gotoXY_R(&trajectory,-500,0);
-    htrajectory_gotoA(&trajectory,0);
-    while(!htrajectory_doneXY(&trajectory));
-
-    htrajectory_gotoXY_R(&trajectory,0,-1000);
-    htrajectory_gotoA(&trajectory,0.5*M_PI);
-    while(!htrajectory_doneXY(&trajectory));
+    _delay_ms(10);
+    rome_handle_input(&rome);
   }
 }
 
