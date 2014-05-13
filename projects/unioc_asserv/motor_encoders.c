@@ -24,7 +24,6 @@
 #include <string.h>
 #include <encoder/quadra/quadra.h>
 #include "motor_encoders.h"
-
 #include "scales.h"
 
 // encoders singleton
@@ -33,12 +32,21 @@ motor_encoders_t encoders;
 void motor_encoders_init() {
   
   // setup port pins for channels A & B for each encoder
+  #ifdef BUILD_GALIPEUR
   encoders.ppAs[0] = PORTPIN(C,0);
   encoders.ppBs[0] = PORTPIN(C,1);
   encoders.ppAs[1] = PORTPIN(C,2);
   encoders.ppBs[1] = PORTPIN(C,3);
   encoders.ppAs[2] = PORTPIN(C,4);
   encoders.ppBs[2] = PORTPIN(C,5);
+  #elif defined(BUILD_GALIPETTE)
+  encoders.ppAs[2] = PORTPIN(C,0);
+  encoders.ppBs[2] = PORTPIN(C,1);
+  encoders.ppAs[0] = PORTPIN(C,2);
+  encoders.ppBs[0] = PORTPIN(C,3);
+  encoders.ppAs[1] = PORTPIN(C,4);
+  encoders.ppBs[1] = PORTPIN(C,5);
+  #endif
   // setup quadrature decoders 
   quadra_init(encoders.quadras+0, &TCC1, 0, encoders.ppAs[0], encoders.ppBs[0], 8);
   quadra_init(encoders.quadras+1, &TCD1, 2, encoders.ppAs[1], encoders.ppBs[1], 8);
