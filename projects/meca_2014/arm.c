@@ -113,7 +113,7 @@ void arm_init() {
 
   pid_init(&pid_arm);
   pid_set_gains(&pid_arm, 500, 20, 5);
-  pid_set_maximums(&pid_arm, 0, 1000, 0);
+  pid_set_maximums(&pid_arm, 0, 100, 0);
   pid_set_out_shift(&pid_arm, 8);
 
   ramp_init(&rampf);

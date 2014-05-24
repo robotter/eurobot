@@ -13,6 +13,11 @@
 #include "arm.h"
 #include "barometer.h"
 
+#define PUMPA_PP PORTPIN(D,0)
+#define PUMPB_PP PORTPIN(D,1)
+#define VALVEA_PP PORTPIN(D,2)
+#define VALVEB_PP PORTPIN(C,4)
+
 // ROME interface
 rome_intf_t rome;
 // ROME messages handler
@@ -133,6 +138,17 @@ int main(void)
   portpin_outclr(&LED_ERROR_PP);
   portpin_outclr(&LED_COM_PP);
 
+  // set up pumps and valves
+  portpin_dirset(&PUMPA_PP);
+  portpin_outset(&PUMPA_PP);
+  portpin_dirset(&PUMPB_PP);
+  portpin_outset(&PUMPB_PP);
+
+  portpin_dirset(&VALVEA_PP);
+  portpin_outset(&VALVEA_PP);
+  portpin_dirset(&VALVEB_PP);
+  portpin_outset(&VALVEB_PP);
+
   printf("**REBOOT**\n");
 
   INTLVL_ENABLE_ALL();
@@ -147,7 +163,8 @@ int main(void)
   arm_start_calibration();
 
   int32_t luptime = uptime;
-
+  int32_t lluptime = uptime;
+  bool lr = true;
     // main loop
   for(;;) {
 
@@ -156,9 +173,22 @@ int main(void)
       luptime = uptime;
       arm_update();
     }
-    if(arm_is_running()) {
+    if(lr && arm_is_running()) {
       arm_set_position(A_UPPER, 4000);
       arm_set_position(A_ELBOW, -300);
+      lr = false;
+    }
+    if(uptime - lluptime > 100000) {
+      lluptime = uptime;
+      uint16_t a,b;
+      a = barometer_get_pressure(&baro0);
+      b = barometer_get_pressure(&baro1);
+      printf("BARO %d %d\n",a,b);
+
+      if(b<260)
+        arm_set_position(A_ELBOW, 0);
+      else
+        arm_set_position(A_ELBOW, -300);
     }
 
   }
