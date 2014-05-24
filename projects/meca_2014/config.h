@@ -15,7 +15,7 @@
 #define UART_CAM  uartF1
 
 // Tick period of uptime counter, in microseconds
-#define UPDATE_TICK_US  1000
+#define UPDATE_TICK_US  100000
 // Interrupt level of tick interrupt
 #define UPTIME_INTLVL  INTLVL_HI
 

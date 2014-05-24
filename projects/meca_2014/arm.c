@@ -10,6 +10,8 @@
 
 #include <ax12/ax12.h>
 
+#define MOTOR_SCALE (24.0/35.0)
+
 #define UPPER_ARM_POSITION_OFFSET 12000
 #define LOWER_ARM_SPEED 0x100
 
@@ -67,6 +69,8 @@ static void _set_arm_motor_sign(bool sign) {
 }
 
 static void set_arm_motor_consign(void *dummy, int32_t consign) {
+  // scale motor consign
+  consign *= MOTOR_SCALE;
   if(arm.motor_is_active) {
     pwm_motor_set(&pwm_arm, -consign);
   }
@@ -108,12 +112,12 @@ void arm_init() {
   quadra_init(&quadra_arm,  &TCC1, 0, PORTPIN(E,0), PORTPIN(E,1), 8);
 
   pid_init(&pid_arm);
-  pid_set_gains(&pid_arm, 500, 20, 100);
-  pid_set_maximums(&pid_arm, 0, 70000, 0);
+  pid_set_gains(&pid_arm, 500, 20, 5);
+  pid_set_maximums(&pid_arm, 0, 1000, 0);
   pid_set_out_shift(&pid_arm, 8);
 
   ramp_init(&rampf);
-  ramp_set_vars(&rampf, 500, 500);
+  ramp_set_vars(&rampf, 1000, 1000);
 
   cs_init(&cs_arm);
   cs_set_consign_filter(&cs_arm, ramp_do_filter, &rampf);
@@ -128,7 +132,7 @@ void arm_init() {
   portpin_dirset(&PORTPIN_TXDN(uart_get_usart(UART_AX12)));
 
   arm.upper_arm_offset = 0;
-  arm.motor_is_active = 1;
+  arm.motor_is_active = false;
   arm.state = ARM_STATE_INIT;
 }
 
@@ -164,86 +168,72 @@ uint8_t arm_is_running() {
 }
 
 void arm_update() {
+
+  portpin_outtgl(&LED_RUN_PP);
+
   quadra_update(&quadra_arm);
-  static int _ds2 = 0; _ds2++;
-  if((_ds2%500) == 0) {
-    cs_manage(&cs_arm);
-    portpin_outtgl(&LED_ERROR_PP);
+
+  cs_manage(&cs_arm);
+
+  arm.count++;
+
+  static int _old_state = 0;
+  if(_old_state != arm.state) {
+    _old_state = arm.state;
   }
 
-  static int _ds = 0; _ds++;
-  if((_ds%2000) == 0) {
-    arm.count++;
+  switch(arm.state) {
+    case ARM_STATE_INIT:
+      break;
 
-    static int _old_state = 0;
-    if(_old_state != arm.state) {
-      printf("AS %d -> %d\n",_old_state,arm.state);
-      _old_state = arm.state;
-    }
+    case ARM_STATE_CALIBRATION_STARTING:
+      arm.count = 0;
+      arm.state = ARM_STATE_CALIBRATION_STARTING_WAITING;
+      _arm_lower_set_position(LA_ELBOW, 0);
+      _arm_lower_set_position(LA_WRIST, 0);
+      break;
 
-    switch(arm.state) {
-      case ARM_STATE_INIT:
-        break;
-
-      case ARM_STATE_CALIBRATION_STARTING:
-        arm.count = 0;
-        arm.state = ARM_STATE_CALIBRATION_STARTING_WAITING;
+    case ARM_STATE_CALIBRATION_STARTING_WAITING:
+      if(arm.count > 10) {
+        arm.state = ARM_STATE_CALIBRATION_IN_POSITION;
+        // secure arm
         _arm_lower_set_position(LA_ELBOW, 0);
         _arm_lower_set_position(LA_WRIST, 0);
-        break;
 
-      case ARM_STATE_CALIBRATION_STARTING_WAITING:
-        if(arm.count > 10) {
-          arm.state = ARM_STATE_CALIBRATION_IN_POSITION;
-          // secure arm
-          _arm_lower_set_position(LA_ELBOW, -300);
-          _arm_lower_set_position(LA_WRIST, -300);
-          // turn motor off
-          arm.motor_is_active = false;
-
-          arm.count = 0;
-        }
-        break;
-
-      case ARM_STATE_CALIBRATION_IN_POSITION: {
-        static int32_t last_arm_position = 0;
-        int32_t arm_position = get_arm_position(NULL);
-        // check arm does not move
-        if(abs(last_arm_position - arm_position) < 10) {
-          
-          // reset position
-          arm.upper_arm_offset = arm_position + UPPER_ARM_POSITION_OFFSET;
-
-          // set arm position to neutral
-          _arm_lower_set_position(LA_ELBOW, 0);
-          _arm_lower_set_position(LA_WRIST, 0);
-          _arm_upper_set_position(-10000);
-          arm.motor_is_active = true;
-          // reset CS and PID
-          pid_reset(&pid_arm);
-          cs_manage(&cs_arm);
-          // switch state to running
-          arm.state = ARM_STATE_RUNNING;
-        }
-        last_arm_position = arm_position;
-        break;
+        arm.count = 0;
       }
+      break;
 
-      case ARM_STATE_RUNNING:
+    case ARM_STATE_CALIBRATION_IN_POSITION: {
+      static int32_t last_arm_position = 0x7fffffff;
+      int32_t arm_position = get_arm_position(NULL);
+      // check arm does not move
+      if(abs(last_arm_position - arm_position) < 4) {
+        
+        // reset position
+        arm.upper_arm_offset = arm_position + UPPER_ARM_POSITION_OFFSET;
 
-        break;
+        // set arm position to neutral
+        _arm_lower_set_position(LA_ELBOW, 0);
+        _arm_lower_set_position(LA_WRIST, 0);
+        _arm_upper_set_position(-UPPER_ARM_POSITION_OFFSET);
+        // reset CS and PID
+        pid_reset(&pid_arm);
+        ramp_reset(&rampf, -UPPER_ARM_POSITION_OFFSET);
+        arm.motor_is_active = true;
 
-      default: break;
+        // switch state to running
+        arm.state = ARM_STATE_RUNNING;
+      }
+      last_arm_position = arm_position;
+      break;
     }
+
+    case ARM_STATE_RUNNING:
+      break;
+
+    default: break;
   }
-  /*
-  static int _ds3 = 0; _ds3++;
-  if((_ds3%5000) == 0) {
-    printf("%6.ld %6.ld %6.ld\n",
-      cs_get_out(&cs_arm),
-      cs_get_consign(&cs_arm),
-      cs_get_error(&cs_arm));
-  }*/
 }
 
 void arm_activate_debug() {

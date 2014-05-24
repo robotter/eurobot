@@ -31,6 +31,13 @@ void ramp_init(struct ramp_filter * r)
   return;
 }
 
+void ramp_reset(struct ramp_filter * r, int32_t value ) {
+  INTLVL_DISABLE_BLOCK(INTLVL_LO) {
+    r->prev_out=value;
+  }
+  return;
+}
+
 /*Set the field var_neg to neg and var_pos to pos */
 void ramp_set_vars(struct ramp_filter * r, uint32_t neg, uint32_t pos)
 {

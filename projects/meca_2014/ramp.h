@@ -51,6 +51,8 @@ struct ramp_filter {
  **/
 void ramp_init(struct ramp_filter * r );
 
+/**\brief Reset ramp filter */
+void ramp_reset(struct ramp_filter * r, int32_t value );
 
 /**\brief Set the fields of the ramp_filter structur
  *\param r ramp_structure to modificate
@@ -58,7 +60,6 @@ void ramp_init(struct ramp_filter * r );
  *\param pos limit for the positive variation
  */ 
 void ramp_set_vars(struct ramp_filter * r, uint32_t neg, uint32_t pos);
-
 
 /** \brief Apply ramp_filter to a ramp
 * \param r ramp_filter used to filter the in
