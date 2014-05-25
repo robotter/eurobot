@@ -30,9 +30,9 @@
 
 #define ROME_UPDATE_FREQUENCY_HZ 10
 
-#define ROME_ASSERV_UART  uartC0
+#define ROME_ASSERV_UART  uartE1
 #define ROME_MECA_UART    uartD0
-#define ROME_PADDOCK_UART uartE1
+#define ROME_PADDOCK_UART uartF0
 
 // declare ROME interfaces
 rome_intf_t rome_asserv;
@@ -153,8 +153,6 @@ int main(void)
     INTLVL_LO, _update_rome_handlers);
 
   for(;;) {
-
-    ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, 0, 0, 0);
 
   }
 }
