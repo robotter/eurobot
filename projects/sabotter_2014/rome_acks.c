@@ -23,24 +23,23 @@
 #include <clock/clock.h>
 #include <util/delay.h>
 
-volatile bool rome_acks_vector[256] = {false};
+static volatile bool rome_acks_vector[256] = {false};
 
 uint8_t rome_acks_new_frame_id() {
   static uint8_t fid = 0; 
-  bool b;
-  // limit search in case all frame IDs are assigned
-  int wdog;
-  for(wdog=0; wdog<256; wdog++) {
-    // generate a new frame ID
-    fid++;
-    // check frame ID avaibility
-    INTLVL_DISABLE_BLOCK(ROME_SEND_INTLVL) {
-      b = rome_acks_vector[fid];
-    }
-    if(!b) break;
-  }
-  // new frame ID is marked as "unavaible"/"waiting for an answer"
+  // wrap the wall loop with disable block
+  // an available fid should be found quickly
   INTLVL_DISABLE_BLOCK(ROME_SEND_INTLVL) {
+    // limit search in case all frame IDs are assigned
+    for(int wdog=0; wdog<256; wdog++) {
+      // generate a new frame ID
+      fid++;
+      // check frame ID avaibility, use it if available
+      if(!rome_acks_vector[fid]) {
+        break;
+      }
+    }
+    // new frame ID is marked as "unavaible"/"waiting for an answer"
     rome_acks_vector[fid] = true;
   }
   return fid;
@@ -53,27 +52,22 @@ bool rome_acks_handle(rome_intf_t *intf, const rome_frame_t *frame) {
 
   // frame ID associated with ACK
   uint8_t fid = frame->ack.fid;
-  // mark FID as "avaible"/"received"
+  // mark FID as "available"/"received"
   rome_acks_vector[fid] = false;
 
   return true;
 }
 
 bool rome_acks_wait(uint8_t fid) {
-  bool b;
-  int32_t wdog = 0;
-  do {
+  //XXX don't use hardcoded wdog limit and delay
+  for(uint16_t wdog=0; wdog<500; wdog++) {
     INTLVL_DISABLE_BLOCK(ROME_SEND_INTLVL) {
-      b = rome_acks_vector[fid];
+      if(rome_acks_vector[fid]) {
+        return true;
+      }
     }
-    // XXX ugly, ugly, ugly code ! 
-    // replace me with some timers !
     _delay_us(1000);
-    wdog++;
-    if(wdog > 500) 
-      return false;
-    // XXX
-  } while(b);
-
-  return true;
+  }
+  return false;
 }
+

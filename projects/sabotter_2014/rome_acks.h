@@ -32,9 +32,9 @@
     fid = rome_acks_new_frame_id();\
     ROME_SEND_##msg(intf, fid, ##__VA_ARGS__);\
   } while(rome_acks_wait(fid)); \
-} while(0);
+} while(0)
 
-/** @brief Generate a new frame ID and mark it as unavaible */
+/** @brief Generate a new frame ID and mark it as unavalaible */
 uint8_t rome_acks_new_frame_id(void);
 
 /** @brief Handle ROME_ACK messages, return true if an ACK message was handled */
