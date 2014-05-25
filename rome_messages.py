@@ -78,7 +78,7 @@ register_messages(
     # activate/deactivate motor power
     _acked('meca_set_power', [('active','uint8')]),
     # set servo #n
-    _acked('meca_set_servo', [('n','uint8'), ('position','int16_t')])
+    _acked('meca_set_servo', [('n','uint8'), ('position','int16')]),
 
     # __ TELEMETRY __
     # return arm position
