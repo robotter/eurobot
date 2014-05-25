@@ -31,9 +31,9 @@ uint8_t rome_acks_new_frame_id() {
   // an available fid should be found quickly
   INTLVL_DISABLE_BLOCK(ROME_SEND_INTLVL) {
     // limit search in case all frame IDs are assigned
-    for(int wdog=0; wdog<256; wdog++) {
+    for(int wdog=0; wdog<128; wdog++) {
       // generate a new frame ID
-      fid++;
+      fid = (fid+1) & 0x7f;
       // check frame ID avaibility, use it if available
       if(!rome_acks_vector[fid]) {
         break;
