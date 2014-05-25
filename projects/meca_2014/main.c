@@ -178,6 +178,10 @@ int main(void)
   portpin_dirset(&LED_RUN_PP);
   portpin_dirset(&LED_ERROR_PP);
   portpin_dirset(&LED_COM_PP);
+  portpin_outset(&LED_RUN_PP);
+  portpin_outset(&LED_ERROR_PP);
+  portpin_outset(&LED_COM_PP);
+  _delay_ms(500);
   portpin_outclr(&LED_RUN_PP);
   portpin_outclr(&LED_ERROR_PP);
   portpin_outclr(&LED_COM_PP);
