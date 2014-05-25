@@ -15,7 +15,12 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-/** @brief Extend ROME protocol with ack'ed message management */
+/** @brief Extend ROME protocol with ack'ed message management
+ *
+ * To avoid conflics, ACK value range is split:
+ *  - 0 to 127: orders sent by sabotter itself
+ *  - 128 to 255: orders forwarded by sabotter
+ */
 
 #ifndef ROME_ACKS_H
 #define ROME_ACKS_H
@@ -37,8 +42,8 @@
 /** @brief Generate a new frame ID and mark it as unavalaible */
 uint8_t rome_acks_new_frame_id(void);
 
-/** @brief Handle ROME_ACK messages, return true if an ACK message was handled */
-bool rome_acks_handle(rome_intf_t *intf, const rome_frame_t *frame);
+/** @brief Free a received ack */
+void rome_acks_free_frame_id(uint8_t fid);
 
 /** @brief Wait some time for frame ID ACK, 
  * @return true if ACK was received while waiting, false otherwise */

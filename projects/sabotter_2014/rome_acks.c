@@ -45,17 +45,8 @@ uint8_t rome_acks_new_frame_id() {
   return fid;
 }
 
-bool rome_acks_handle(rome_intf_t *intf, const rome_frame_t *frame) {
-  if(frame->mid != ROME_MID_ACK) {
-    return false;
-  }
-
-  // frame ID associated with ACK
-  uint8_t fid = frame->ack.fid;
-  // mark FID as "available"/"received"
+void rome_acks_free_frame_id(uint8_t fid) {
   rome_acks_vector[fid] = false;
-
-  return true;
 }
 
 bool rome_acks_wait(uint8_t fid) {
