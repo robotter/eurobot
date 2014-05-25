@@ -27,6 +27,7 @@
 #include <timer/timer.h>
 #include <rome/rome.h>
 #include "rome_acks.h"
+#include "strat.h"
 
 #define ROME_UPDATE_FREQUENCY_HZ 10
 
@@ -152,9 +153,10 @@ int main(void)
     TIMER_US_TO_TICKS(E0, 1e6/ROME_UPDATE_FREQUENCY_HZ),
     INTLVL_LO, _update_rome_handlers);
 
-  for(;;) {
-
-  }
+  //TODO move arm to init position
+  //TODO select color
+  //TODO wait for starting cord
+  strat_run(TEAM_NONE);
 }
 
 
