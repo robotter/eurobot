@@ -46,8 +46,8 @@ static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
   switch(frame->mid) {
     case ROME_MID_ACK:
-      rome_acks_free_frame_id(frame->ack.fid);
-      if(frame->ack.fid < 128) {
+      if(frame->ack.fid <= ROME_FRAME_ID_MAX) {
+        rome_acks_free_frame_id(frame->ack.fid);
         return; // don't forward
       }
       break;
@@ -63,8 +63,8 @@ static void rome_meca_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
   switch(frame->mid) {
     case ROME_MID_ACK:
-      rome_acks_free_frame_id(frame->ack.fid);
-      if(frame->ack.fid < 128) {
+      if(frame->ack.fid <= ROME_FRAME_ID_MAX) {
+        rome_acks_free_frame_id(frame->ack.fid);
         return; // don't forward
       }
       break;
@@ -82,10 +82,14 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_ACK:
       // should not happen
       rome_acks_free_frame_id(frame->ack.fid);
-      break;
+      return;
     default:
       break;
   }
+
+  // forward to other interfaces
+  rome_send(&rome_asserv, frame);
+  rome_send(&rome_meca, frame);
 }
 
 // update rome handlers

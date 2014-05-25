@@ -31,6 +31,9 @@
 
 #include <rome/rome.h>
 
+/// Maximum frame ID allocated to sabotter
+#define ROME_FRAME_ID_MAX  127
+
 #define ROME_SEND_AND_WAIT(msg, intf, ...) do {\
   uint8_t fid;\
   do {\
