@@ -70,8 +70,8 @@ def main():
   try:
     import tty,termios
  
-    client.send(Frame('asserv_set_htraj_xy_cruise', 30.0, 0.2))
-    client.send(Frame('asserv_set_htraj_xy_stop', 0.0, 0.05))
+    client.send(Frame('asserv_set_htraj_xy_cruise', 0, 30.0, 0.2))
+    client.send(Frame('asserv_set_htraj_xy_stop', 0, 0.0, 0.05))
 
     time.sleep(0.5)
 
@@ -82,7 +82,7 @@ def main():
       _goto_xya(x,y,a,'asserv_goto_xy')
 
     def _goto_xya(x,y,a,msg_name):
-      client.send(Frame(msg_name, x,y,a))
+      client.send(Frame(msg_name, 0, x,y,a))
       time.sleep(0.5)
       while not client.done_xy or not client.done_a:
         time.sleep(0.5)
@@ -92,12 +92,12 @@ def main():
     AS_UP = 3
     AS_DOWN = 4
 
-    client.send(Frame('asserv_set_xya', 100, 100, 0.0))
+    client.send(Frame('asserv_set_xya', 0, 100, 100, 0.0))
     time.sleep(0.5)
 
     while 1:
       print "AS DOWN"
-      client.send(Frame('asserv_autoset', AS_DOWN, 0.0, 0.0))
+      client.send(Frame('asserv_autoset', 0, AS_DOWN, 0.0, 0.0))
       time.sleep(0.5)
       while not client.done_autoset:
         time.sleep(0.5)
@@ -106,7 +106,7 @@ def main():
       goto_xya(100,100,0)
 
       print "AS LEFT"
-      client.send(Frame('asserv_autoset', AS_LEFT, 0.0, 0.0))
+      client.send(Frame('asserv_autoset', 0, AS_LEFT, 0.0, 0.0))
       time.sleep(0.5)
       while not client.done_autoset:
         time.sleep(0.5)
@@ -116,13 +116,8 @@ def main():
       goto_xya(100,100,0)
 
       goto_xya(100 , 500, 0)
-      goto_xya(2500, 500, 0)
+      goto_xya(1500, 500, 0)
 
-      goto_xya(2500, 900, 0)
-      goto_xya(2500, 900, math.pi)
-      goto_xya(2500, 900, 0)
-
-      goto_xya(2500, 500, 0)
       goto_xya(100,  500, 0)
       goto_xya(100,  100, 0)
 
@@ -130,7 +125,7 @@ def main():
     pass
   finally:
     time.sleep(0.5)
-    client.send(Frame('asserv_goto_xy_rel',0,0,0))
+    client.send(Frame('asserv_goto_xy_rel',0,0,0,0))
     client.stop()
 
 if __name__ == '__main__':
