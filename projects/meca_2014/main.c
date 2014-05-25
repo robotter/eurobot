@@ -12,11 +12,8 @@
 #include "config.h"
 #include "arm.h"
 #include "barometer.h"
-
-#define PUMPA_PP PORTPIN(D,0)
-#define PUMPB_PP PORTPIN(D,1)
-#define VALVEA_PP PORTPIN(D,2)
-#define VALVEB_PP PORTPIN(C,4)
+#include "telemetry.h"
+#include "pumps_valves.h"
 
 // ROME interface
 rome_intf_t rome;
@@ -25,12 +22,55 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
   switch(frame->mid) {
     
     case ROME_MID_MECA_SET_ARM: {
+      uint8_t fid = frame->meca_set_arm.fid;
       int32_t upper = frame->meca_set_arm.upper;
       int32_t elbow = frame->meca_set_arm.elbow;
       int32_t wrist = frame->meca_set_arm.wrist;
       arm_set_position(A_UPPER, upper);
       arm_set_position(A_ELBOW, elbow);
       arm_set_position(A_WRIST, wrist);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+
+    case ROME_MID_MECA_SET_PUMP: {
+      uint8_t fid = frame->meca_set_pump.fid;
+      uint8_t n = frame->meca_set_pump.n;
+      uint8_t active = frame->meca_set_pump.active;
+      
+      switch(n) {
+        case 0: pump_valves_activate_pump_A(active); break;
+        case 1: pump_valves_activate_pump_B(active); break;
+        default: break;
+      }
+ 
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+
+    case ROME_MID_MECA_SET_SUCKER: {
+      uint8_t fid = frame->meca_set_sucker.fid;
+      uint8_t n = frame->meca_set_sucker.n;
+      uint8_t active = frame->meca_set_sucker.active;
+
+      switch(n) {
+        case 0: pump_valves_activate_valve_A(active); break;
+        case 1: pump_valves_activate_valve_B(active); break;
+        default: break;
+      }
+         
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+
+    case ROME_MID_MECA_SET_POWER: {
+      uint8_t fid = frame->meca_set_power.fid;
+      uint8_t active = frame->meca_set_power.active;
+
+      arm_activate_debug(active);
+
+      ROME_SEND_ACK(intf, fid);
+      break;
     }
 
     default:
@@ -129,6 +169,10 @@ int main(void)
   // ADCA5
   barometer_init(&baro1, &ADCA, ADC_CH_MUXPOS_PIN5_gc);
 
+  // initialize pumps
+  pump_valves_init();
+
+  // initialize arm
   arm_init();
 
   portpin_dirset(&LED_RUN_PP);
@@ -138,57 +182,41 @@ int main(void)
   portpin_outclr(&LED_ERROR_PP);
   portpin_outclr(&LED_COM_PP);
 
-  // set up pumps and valves
-  portpin_dirset(&PUMPA_PP);
-  portpin_outset(&PUMPA_PP);
-  portpin_dirset(&PUMPB_PP);
-  portpin_outset(&PUMPB_PP);
-
-  portpin_dirset(&VALVEA_PP);
-  portpin_outset(&VALVEA_PP);
-  portpin_dirset(&VALVEB_PP);
-  portpin_outset(&VALVEB_PP);
-
-  printf("**REBOOT**\n");
-
   INTLVL_ENABLE_ALL();
   __asm__("sei");
-
 
   // timer
   timer_init();
   timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US), UPTIME_INTLVL, update);
 
+  // Initialize ROME
+  rome_intf_init(&rome);
+  rome.uart = UART_PPP;
+  rome.handler = rome_handler;
+ 
   // start arm calibration procedure
   arm_start_calibration();
 
   int32_t luptime = uptime;
   int32_t lluptime = uptime;
-  bool lr = true;
-    // main loop
+  // main loop
   for(;;) {
 
-    // update arm every 1 ms
-    if(uptime - luptime > 1000) {
+    // update arm every 100 ms
+    if(uptime - luptime > UPDATE_ARM_US) {
       luptime = uptime;
       arm_update();
+
+      // update telemetries
+      uint16_t a = barometer_get_pressure(&baro0);
+      uint16_t b = barometer_get_pressure(&baro1);
+      TM_DL_SUCKERS(a < 250, b < 250);
     }
-    if(lr && arm_is_running()) {
-      arm_set_position(A_UPPER, 4000);
-      arm_set_position(A_ELBOW, -300);
-      lr = false;
-    }
+    
+    // update rome every 100 ms
     if(uptime - lluptime > 100000) {
       lluptime = uptime;
-      uint16_t a,b;
-      a = barometer_get_pressure(&baro0);
-      b = barometer_get_pressure(&baro1);
-      printf("BARO %d %d\n",a,b);
-
-      if(b<260)
-        arm_set_position(A_ELBOW, 0);
-      else
-        arm_set_position(A_ELBOW, -300);
+      rome_handle_input(&rome);
     }
 
   }

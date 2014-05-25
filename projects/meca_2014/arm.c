@@ -7,8 +7,8 @@
 #include <encoder/quadra/quadra.h>
 #include <uart/uart.h>
 #include <pwm/motor.h>
-
 #include <ax12/ax12.h>
+#include "telemetry.h"
 
 #define MOTOR_SCALE (24.0/35.0)
 
@@ -18,6 +18,7 @@
 typedef enum {
   LA_ELBOW = 0x01,
   LA_WRIST = 0x02,
+  LA_BACK = 0x10,
 }lower_arm_t;
 
 extern ax12_t ax12;
@@ -79,8 +80,22 @@ static void set_arm_motor_consign(void *dummy, int32_t consign) {
   }
 }
 
-static int32_t get_arm_position(void *dummy) {
+static int32_t get_upper_arm_position(void *dummy) {
   return quadra_get_value(&quadra_arm) - arm.upper_arm_offset;
+}
+
+static int16_t _arm_lower_get_position(arm_part_t armpart) {
+  uint16_t w;
+  switch(armpart) {
+    case A_ELBOW:
+      ax12_read_word(&ax12, LA_ELBOW, AX12_ADDR_PRESENT_POSITION_L, &w);
+      return (int16_t)w-0x1FF;
+    case A_WRIST:
+      ax12_read_word(&ax12, LA_WRIST, AX12_ADDR_PRESENT_POSITION_L, &w);
+      return (int16_t)w-0x1FF;
+    default: 
+      return 0;
+  }
 }
 
 static void _arm_lower_set_position(lower_arm_t arm, int16_t position) {
@@ -91,6 +106,15 @@ static void _arm_lower_set_position(lower_arm_t arm, int16_t position) {
 
 static void _arm_upper_set_position(int16_t position) {
   cs_set_consign(&cs_arm, position);
+}
+
+int16_t tm_arm_upper_position;
+int16_t tm_arm_elbow_position;
+int16_t tm_arm_arm_position;
+static void _update_arm_telemetry(void) {
+  tm_arm_upper_position = get_upper_arm_position(NULL);
+  tm_arm_elbow_position = _arm_lower_get_position(A_ELBOW);
+  tm_arm_arm_position = _arm_lower_get_position(A_WRIST);
 }
 
 // -- public functions --
@@ -124,7 +148,7 @@ void arm_init() {
   cs_set_feedback_filter(&cs_arm, NULL, NULL);
   cs_set_correct_filter(&cs_arm, pid_do_filter, &pid_arm);
   cs_set_process_in(&cs_arm, set_arm_motor_consign, NULL);
-  cs_set_process_out(&cs_arm, get_arm_position, NULL);
+  cs_set_process_out(&cs_arm, get_upper_arm_position, NULL);
 
   // init AX-12
   portpin_dirset(&AX12_DIR_PP);
@@ -206,7 +230,7 @@ void arm_update() {
 
     case ARM_STATE_CALIBRATION_IN_POSITION: {
       static int32_t last_arm_position = 0x7fffffff;
-      int32_t arm_position = get_arm_position(NULL);
+      int32_t arm_position = get_upper_arm_position(NULL);
       // check arm does not move
       if(abs(last_arm_position - arm_position) < 4) {
         
@@ -234,19 +258,25 @@ void arm_update() {
 
     default: break;
   }
+
+  // update telemetry
+  TM_PERIODIC(_update_arm_telemetry());
+  TM_DL_ARM(tm_arm_upper_position, tm_arm_elbow_position, tm_arm_arm_position);
 }
 
-void arm_activate_debug() {
+void arm_activate_debug(bool b) {
+
+  uint8_t w = b?0x01:0x00;
   // deactivate lower arm elbow and wrist
-  ax12_write_byte(&ax12, LA_ELBOW, AX12_ADDR_TORQUE_ENABLE, 0x00);
-  ax12_write_byte(&ax12, LA_WRIST, AX12_ADDR_TORQUE_ENABLE, 0x00);
+  ax12_write_byte(&ax12, LA_ELBOW, AX12_ADDR_TORQUE_ENABLE, w);
+  ax12_write_byte(&ax12, LA_WRIST, AX12_ADDR_TORQUE_ENABLE, w);
   // deactivate upper arm motor
-  arm.motor_is_active = false;
+  arm.motor_is_active = b;
 }
 
 void arm_get_debug(arm_debug_t *debug) {
   uint16_t w;
-  debug->upper = get_arm_position(NULL);
+  debug->upper = get_upper_arm_position(NULL);
   ax12_read_word(&ax12, LA_ELBOW, AX12_ADDR_PRESENT_POSITION_L, &w);
   debug->elbow = w-0x1FF;
   ax12_read_word(&ax12, LA_WRIST, AX12_ADDR_PRESENT_POSITION_L, &w);

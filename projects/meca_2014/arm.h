@@ -2,6 +2,7 @@
 #define _ARM_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef enum {
   A_UPPER,
@@ -30,8 +31,8 @@ uint8_t arm_is_running(void);
 /** @brief Update module, shall be called periodically */
 void arm_update(void);
 
-/** @brief Activate debug mode */
-void arm_activate_debug(void);
+/** @brief Activate/deactivate debug mode */
+void arm_activate_debug(bool);
 
 /** @brief Fill debug structure */
 void arm_get_debug(arm_debug_t*);

@@ -15,9 +15,12 @@
 #define UART_CAM  uartF1
 
 // Tick period of uptime counter, in microseconds
-#define UPDATE_TICK_US  100000
+#define UPDATE_TICK_US  10000
 // Interrupt level of tick interrupt
 #define UPTIME_INTLVL  INTLVL_HI
+
+// arm update in us
+#define UPDATE_ARM_US 100000
 
 // AX-12 timeout for state switch, in microseconds
 #define AX12_TIMEOUT_US  10000
