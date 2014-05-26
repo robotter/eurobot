@@ -34,12 +34,12 @@
 /// Maximum frame ID allocated to sabotter
 #define ROME_FRAME_ID_MAX  127
 
-#define ROME_SEND_AND_WAIT(msg, intf, ...) do {\
-  uint8_t fid;\
-  do {\
-    fid = rome_acks_new_frame_id();\
-    ROME_SEND_##msg(intf, fid, ##__VA_ARGS__);\
-  } while(rome_acks_wait(fid)); \
+#define ROME_SEND_AND_WAIT(msg, intf, ...) do { \
+  uint8_t fid; \
+  do { \
+    fid = rome_acks_new_frame_id(); \
+    ROME_SEND_##msg(intf, fid, ##__VA_ARGS__); \
+  } while(!rome_acks_wait(fid)); \
 } while(0)
 
 /** @brief Generate a new frame ID and mark it as unavalaible */
