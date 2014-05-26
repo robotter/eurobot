@@ -19,6 +19,8 @@
 
 #include "rome_acks.h"
 #include "rome_config.h"
+#include "common.h"
+#include "config.h"
 
 #include <clock/clock.h>
 #include <util/delay.h>
@@ -50,15 +52,15 @@ void rome_acks_free_frame_id(uint8_t fid) {
 }
 
 bool rome_acks_wait(uint8_t fid) {
-  //XXX don't use hardcoded wdog limit and delay
-  for(uint16_t wdog=0; wdog<500; wdog++) {
+  uint32_t tend = get_uptime_us() + ROME_ACK_TIMEOUT_US;
+  do {
     INTLVL_DISABLE_BLOCK(ROME_SEND_INTLVL) {
       if(rome_acks_vector[fid]) {
         return true;
       }
+      update_rome_interfaces();
     }
-    _delay_us(1000);
-  }
+  } while(get_uptime_us() < tend);
   return false;
 }
 

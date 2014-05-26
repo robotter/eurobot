@@ -28,14 +28,9 @@
 #include <rome/rome.h>
 #include "rome_acks.h"
 #include "strat.h"
+#include "config.h"
 
-#define ROME_UPDATE_FREQUENCY_HZ 10
-
-#define ROME_ASSERV_UART  uartE1
-#define ROME_MECA_UART    uartD0
-#define ROME_PADDOCK_UART uartF0
-
-// declare ROME interfaces
+// ROME interfaces
 rome_intf_t rome_asserv;
 rome_intf_t rome_meca;
 rome_intf_t rome_paddock;
@@ -93,12 +88,34 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
   rome_send(&rome_meca, frame);
 }
 
-// update rome handlers
-static void _update_rome_handlers(void) {
+// Handle input from all ROME interfaces
+void update_rome_interfaces(void)
+{
   rome_handle_input(&rome_asserv);
   rome_handle_input(&rome_meca);
   rome_handle_input(&rome_paddock);
 }
+
+
+/// current time in microseconds
+static volatile uint32_t uptime;
+
+/// Get uptime value
+uint32_t get_uptime_us(void)
+{
+  uint32_t tmp;
+  INTLVL_DISABLE_ALL_BLOCK() {
+    tmp = uptime;
+  }
+  return tmp;
+}
+
+/// Called on uptime timer tick
+static void update_uptime(void)
+{
+  uptime += UPDATE_TICK_US;
+}
+
 
 int main(void)
 {
@@ -149,9 +166,8 @@ int main(void)
 
   // Initialize timers
   timer_init();
-  timer_set_callback(timerE0, 'A', 
-    TIMER_US_TO_TICKS(E0, 1e6/ROME_UPDATE_FREQUENCY_HZ),
-    INTLVL_LO, _update_rome_handlers);
+  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US),
+                     UPTIME_INTLVL, update_uptime);
 
   //TODO move arm to init position
   //TODO select color

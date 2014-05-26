@@ -48,7 +48,7 @@ uint8_t rome_acks_new_frame_id(void);
 /** @brief Free a received ack */
 void rome_acks_free_frame_id(uint8_t fid);
 
-/** @brief Wait some time for frame ID ACK, 
+/** @brief Wait some time for frame ID ACK
  * @return true if ACK was received while waiting, false otherwise */
 bool rome_acks_wait(uint8_t fid);
 
