@@ -13,6 +13,6 @@
 #define UARTF1_ENABLED
 
 //
-#define UART_INTLVL  INTLVL_LO
+#define UART_INTLVL  INTLVL_MED
 
 #endif
