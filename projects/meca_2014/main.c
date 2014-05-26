@@ -19,7 +19,7 @@
 rome_intf_t rome;
 // ROME messages handler
 void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
-  return;
+
   switch(frame->mid) {
   
     case ROME_MID_MECA_SET_ARM: {
@@ -27,9 +27,11 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       int16_t upper = frame->meca_set_arm.upper;
       int16_t elbow = frame->meca_set_arm.elbow;
       int16_t wrist = frame->meca_set_arm.wrist;
-      arm_set_position(A_UPPER, upper);
+
       arm_set_position(A_ELBOW, elbow);
       arm_set_position(A_WRIST, wrist);
+      arm_set_position(A_UPPER, upper);
+
       ROME_SEND_ACK(intf, fid);
       break;
     }
@@ -68,6 +70,10 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       uint8_t fid = frame->meca_set_power.fid;
       uint8_t active = frame->meca_set_power.active;
 
+      if(active)
+        portpin_outset(&LED_ERROR_PP);
+      else
+        portpin_outclr(&LED_ERROR_PP);
       arm_activate_debug(active);
 
       ROME_SEND_ACK(intf, fid);
@@ -113,7 +119,10 @@ static void ax12_set_state(ax12_state_t state)
   } else {
     while(ax12_nsent > 0) {
       int c;
-      while((c = uart_recv_nowait(UART_AX12)) == -1) ;
+      for(int wdog=0; wdog<1000; wdog++) {
+        if((c = uart_recv_nowait(UART_AX12)) != -1)
+          break;
+      }
       ax12_nsent--;
     }
     portpin_dirclr(&PORTPIN_TXDN(usart));
@@ -153,7 +162,9 @@ ax12_t ax12 = {
 /// Called on uptime timer tick
 void update(void)
 {
-  uptime += UPDATE_TICK_US;
+  INTLVL_DISABLE_ALL_BLOCK() {
+    uptime += UPDATE_TICK_US;
+  }
 }
 
 int main(void)
@@ -164,6 +175,11 @@ int main(void)
   portpin_dirset(&LED_RUN_PP);
   portpin_dirset(&LED_ERROR_PP);
   portpin_dirset(&LED_COM_PP);
+  portpin_dirset(&LED_AN_PP(0));
+  portpin_dirset(&LED_AN_PP(1));
+  portpin_dirset(&LED_AN_PP(2));
+  portpin_dirset(&LED_AN_PP(3));
+
   portpin_outset(&LED_RUN_PP);
   portpin_outset(&LED_ERROR_PP);
   portpin_outset(&LED_COM_PP);
@@ -194,12 +210,12 @@ int main(void)
 
   // timer
   timer_init();
-  //timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US), UPTIME_INTLVL, update);
+  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US), UPTIME_INTLVL, update);
 
   // Initialize ROME
   rome_intf_init(&rome);
   rome.uart = UART_PPP;
-  rome.handler = NULL;//rome_handler;
+  rome.handler = rome_handler;
  
   // start arm calibration procedure
   arm_start_calibration();
@@ -209,31 +225,35 @@ int main(void)
 
   // main loop
   int32_t uptime;
+  uint8_t t=0;
+  int32_t i=0; 
   for(;;) {
-    (void)luptime;
-    /*
+    i++;
+    if(i>10000) {
+      i=0;
+      t++;
+      PORTA.OUT = t&0x0f;
+    }
     // update arm every 100 ms
     uptime = get_uptime_us();
     if(uptime - luptime > UPDATE_ARM_US) {
       luptime = uptime;
-
-      portpin_outtgl(&LED_RUN_PP);
+      // update arm
       arm_update();
-      
       // update telemetries
       uint16_t a = barometer_get_pressure(&baro0);
       uint16_t b = barometer_get_pressure(&baro1);
       TM_DL_SUCKERS(a < 250, b < 250);
-    }*/
+    }
     
-    rome_handle_input(&rome);
-    (void)lluptime;(void)uptime;
-    /*
     // update rome every 100 ms
     uptime = get_uptime_us();
     if(uptime - lluptime > 100000) {
       lluptime = uptime;
-    }*/
+      portpin_outset(&LED_COM_PP);
+      rome_handle_input(&rome);
+      portpin_outclr(&LED_COM_PP);
+    }
   }
 }
 
