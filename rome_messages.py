@@ -13,7 +13,7 @@ register_messages(
   (0x20, [
     # __ ORDERS __
     # turn on control systems if activate is TRUE, turn it off otherwise
-    _acked('asserv_activate', [('activate','uint8')]),
+    _acked('asserv_activate', [('activate','bool')]),
 
     # order robot to go directly to point (x,y) then turn to heading a 
     _acked('asserv_goto_xy',     [('x','dist'),('y','dist'),('a','angle')]),
@@ -53,8 +53,8 @@ register_messages(
     ('asserv_tm_y_pid', [('input','int32'),('error','int32'),('out','int32')]),
     ('asserv_tm_a_pid', [('input','int32'),('error','int32'),('out','int32')]),
     # htrajectory internal state
-    ('asserv_tm_htraj_done', [('xy','uint8'),('a','uint8')]),
-    ('asserv_tm_htraj_autoset_done', [('b','uint8')]),
+    ('asserv_tm_htraj_done', [('xy','bool'),('a','bool')]),
+    ('asserv_tm_htraj_autoset_done', [('b','bool')]),
     ('asserv_tm_htraj_state',      [('state','uint8')]),
     ('asserv_tm_htraj_carrot_xy', [('x','dist'),('y','dist')]),
     ('asserv_tm_htraj_speed',      [('speed','float')]),
@@ -72,11 +72,11 @@ register_messages(
     # set arm position
     _acked('meca_set_arm', [('upper','int32'),('elbow','int32'),('wrist','int32')]),
     # set sucker #n on / off (default off)
-    _acked('meca_set_sucker', [('n','uint8'),('active','uint8')]),
+    _acked('meca_set_sucker', [('n','uint8'),('active','bool')]),
     # set pump #n on / off (default off)
-    _acked('meca_set_pump', [('n','uint8'),('active','uint8')]),
+    _acked('meca_set_pump', [('n','uint8'),('active','bool')]),
     # activate/deactivate motor power
-    _acked('meca_set_power', [('active','uint8')]),
+    _acked('meca_set_power', [('active','bool')]),
     # set servo #n
     _acked('meca_set_servo', [('n','uint8'), ('position','int16')]),
 
@@ -84,6 +84,6 @@ register_messages(
     # return arm position
     ('meca_tm_arm', [('upper','int16'),('elbow','int16'),('wrist','int16')]),
     # return pressure sensors
-    ('meca_tm_suckers', [('a','uint8'),('b','uint8')]),
+    ('meca_tm_suckers', [('a','bool'),('b','bool')]),
    ]),
 )
