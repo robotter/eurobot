@@ -195,8 +195,6 @@ uint8_t arm_is_running() {
 
 void arm_update() {
 
-  portpin_outtgl(&LED_RUN_PP);
-
   quadra_update(&quadra_arm);
 
   cs_manage(&cs_arm);

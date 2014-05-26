@@ -19,8 +19,9 @@
 rome_intf_t rome;
 // ROME messages handler
 void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
+  return;
   switch(frame->mid) {
-    
+  
     case ROME_MID_MECA_SET_ARM: {
       uint8_t fid = frame->meca_set_arm.fid;
       int16_t upper = frame->meca_set_arm.upper;
@@ -193,38 +194,46 @@ int main(void)
 
   // timer
   timer_init();
-  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US), UPTIME_INTLVL, update);
+  //timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US), UPTIME_INTLVL, update);
 
   // Initialize ROME
   rome_intf_init(&rome);
   rome.uart = UART_PPP;
-  rome.handler = rome_handler;
+  rome.handler = NULL;//rome_handler;
  
   // start arm calibration procedure
   arm_start_calibration();
 
   int32_t luptime = uptime;
   int32_t lluptime = uptime;
-  // main loop
-  for(;;) {
 
+  // main loop
+  int32_t uptime;
+  for(;;) {
+    (void)luptime;
+    /*
     // update arm every 100 ms
+    uptime = get_uptime_us();
     if(uptime - luptime > UPDATE_ARM_US) {
       luptime = uptime;
-      arm_update();
 
+      portpin_outtgl(&LED_RUN_PP);
+      arm_update();
+      
       // update telemetries
       uint16_t a = barometer_get_pressure(&baro0);
       uint16_t b = barometer_get_pressure(&baro1);
       TM_DL_SUCKERS(a < 250, b < 250);
-    }
+    }*/
     
+    rome_handle_input(&rome);
+    (void)lluptime;(void)uptime;
+    /*
     // update rome every 100 ms
+    uptime = get_uptime_us();
     if(uptime - lluptime > 100000) {
       lluptime = uptime;
-      rome_handle_input(&rome);
-    }
-
+    }*/
   }
 }
 
