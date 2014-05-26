@@ -13,7 +13,7 @@
 #define MOTOR_SCALE (24.0/16.0)
 
 #define UPPER_ARM_POSITION_OFFSET 12000
-#define LOWER_ARM_SPEED 0x100
+#define LOWER_ARM_SPEED 0x50
 
 typedef enum {
   LA_ELBOW = 0x01,
@@ -138,7 +138,7 @@ void arm_init() {
   quadra_init(&quadra_arm,  &TCC1, 0, PORTPIN(E,0), PORTPIN(E,1), 8);
 
   pid_init(&pid_arm);
-  pid_set_gains(&pid_arm, 500, 20, 5);
+  pid_set_gains(&pid_arm, 300, 20, 5);
   pid_set_maximums(&pid_arm, 0, 100, 0);
   pid_set_out_shift(&pid_arm, 8);
 
@@ -264,7 +264,7 @@ void arm_update() {
   TM_DL_ARM(tm_arm_upper_position, tm_arm_elbow_position, tm_arm_arm_position);
 }
 
-void arm_activate_debug(bool b) {
+void arm_activate_power(bool b) {
 
   uint8_t w = b?0x01:0x00;
   // deactivate lower arm elbow and wrist

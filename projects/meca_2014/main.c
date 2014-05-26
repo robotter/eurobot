@@ -19,7 +19,6 @@
 rome_intf_t rome;
 // ROME messages handler
 void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
-
   switch(frame->mid) {
   
     case ROME_MID_MECA_SET_ARM: {
@@ -74,7 +73,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
         portpin_outset(&LED_ERROR_PP);
       else
         portpin_outclr(&LED_ERROR_PP);
-      arm_activate_debug(active);
+      arm_activate_power(active);
 
       ROME_SEND_ACK(intf, fid);
       break;
@@ -220,20 +219,16 @@ int main(void)
   // start arm calibration procedure
   arm_start_calibration();
 
-  int32_t luptime = uptime;
-  int32_t lluptime = uptime;
+  uint32_t luptime = uptime;
+  uint32_t lluptime = uptime;
 
+  uint32_t t = 0;
   // main loop
-  int32_t uptime;
-  uint8_t t=0;
-  int32_t i=0; 
   for(;;) {
-    i++;
-    if(i>10000) {
-      i=0;
-      t++;
-      PORTA.OUT = t&0x0f;
-    }
+    
+    // debug info
+    PORTA.OUT = (t++)/1000;
+
     // update arm every 100 ms
     uptime = get_uptime_us();
     if(uptime - luptime > UPDATE_ARM_US) {

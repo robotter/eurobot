@@ -31,8 +31,8 @@ uint8_t arm_is_running(void);
 /** @brief Update module, shall be called periodically */
 void arm_update(void);
 
-/** @brief Activate/deactivate debug mode */
-void arm_activate_debug(bool);
+/** @brief Activate/deactivate power */
+void arm_activate_power(bool);
 
 /** @brief Fill debug structure */
 void arm_get_debug(arm_debug_t*);
