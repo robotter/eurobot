@@ -23,12 +23,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <uart/uart.h>
+#include <rome/rome.h>
 #include <math.h>
 #include <timer/timer.h>
-#include <perlimpinpin/perlimpinpin.h>
-#include <perlimpinpin/payload/system.h>
-#include <perlimpinpin/payload/room.h>
-#include <perlimpinpin/payload/log.h>
 
 #include "hrobot_manager.h"
 #include "cs.h"
@@ -39,29 +36,215 @@
 
 #include "settings.h"
 
-// error code
-#define MAIN_ERROR 0x30
+#include "adxrs/adxrs.h"
 
+volatile uint8_t init0, init1;
 
+portpin_t leds[4];
+
+// accessed through ROME handler
+#include "pid.h"
+extern struct pid_filter pid_x;
+extern struct pid_filter pid_y;
+extern struct pid_filter pid_angle;
+
+#include "quadramp.h"
+extern struct quadramp_filter qramp_angle;
+
+// ROME interface
+rome_intf_t rome;
+// ROME messages handler
+void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
+  switch((uint8_t)frame->mid) {
+
+    case ROME_MID_ASSERV_ACTIVATE: {
+      uint8_t fid = frame->asserv_autoset.fid;
+      uint8_t b = frame->asserv_activate.activate;
+      (void)b;// TODO
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_AUTOSET: {
+      uint8_t fid = frame->asserv_autoset.fid;
+      uint8_t side = frame->asserv_autoset.side;
+      float x = frame->asserv_autoset.x;
+      float y = frame->asserv_autoset.y;
+      htrajectory_autoset(&trajectory, side, x, y);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_GOTO_XY: {
+      uint8_t fid = frame->asserv_goto_xy.fid;
+      float x = frame->asserv_goto_xy.x;
+      float y = frame->asserv_goto_xy.y;
+      float a = (frame->asserv_goto_xy.a)/1000.0;
+      htrajectory_gotoXY(&trajectory, x, y);
+      htrajectory_gotoA(&trajectory, a);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_GOTO_XY_REL: {
+      uint8_t fid = frame->asserv_goto_xy_rel.fid;
+      float x = frame->asserv_goto_xy_rel.x;
+      float y = frame->asserv_goto_xy_rel.y;
+      float a = (frame->asserv_goto_xy_rel.a)/1000.0;
+      htrajectory_gotoXY_R(&trajectory, x, y);
+      htrajectory_gotoA_R(&trajectory, a);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_XYA: {
+      uint8_t fid = frame->asserv_set_xya.fid;
+      int16_t x = frame->asserv_set_xya.x;
+      int16_t y = frame->asserv_set_xya.y;
+      int16_t a = (frame->asserv_set_xya.a)/1000.0;
+      hposition_set(&position,x,y,a);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_XY: {
+      uint8_t fid = frame->asserv_set_xy.fid;
+      double a;
+      hposition_get_a(&position, &a);
+      int16_t x = frame->asserv_set_xya.x;
+      int16_t y = frame->asserv_set_xya.y;
+      hposition_set(&position,x,y,a);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_A: {
+      uint8_t fid = frame->asserv_set_a.fid;
+      vect_xy_t xy;
+      hposition_get_xy(&position,&xy);
+      int16_t a = (frame->asserv_set_xya.a)/1000.0;
+      hposition_set(&position, xy.x, xy.y, a);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_X_PID: {
+      uint8_t fid = frame->asserv_set_x_pid.fid;
+      uint16_t p = frame->asserv_set_x_pid.p;
+      uint16_t i = frame->asserv_set_x_pid.i;
+      uint16_t d = frame->asserv_set_x_pid.d;
+      int32_t max_in = frame->asserv_set_x_pid.max_in;
+      int32_t max_I = frame->asserv_set_x_pid.max_I;
+      int32_t max_out = frame->asserv_set_x_pid.max_out;
+      pid_set_gains(&pid_x, p, i, d);
+      pid_set_maximums(&pid_x, max_in, max_I, max_out);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_Y_PID: {
+      uint8_t fid = frame->asserv_set_y_pid.fid;
+      uint16_t p = frame->asserv_set_y_pid.p;
+      uint16_t i = frame->asserv_set_y_pid.i;
+      uint16_t d = frame->asserv_set_y_pid.d;
+      int32_t max_in = frame->asserv_set_y_pid.max_in;
+      int32_t max_I = frame->asserv_set_y_pid.max_I;
+      int32_t max_out = frame->asserv_set_y_pid.max_out;
+      pid_set_gains(&pid_y, p, i, d);
+      pid_set_maximums(&pid_y, max_in, max_I, max_out);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_A_PID: {
+      uint8_t fid = frame->asserv_set_a_pid.fid;
+      uint16_t p = frame->asserv_set_a_pid.p;
+      uint16_t i = frame->asserv_set_a_pid.i;
+      uint16_t d = frame->asserv_set_a_pid.d;
+      int32_t max_in = frame->asserv_set_a_pid.max_in;
+      int32_t max_I = frame->asserv_set_a_pid.max_I;
+      int32_t max_out = frame->asserv_set_a_pid.max_out;
+      pid_set_gains(&pid_angle, p, i, d);
+      pid_set_maximums(&pid_angle, max_in, max_I, max_out);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_A_QRAMP: {
+      uint8_t fid = frame->asserv_set_a_qramp.fid;
+      uint16_t dot = frame->asserv_set_a_qramp.dot;
+      uint16_t dotdot = frame->asserv_set_a_qramp.dotdot;
+      quadramp_set_1st_order_vars(&qramp_angle, dot, dot);
+      quadramp_set_2nd_order_vars(&qramp_angle, dotdot, dotdot);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_HTRAJ_XY_CRUISE: {
+      uint8_t fid = frame->asserv_set_htraj_xy_cruise.fid;
+      float speed = frame->asserv_set_htraj_xy_cruise.speed;
+      float acc   = frame->asserv_set_htraj_xy_cruise.acc;
+      htrajectory_setXYCruiseSpeed(&trajectory, speed, acc);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_HTRAJ_XY_STEERING: {
+      uint8_t fid = frame->asserv_set_htraj_xy_steering.fid;
+      float speed = frame->asserv_set_htraj_xy_steering.speed;
+      float acc   = frame->asserv_set_htraj_xy_steering.acc;
+      htrajectory_setXYSteeringSpeed(&trajectory, speed, acc);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_HTRAJ_XY_STOP: {
+      uint8_t fid = frame->asserv_set_htraj_xy_stop.fid;
+      float speed = frame->asserv_set_htraj_xy_stop.speed;
+      float acc   = frame->asserv_set_htraj_xy_stop.acc;
+      htrajectory_setXYStopSpeed(&trajectory, speed, acc);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_HTRAJ_XYSTEERING_WINDOW: {
+      uint8_t fid = frame->asserv_set_htraj_xysteering_window.fid;
+      float r = frame->asserv_set_htraj_xysteering_window.r;
+      htrajectory_setSteeringWindow(&trajectory, r);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_SET_HTRAJ_STOP_WINDOWS: {
+      uint8_t fid = frame->asserv_set_htraj_stop_windows.fid;
+      float xy = frame->asserv_set_htraj_stop_windows.xy;
+      float angle = frame->asserv_set_htraj_stop_windows.angle;
+      htrajectory_setStopWindows(&trajectory, xy, angle);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    default:
+      break;
+  }
+}
 
 // CSs cpu usage in percent (0-100)
 extern uint8_t cs_cpuUsage;
 
+int up_cnt = 0;
 void vcs_update(void)
 {
+  up_cnt++;
   cs_update(NULL);
 }
 
 
-ppp_intf_t pppintf;
-ppp_payload_handler_t *ppp_filter(ppp_intf_t *intf);
-void room_message_handler(ppp_intf_t *intf, room_payload_t *pl);
+#if defined(BUILD_GALIPEUR)
+#define ZGYRO_SCALE 2*1.1214e-6
+#elif defined(BUILD_GALIPETTE)
+#define ZGYRO_SCALE 2.1964e-6//1.335e-6//1.0*BASE_ZGYRO_SCALE
+#else
+# error "Please define either BUILD_GALIPEUR or BUILD_GALIPETTE"
+#endif
 
+void _adxrs_update(void) {
+  adxrs_capture_manual(ZGYRO_SCALE);
+}
 
 int main(void)
 {
+  init0 = init1;
   // Booting
-
+  for(int k=0;k<4;k++) {
+    leds[k] = PORTPIN(Q,k);
+    portpin_dirset(leds+k);
+    portpin_outclr(leds+k);
+  }
   // Initialize clocks
   clock_init();
 
@@ -71,38 +254,35 @@ int main(void)
 
   // Initialize Timer
   timer_init();
-  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, vcs_update);
+  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0, CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, vcs_update);
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
-  // PPP init
-  pppintf.filter = ppp_filter;
-  pppintf.uart = uartE0;
-  pppintf.addr = 0x11;
-  ppp_intf_init(&pppintf);
-  room_set_message_handler(room_message_handler);
-  // send a system RESET to signal that we have booted
-  ppp_send_system_reset(&pppintf);
-
-  // Some advertisment :p
-  PPP_LOG(&pppintf, NOTICE, "Robotter 2013 - Galipeur - SUPER-UNIOC-NG PROPULSION");
-  PPP_LOG(&pppintf, NOTICE, "Compiled "__DATE__" at "__TIME__".");
-
+  // Initialize ROME
+  rome_intf_init(&rome);
+  rome.uart = uartD0;
+  rome.handler = rome_handler;
+  
   //--------------------------------------------------------
   // CS
   //--------------------------------------------------------
-
-  PPP_LOG(&pppintf, NOTICE, "Initializing CS");
   cs_initialize();
+
+  // setup ADXRS update task
+  timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0, ADXRS_PERIOD_US), ADXRS_INTLVL, _adxrs_update);
 
   // remove break
   hrobot_break(0);
 
+  //adxrs_calibration_mode(true);
+  //_delay_ms(2000);
+  //adxrs_calibration_mode(false);
+  printf("-- reboot --\n");
   //----------------------------------------------------------------------
-
   for(;;) {
-    ppp_intf_update(&pppintf);
+    _delay_ms(10);
+    rome_handle_input(&rome);
   }
 }
 

@@ -85,12 +85,12 @@
 
 // -- quadramp angle --
 
-#define SETTING_QRAMP_A_SPEED (500)
-#define SETTING_QRAMP_A_ACC   (100)
+#define SETTING_QRAMP_A_SPEED (10)
+#define SETTING_QRAMP_A_ACC   (10)
 
 // -- trajectory manager --
 
-#define SETTING_TRAJECTORY_A_SPEED (600.0)
+#define SETTING_TRAJECTORY_A_SPEED (200.0)
 #define SETTING_TRAJECTORY_A_ACC   (100.0)
 
 #define SETTING_TRAJECTORY_XYCRUISE_SPEED (20.0)
@@ -111,6 +111,9 @@
 #define CONTROL_SYSTEM_PERIOD_US  15000
 /// Interrupt level for control system update
 #define CONTROL_SYSTEM_INTLVL  INTLVL_LO
+// ADXRS updated period, in microseconds
+#define ADXRS_PERIOD_US  10000
+#define ADXRS_INTLVL INTLVL_MED
 
 // -- position manager --
 
@@ -134,8 +137,7 @@
 
 // -- autoset --
 
-#define SETTING_AUTOSET_SPEED (5000000.0)
-#define SETTING_AUTOSET_ZEROSPEED (30)
-#define SETTING_AUTOSET_ZEROCOUNT (20)
+#define SETTING_AUTOSET_SPEED (25000000.0)
+#define SETTING_AUTOSET_ZEROCOUNT (100)
 
 #endif/*SETTINGS_H*/

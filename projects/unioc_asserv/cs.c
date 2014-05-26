@@ -25,19 +25,19 @@
 
 #include <avarix.h>
 #include <math.h>
-#include <perlimpinpin/payload/log.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "cs.h"
 #include "robot_cs.h"
 #include "htrajectory.h"
 #include "motor_encoders.h"
 #include "hrobot_manager.h"
+#include "adxrs/adxrs.h"
 // XXX NDJD : bring me back me ADC module is done
 //#include "avoidance.h"
 
 #include "settings.h"
-
-extern ppp_intf_t pppintf;
 
 // Robot position
 hrobot_position_t position;
@@ -55,25 +55,25 @@ extern struct quadramp_filter qramp_angle;
 void cs_initialize(void)
 {
   // Initialize robot manager
-  PPP_LOG(&pppintf, NOTICE, "Initializing robot manager");
   hrobot_init();
 
   // Initilialize motor encoders
-  PPP_LOG(&pppintf, NOTICE, "Initialize motor encoders");
   motor_encoders_init();
 
+  // Initialize z gyro
+  adxrs_init(PORTPIN(K,0));
+  adxrs_startup();
+  adxrs_capture_manual(0);
+
   // Initialize position manager
-  PPP_LOG(&pppintf, NOTICE, "Initializing position manager");
   hposition_init( &position );
 
   // Initialize control systems for robot
-  PPP_LOG(&pppintf, NOTICE, "Initializing robot control systems");
   robot_cs_init(&robot_cs);
   robot_cs_set_hrobot_manager(&robot_cs,&system);
   robot_cs_set_hposition_manager(&robot_cs,&position);
   
   // Initialize trajectory management
-  PPP_LOG(&pppintf, NOTICE, "Initializing trajectory management");
   htrajectory_init(&trajectory,&position,&robot_cs,&qramp_angle);
   htrajectory_setASpeed(&trajectory, SETTING_TRAJECTORY_A_SPEED,
                                      SETTING_TRAJECTORY_A_ACC);
@@ -94,7 +94,6 @@ void cs_initialize(void)
 
   // Initialize avoidance system
   // XXX NDJD : bring me back me ADC module is done
-  //PPP_LOG(&pppintf, NOTICE, "Initializing avoidance system");
   //avoidance_init(&avoidance);
   // XXX
 }

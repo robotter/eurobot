@@ -25,10 +25,11 @@
  */
 
 #include <math.h>
-#include <perlimpinpin/payload/log.h>
 #include "htrajectory.h"
 #include "hrobot_manager.h"
 #include "settings.h"
+
+#include "telemetry.h"
 
 // XXX NDJD : bring me back me ADC module is done
 //#include "avoidance.h"
@@ -37,12 +38,10 @@
 // XXX NDJD : bring me back me ADC module is done
 //extern avoidance_t avoidance;
 
-extern ppp_intf_t pppintf;
-
 /* -- private functions -- */
 
 /** \brief Compute normalized error vector to current point */
-inline vect_xy_t computeNormalizedError( vect_xy_t point, vect_xy_t carrot )
+static inline vect_xy_t computeNormalizedError( vect_xy_t point, vect_xy_t carrot )
 { 
   vect_xy_t error;
   double errorLength;
@@ -75,12 +74,6 @@ static inline void preparePoint( htrajectory_t *htj )
   // compute and store normalized error vector
   htj->normalizedError = 
     computeNormalizedError(htj->path[htj->pathIndex],htj->carrot);
-  
-  PPP_LOGF(&pppintf, DEBUG, "Going to %d (%2.2f,%2.2f) state=%d",
-    htj->pathIndex,
-    htj->path[htj->pathIndex].x,
-    htj->path[htj->pathIndex].y,
-    htj->state);
 }
 
 /** \brief Set htj->carrot angle, transfer orders to low level CSs */
@@ -102,10 +95,10 @@ static inline void copyPath( htrajectory_t *htj, vect_xy_t *path, uint8_t n)
   uint8_t it;
 
   if( n == 0 )
-    PPP_LOG(&pppintf, ERROR, "zero point path");
+    return;
 
   if( n > HTRAJECTORY_MAX_POINTS )
-    PPP_LOGF(&pppintf, ERROR, "%d points path over %d points limit",n,HTRAJECTORY_MAX_POINTS);
+    return;
 
   htj->pathSize = n;
 
@@ -199,8 +192,6 @@ void htrajectory_run( htrajectory_t *htj, vect_xy_t *path, uint8_t n )
 {
   // copy points to internal structure
   copyPath( htj, path, n );
-
-  PPP_LOGF(&pppintf, DEBUG, "New path loaded (size=%d) and running",n);
 
   htj->pathIndex = 0;
 
@@ -331,14 +322,14 @@ uint8_t htrajectory_doneAutoset( htrajectory_t *htj )
 {
   if( (htj->state == STATE_AUTOSET_HEADING)
     || (htj->state == STATE_AUTOSET_MOVE) )
-    return 1;
-  else
     return 0;
+  else
+    return 1;
 }
 
 /* -- trajectory update -- */
 
-void htrajectory_update( htrajectory_t *htj )
+static void _htrajectory_update( htrajectory_t *htj )
 {
   double sqErrorLength;
   vect_xy_t *point;
@@ -350,7 +341,6 @@ void htrajectory_update( htrajectory_t *htj )
   if( !(htj->carrotA_reached) && htrajectory_doneA(htj) )
   {
     htj->carrotA_reached = 1;
-    // XXX PPP_SEND_ASSERV_ANGLE_REACHED(ROID_SUBSCRIBER);
   }
 
   // trajectory states
@@ -363,19 +353,15 @@ void htrajectory_update( htrajectory_t *htj )
     // wait for robot heading OK
     if( htrajectory_doneA(htj) )
     {
-      PPP_LOGF(&pppintf, DEBUG, "AUTOSET HEADING done (a=%2.2f)",htj->carrotA);
-
       // set autoset to next step
       htj->state = STATE_AUTOSET_MOVE;
 
       // shutdown robot CSs
       robot_cs_activate(htj->rcs, 0);
     
-      dx = SETTING_AUTOSET_SPEED*cos(htj->carrotA+1.5*M_PI);
-      dy = SETTING_AUTOSET_SPEED*sin(htj->carrotA+1.5*M_PI);
+      dx = SETTING_AUTOSET_SPEED*cos(-.5*M_PI);
+      dy = SETTING_AUTOSET_SPEED*sin(-.5*M_PI);
       
-      PPP_LOGF(&pppintf, DEBUG, "AUTOSET MOTORS (dx=%2.2f dy=%2.2f)",dx,dy);
-
       // store current robot position
       hposition_get(htj->hrp, &(htj->autosetInitPos));
 
@@ -391,22 +377,8 @@ void htrajectory_update( htrajectory_t *htj )
 
   if( htj->state == STATE_AUTOSET_MOVE )
   {
-    int32_t adv = 0;
-    int32_t v;
-    uint8_t i;
-
-    // XXX NDJD : computing advance using ADNS
-    (void)i; (void)v;
-    //for(i=0;i<4;i++)
-    //{
-    //  v = adns.vectors[i] - htj->ladns.vectors[i];
-    //  adv += v*v;
-    //}
-    //htj->ladns = adns;
-    // XXX
-
-    //
-    if( adv < SETTING_AUTOSET_ZEROSPEED )
+    // XXX maybe replaced with an advance detector XXX
+    if(true)
     {
       htj->autosetCount++;
 
@@ -436,13 +408,15 @@ void htrajectory_update( htrajectory_t *htj )
             break;
 
           default:
-            PPP_LOGF(&pppintf, ERROR, "AUTOSET with invalid side (side=%d)", htj->autosetSide);
+            return;
         }
 
         hposition_set(htj->hrp, htj->autosetInitPos.x,
                                 htj->autosetInitPos.y,
                                 htj->autosetInitPos.alpha);
-        PPP_LOG(&pppintf, DEBUG, "AUTOSET DONE");
+        // reset htrajectory carrot
+        htrajectory_reset_carrot(htj);
+        setCarrotXYPosition( htj, htj->carrot );
         // reactivate robot CSs damn it !
         robot_cs_activate(htj->rcs, 1);
         // set trajectory status to stop
@@ -474,8 +448,6 @@ void htrajectory_update( htrajectory_t *htj )
       // set carrot to current position
       setCarrotXYPosition(htj, robot);
 
-      PPP_LOGF(&pppintf, DEBUG, "AVOID BLOCK(dir=%d) (%2.2f,%2.2f)", dir, robot.x, robot.y);
-
       // reset carrot speed
       htj->carrotSpeed = 0;
       htj->blocked = 1;
@@ -488,9 +460,6 @@ void htrajectory_update( htrajectory_t *htj )
   // if NOT blocked and previously blocked
   if( (dir == DIR_NONE) && (htj->blocked) )
   {
-    PPP_LOGF(&pppintf, DEBUG, "AVOID NOBLOCK carrot (%2.2f,%2.2f)",
-              htj->carrot.x, htj->carrot.y);
-
     hposition_get_xy( htj->hrp, &robot);
 
     htj->carrot = robot;
@@ -510,13 +479,6 @@ void htrajectory_update( htrajectory_t *htj )
     // last point reached
     if( htj->state == STATE_PATH_LAST )
     {
-      PPP_LOGF(&pppintf, DEBUG, "Point %d (%2.2f,%2.2f) reached, full stop",
-        htj->pathIndex,
-        htj->path[htj->pathIndex].x,
-        htj->path[htj->pathIndex].y);
-
-      // XXX PPP_SEND_ASSERV_TRAJECTORY_REACHED(ROID_SUBSCRIBER, htj->pathIndex, 1);
-
       // put trajectory management to full stop
       htj->pathIndex = 0;
       htj->state = STATE_STOP;
@@ -527,13 +489,6 @@ void htrajectory_update( htrajectory_t *htj )
 
       return;
     }
-
-    PPP_LOGF(&pppintf, DEBUG, "Point %d (%2.2f,%2.2f) reached, goto next point",
-        htj->pathIndex,
-        htj->path[htj->pathIndex].x,
-        htj->path[htj->pathIndex].y);
-
-    // XXX PPP_SEND_ASSERV_TRAJECTORY_REACHED(ROID_SUBSCRIBER, htj->pathIndex, 0);
 
     // switch to next point 
     htj->pathIndex++;
@@ -546,7 +501,6 @@ void htrajectory_update( htrajectory_t *htj )
   }
   
   point = htj->path + htj->pathIndex;
-
 
   // --- compute speed consign & ramp ---
   
@@ -569,8 +523,7 @@ void htrajectory_update( htrajectory_t *htj )
     }
     else
     {
-      /* should not happen */
-      PPP_LOGF(&pppintf, ERROR, "update reach an incorrect state : state=%d",htj->state);
+      return;
     }
        
   // compute squared distance between carrot and target
@@ -622,6 +575,18 @@ void htrajectory_update( htrajectory_t *htj )
 
 }
 
+void htrajectory_update( htrajectory_t *htj ) {
+  // update trajectory
+  _htrajectory_update(htj);
+  // update telemetries
+  TM_DL_HTRAJ_STATE(htj->state);
+  TM_DL_HTRAJ_PATH_INDEX(htj->pathIndex, htj->pathSize);
+  TM_DL_HTRAJ_CARROT_XY(htj->carrot.x, htj->carrot.y);
+  TM_DL_HTRAJ_SPEED(htj->carrotSpeed);
+  TM_DL_HTRAJ_DONE(htrajectory_doneXY(htj), htrajectory_doneA(htj));
+  TM_DL_HTRAJ_AUTOSET_DONE(htrajectory_doneAutoset(htj));
+}
+
 // --- AUTOSET ---
 
 void htrajectory_autoset( htrajectory_t *htj, tableSide_t side,
@@ -638,8 +603,6 @@ void htrajectory_autoset( htrajectory_t *htj, tableSide_t side,
 
   // set carrot position to current position
   setCarrotXYPosition( htj, robot);
-
-  PPP_LOG(&pppintf, DEBUG, "Robot AUTOSET initiated");
 
   switch(side)
   {
@@ -660,8 +623,10 @@ void htrajectory_autoset( htrajectory_t *htj, tableSide_t side,
       break;
 
     default:
-      PPP_LOGF(&pppintf, ERROR, "AUTOSET launched with invalid side (side=%d)", side);
+      return;
   }
+
+  htrajectory_gotoA(htj, htj->carrotA);
 
   htj->autosetTargetX = x;
   htj->autosetTargetY = y;

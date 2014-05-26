@@ -1,5 +1,5 @@
 /*  
- *  Copyright RobOtter (2009) 
+ *  Copyright RobOtter (2014)
  * 
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,25 +16,28 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/** \file cli.h
-  * \author JD
-  */
+#ifndef TELEMETRY_H
+#define TELEMETRY_H
 
-#ifndef _CLI_H_
-#define _CLI_H_
+#include <rome/rome.h>
+#include "config.h"
 
-#include <avarix.h>
-#include <uart/uart.h>
+extern rome_intf_t rome;
 
-#define CLI_USER_UART uartD0
+#define TM_FREQUENCY (3)
+#define TM_PRESCALER ((int32_t)1e6/((int32_t)TM_FREQUENCY*UPDATE_ARM_US))
 
-static inline int cli_getkey(void)
-{
-  return uart_recv(CLI_USER_UART);
-}
+#define _DWZ(f) do{f}while(0)
 
-static inline int cli_getkey_nowait(void)
-{
-  return uart_recv_nowait(CLI_USER_UART);
-}
-#endif/*_CLI_H_*/
+#define _PRESCALE(N,f) _DWZ(\
+static int32_t _prescaler = 0;\
+if(_prescaler++>(N)) {\
+  _prescaler = 0;\
+  f\
+})
+
+#define TM_PERIODIC(f) _PRESCALE(TM_PRESCALER, f;)
+#define TM_DL_ARM(a,b,c) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_ARM(&rome,a,b,c))
+#define TM_DL_SUCKERS(a,b) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_SUCKERS(&rome,a,b))
+
+#endif//TELEMETRY_H

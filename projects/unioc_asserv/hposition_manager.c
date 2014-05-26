@@ -34,9 +34,14 @@
 #include "settings.h"
 #include "motor_encoders.h"
 #include "robot_cs.h"
+#include "adxrs/adxrs.h"
+
+#include <stdio.h>
 
 #include "hposition_manager.h"
 #include "hposition_manager_config.h"
+
+#include "telemetry.h"
 
 // robot CSs
 extern robot_cs_t robot_cs;
@@ -63,6 +68,7 @@ void hposition_set( hrobot_position_t* hpos, double x, double y, double alpha)
     hpos->position.x = x;
     hpos->position.y = y;
     hpos->position.alpha = alpha;
+    adxrs_set_angle(alpha);
 
     // set actual position to RCSs
     robot_cs_set_xy_consigns( &robot_cs, RCS_MM_TO_CSUNIT*x,
@@ -115,7 +121,7 @@ void hposition_update(void *dummy)
   hrobot_vector_t vec;
   double _ca,_sa;
   hrobot_position_t* hpos  = dummy;
-
+  
   int16_t *vectors  = NULL;
   int16_t *pvectors = NULL;
   double *matrix    = NULL;
@@ -123,6 +129,7 @@ void hposition_update(void *dummy)
   // access motor encoders values
   motor_encoders_update();
   vectors = motor_encoders_get_value();
+
   // first time update => update vector, quit
   if( hpos->firstUpdate )
   {
@@ -131,7 +138,6 @@ void hposition_update(void *dummy)
     hpos->firstUpdate = 0;
     return;
   }
-
   // set vectors & matrix
   pvectors = hpos->pvectors;
   matrix = hrobot_motors_invmatrix;
@@ -141,6 +147,7 @@ void hposition_update(void *dummy)
   for(k=0;k<3;k++)
     dp[k] = 0.0;
 
+  bool is_moving = false;
   // for each encoder coordinate
   for(i=0;i<3;i++)
   {
@@ -148,7 +155,10 @@ void hposition_update(void *dummy)
     v = vectors[i] - pvectors[i];
     // update previous ADNS vectors
     pvectors[i] = vectors[i];
-    
+ 
+    if(v > 0)
+      is_moving = true;
+
     // for each robot coordinate (x,y,a) compute a dx of mouvement
     for(k=0;k<3;k++)
       dp[k] += matrix[i+k*3]*v;
@@ -164,11 +174,16 @@ void hposition_update(void *dummy)
   _ca = cos(vec.alpha);
   _sa = sin(vec.alpha);
  
+  // put gyro in calibration mode
+  // XXX NDJD : is_moving will be used... later XXX
+  (void)is_moving;
+  adxrs_calibration_mode(false);//!is_moving);
+
   //--------------------------------------------------
   // Integrate speed in robot coordinates to position
   vec.x = hpos->position.x + dp[HROBOT_DX]*_ca - dp[HROBOT_DY]*_sa;
   vec.y = hpos->position.y + dp[HROBOT_DX]*_sa + dp[HROBOT_DY]*_ca;
-	vec.alpha += dp[HROBOT_DA];
+	vec.alpha = adxrs_get_angle();
 
   //------------------------------------
   // Latch computed values to accessors
@@ -177,6 +192,10 @@ void hposition_update(void *dummy)
     hpos->position.y = vec.y;
     hpos->position.alpha = vec.alpha;
   }
+
+  // update telemetry
+  TM_DL_XYA(hpos->position.x, hpos->position.y, 1000*hpos->position.alpha);
+
   return;
 }
 

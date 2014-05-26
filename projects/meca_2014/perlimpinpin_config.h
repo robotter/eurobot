@@ -17,7 +17,7 @@
 
 
 /// Perlimpinpin node name
-#define PPP_NODE_NAME  "galipeur"
+#define PPP_NODE_NAME  "R3D2"
 
 
 /** @brief Support payload named \c X

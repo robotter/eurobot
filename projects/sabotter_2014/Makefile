@@ -1,10 +1,10 @@
 
 ## Project configuration
 
-SRCS = $(filter-out avoidance%, $(wildcard *.c))
+SRCS = $(wildcard *.c)
 ASRCS =
 TARGET = main
-MODULES = uart clock pwm encoder/quadra timer rome adxrs
+MODULES = uart clock timer rome
 
 ## Target configuration
 MCU = atxmega128a1

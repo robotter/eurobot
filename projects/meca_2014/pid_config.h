@@ -1,5 +1,5 @@
 /*  
- *  Copyright RobOtter (2009) 
+ *  Copyright Droids Corporation, Microb Technology, Eirbot (2005)
  * 
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,27 +14,17 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * 
+ *
  */
 
-/** \file cli.h
-  * \author JD
-  */
+#ifndef PID_CONFIG_H
+#define PID_CONFIG_H
 
-#ifndef _CLI_H_
-#define _CLI_H_
+/** the derivate term can be filtered to remove the noise. This value
+ * is the maxium sample count to keep in memory to do this
+ * filtering. For an instance of pid, this count is defined o*/
+#define PID_DERIVATE_FILTER_MAX_SIZE 4
 
-#include <avarix.h>
-#include <uart/uart.h>
-
-#define CLI_USER_UART uartD0
-
-static inline int cli_getkey(void)
-{
-  return uart_recv(CLI_USER_UART);
-}
-
-static inline int cli_getkey_nowait(void)
-{
-  return uart_recv_nowait(CLI_USER_UART);
-}
-#endif/*_CLI_H_*/
+#endif

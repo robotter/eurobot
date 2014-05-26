@@ -23,7 +23,10 @@
 #define UART_BSCALE  0
 
 /// Enable UARTxn
+#define UARTC0_ENABLED
 #define UARTD0_ENABLED
+#define UARTE1_ENABLED
+#define UARTF0_ENABLED
 
 /** @brief Interrupt level (an \ref intlvl_t value)
  * @note Global configuration only.
