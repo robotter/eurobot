@@ -1,6 +1,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <clock/clock.h>
+#include <util/delay.h>
+#include <avarix/portpin.h>
 #include <rome/rome.h>
 #include "rome_acks.h"
 #include "strat.h"
@@ -44,13 +46,19 @@ void autoset(uint8_t side, float x, float y)
 }
 
 /// Move arm and wait for it to be in position
-void arm_wait(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
+void arm_set(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
 {
-  ROME_SEND_AND_WAIT(MECA_SET_ARM, &rome_meca, shoulder, elbow, wrist);
-  while(abs(shoulder-robot_state.arm.shoulder) > ARM_POS_MARGIN ||
-        abs(elbow-robot_state.arm.elbow) > ARM_POS_MARGIN ||
-        abs(wrist-robot_state.arm.elbow) > ARM_POS_MARGIN) {
-    update_rome_interfaces();
+  for(;;) {
+    uint32_t tend = get_uptime_us() + STRAT_TIMEOUT_US;
+    ROME_SEND_AND_WAIT(MECA_SET_ARM, &rome_meca, shoulder, elbow, wrist);
+    do {
+      update_rome_interfaces();
+      if(abs(shoulder-robot_state.arm.shoulder) < ARM_UPPER_MARGIN &&
+         abs(elbow-robot_state.arm.elbow) < ARM_LOWER_MARGIN &&
+         abs(wrist-robot_state.arm.wrist) < ARM_LOWER_MARGIN) {
+        return;
+      }
+    } while(get_uptime_us() < tend);
   }
 }
 

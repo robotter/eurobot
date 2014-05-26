@@ -54,6 +54,7 @@ static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
       break;
     case ROME_MID_ASSERV_TM_HTRAJ_AUTOSET_DONE:
       robot_state.asserv.autoset = frame->asserv_tm_htraj_autoset_done.b;
+      break;
     default:
       break;
   }
@@ -70,6 +71,15 @@ static void rome_meca_handler(rome_intf_t *intf, const rome_frame_t *frame)
         rome_acks_free_frame_id(frame->ack.fid);
         return; // don't forward
       }
+      break;
+    case ROME_MID_MECA_TM_ARM:
+      robot_state.arm.shoulder = frame->meca_tm_arm.upper;
+      robot_state.arm.elbow = frame->meca_tm_arm.elbow;
+      robot_state.arm.wrist = frame->meca_tm_arm.wrist;
+      break;
+    case ROME_MID_MECA_TM_SUCKERS:
+      robot_state.suckers.a = frame->meca_tm_suckers.a;
+      robot_state.suckers.b = frame->meca_tm_suckers.b;
       break;
     default:
       break;
@@ -153,23 +163,14 @@ int main(void)
   rome_paddock.handler = rome_paddock_handler;
 
   // leds
-  portpin_t *led_r = &PORTPIN(F,0);
-  portpin_t *led_g = &PORTPIN(F,7);
-  portpin_t *led_b = &PORTPIN(A,7);
+  portpin_dirset(&LED_R_PP);
+  portpin_dirset(&LED_G_PP);
+  portpin_dirset(&LED_B_PP);
 
-  portpin_t *led0 = &PORTPIN(A,1);
-  portpin_t *led1 = &PORTPIN(A,2);
-  portpin_t *led2 = &PORTPIN(A,3);
-  portpin_t *led3 = &PORTPIN(A,4);
-
-  portpin_dirset(led_r);
-  portpin_dirset(led_g);
-  portpin_dirset(led_b);
-
-  portpin_dirset(led0);
-  portpin_dirset(led1);
-  portpin_dirset(led2);
-  portpin_dirset(led3);
+  portpin_dirset(&LED0_PP);
+  portpin_dirset(&LED1_PP);
+  portpin_dirset(&LED2_PP);
+  portpin_dirset(&LED3_PP);
 
   // Initialize timers
   timer_init();
