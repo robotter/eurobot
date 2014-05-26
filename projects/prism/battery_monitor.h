@@ -56,20 +56,22 @@ typedef struct{
  * @brief initialize battery monitoring
  * @param Batt pointer to a BATTMON_t structure
  */
-void BATTMON_Init(BATTMON_t *Batt);
+void BATTMON_Init(void);
 
 
 /*
  * @brief monitor the battery voltage and make blink battery alarm led 
  * @brief must be called at 2Hz (500ms period)
  */
-void BATTMON_monitor(BATTMON_t *Batt);
+void BATTMON_monitor(void);
 
 /*
  * @brief return the status of the battery
  * @retval 0 battery not discharged
  * @retval 1 battery discharged
  */
-BATTMON_BatteryStatus_t BATTMON_IsBatteryDischarged(BATTMON_t *Batt);
+BATTMON_BatteryStatus_t BATTMON_IsBatteryDischarged(void);
+
+uint16_t BATTMON_GetVoltage_mV(void);
 
 #endif //BATTERY_MONITOR_H

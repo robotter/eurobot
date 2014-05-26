@@ -127,20 +127,20 @@ void sensor_init(void) {
 }
 
 void sensor_latch(void) {
-  //INTLVL_DISABLE_ALL_BLOCK {
-  memcpy((void *)top_data_latched, (void *)top_data, 2 * MAX_OBJECT * sizeof(uint16_t));
-  top_period_latched = top_period;
-  if(top_shift) {
-    uint16_t dl0 = top_data_latched[0];
-    for(int i = 0; i < 2 * MAX_OBJECT; i += 1) {
-      top_data_latched[i] = top_data_latched[i + 1];
-      if(top_data_latched[i] == 0xffff) {
-        top_data_latched[i] = dl0;
-        break;
+  INTLVL_DISABLE_ALL_BLOCK() {
+    memcpy((void *)top_data_latched, (void *)top_data, 2 * MAX_OBJECT * sizeof(uint16_t));
+    top_period_latched = top_period;
+    if(top_shift) {
+      uint16_t dl0 = top_data_latched[0];
+      for(int i = 0; i < 2 * MAX_OBJECT; i += 1) {
+        top_data_latched[i] = top_data_latched[i + 1];
+        if(top_data_latched[i] == 0xffff) {
+          top_data_latched[i] = dl0;
+          break;
+        }
       }
     }
   }
-  //}
 }
 
 double sensor_get_period(sensor_position_t sid) {
@@ -209,12 +209,12 @@ double sensor_get_object_distance(sensor_position_t sid, uint8_t id) {
 
 uint8_t sensor_new_data_available(void)
 {
-  //INTLVL_DISABLE_ALL_BLOCK {
+  INTLVL_DISABLE_ALL_BLOCK() {
     if(new_data) {
       new_data = 0;
       return 1;
     }
-  //}
+  }
 
   return 0;
 }

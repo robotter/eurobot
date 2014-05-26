@@ -8,6 +8,8 @@
 #include "beacom.h"
 #include "sensor.h"
 
+#define DEBUG_PRINTF
+
 #define BEACOM_MAGIC_START 'S'
 #define BEACOM_MAGIC_END 'E'
 
@@ -173,8 +175,11 @@ static void beacom_run_master(void) {
       int count = sensor_get_object_number(SENSOR_TOP);
 
       printf("----------------\r\n");
+      printf("Bat:\r\n");
+      printf("\t - %s\r\n", BATTMON_IsBatteryDischarged() == BATTERY_DISCHARGED ? "KO" : "OK");
+      printf("\t - %dmV\r\n", BATTMON_GetVoltage_mV());
       printf("B0:\r\n");
-      printf("\t - per:%.2fms\r\n",per);
+    printf("\t - per:%.2fms\r\n",per);
       printf("\t - obj:%d ",count);
       for(int i = 0; i < count; i += 1) {
         printf("{a:%.2fdeg d:%.2fdeg} ",sensor_get_object_angle(SENSOR_TOP,i), sensor_get_object_distance(SENSOR_TOP,i));

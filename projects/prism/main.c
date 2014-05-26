@@ -10,12 +10,9 @@
 #include "battery_monitor.h"
 #include "battery_monitor_config.h"
 
-//TODO: Cette variable devrait etre statique au module battery_monitor
-BATTMON_t bat;
-
 void battmon_update(void)  {
   PORTH.OUTTGL = 0xE0;
-  BATTMON_monitor(&bat);
+  BATTMON_monitor();
 }
 
 int main(void) {
@@ -28,7 +25,7 @@ int main(void) {
 
 
   beacom_init();
-  BATTMON_Init(&bat);
+  BATTMON_Init();
   sensor_init();
 
   //led init
