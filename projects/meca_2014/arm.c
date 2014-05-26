@@ -10,7 +10,7 @@
 #include <ax12/ax12.h>
 #include "telemetry.h"
 
-#define MOTOR_SCALE (24.0/35.0)
+#define MOTOR_SCALE (24.0/16.0)
 
 #define UPPER_ARM_POSITION_OFFSET 12000
 #define LOWER_ARM_SPEED 0x100
@@ -123,7 +123,9 @@ static void _update_arm_telemetry(void) {
 void arm_init() {
 
   // arm 
-  sign_arm = PORTPIN(E,2);
+  #define HACKED_PIN PORTPIN(E,2)
+  portpin_dirclr(&HACKED_PIN);
+  sign_arm = PORTPIN(C,3);
   portpin_dirset(&sign_arm);
   // break
   break_arm = PORTPIN(E,3);

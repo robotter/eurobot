@@ -159,6 +159,19 @@ int main(void)
 {
   clock_init();
 
+  // initialize leds
+  portpin_dirset(&LED_RUN_PP);
+  portpin_dirset(&LED_ERROR_PP);
+  portpin_dirset(&LED_COM_PP);
+  portpin_outset(&LED_RUN_PP);
+  portpin_outset(&LED_ERROR_PP);
+  portpin_outset(&LED_COM_PP);
+  _delay_ms(500);
+  portpin_outclr(&LED_RUN_PP);
+  portpin_outclr(&LED_ERROR_PP);
+  portpin_outclr(&LED_COM_PP);
+
+  // initialize uarts
   uart_init();
   uart_fopen(UART_PPP);
 
@@ -174,17 +187,6 @@ int main(void)
 
   // initialize arm
   arm_init();
-
-  portpin_dirset(&LED_RUN_PP);
-  portpin_dirset(&LED_ERROR_PP);
-  portpin_dirset(&LED_COM_PP);
-  portpin_outset(&LED_RUN_PP);
-  portpin_outset(&LED_ERROR_PP);
-  portpin_outset(&LED_COM_PP);
-  _delay_ms(500);
-  portpin_outclr(&LED_RUN_PP);
-  portpin_outclr(&LED_ERROR_PP);
-  portpin_outclr(&LED_COM_PP);
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");

@@ -14,10 +14,10 @@ static inline void pump_valves_init(void) {
   portpin_outclr(&PUMPB_PP);
 
   portpin_dirset(&VALVEA_PP);
-  portpin_outset(&VALVEA_PP);
+  portpin_outclr(&VALVEA_PP);
 
   portpin_dirset(&VALVEB_PP);
-  portpin_outset(&VALVEB_PP);
+  portpin_outclr(&VALVEB_PP);
 }
 
 static inline void _activate(portpin_t *pp, bool b) {
