@@ -28,6 +28,7 @@
 #include <rome/rome.h>
 #include "rome_acks.h"
 #include "strat.h"
+#include "common.h"
 #include "config.h"
 
 // ROME interfaces
@@ -47,6 +48,12 @@ static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
         return; // don't forward
       }
       break;
+    case ROME_MID_ASSERV_TM_HTRAJ_DONE:
+      robot_state.asserv.xy = frame->asserv_tm_htraj_done.xy;
+      robot_state.asserv.a = frame->asserv_tm_htraj_done.a;
+      break;
+    case ROME_MID_ASSERV_TM_HTRAJ_AUTOSET_DONE:
+      robot_state.asserv.autoset = frame->asserv_tm_htraj_autoset_done.b;
     default:
       break;
   }
