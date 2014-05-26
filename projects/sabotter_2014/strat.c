@@ -81,3 +81,8 @@ void strat_run(team_t team)
   goto_xya_rel(kx*0, 100, 0);
 }
 
+
+void strat_test(void)
+{
+}
+

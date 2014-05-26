@@ -177,10 +177,26 @@ int main(void)
   timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US),
                      UPTIME_INTLVL, update_uptime);
 
-  //TODO move arm to init position
+  // wait for other boards to be ready
+  _delay_ms(4000);
+
+  // initialize meca
+  ROME_SEND_AND_WAIT(MECA_SET_ARM, &rome_meca, 0, 0, 0);
+  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 0, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 1, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 0, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 1, 1);
+  //_delay_ms(1000);
+  //ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 0);
+
   //TODO select color
   //TODO wait for starting cord
-  strat_run(TEAM_NONE);
+  strat_test();
+  //strat_run(TEAM_NONE);
+
+  for(;;) {
+    update_rome_interfaces();
+  }
 }
 
 

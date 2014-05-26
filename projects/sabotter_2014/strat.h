@@ -9,5 +9,6 @@ typedef enum {
 } team_t;
 
 void strat_run(team_t team);
+void strat_test(void);
 
 #endif
