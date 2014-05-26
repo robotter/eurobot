@@ -23,9 +23,9 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
     
     case ROME_MID_MECA_SET_ARM: {
       uint8_t fid = frame->meca_set_arm.fid;
-      int32_t upper = frame->meca_set_arm.upper;
-      int32_t elbow = frame->meca_set_arm.elbow;
-      int32_t wrist = frame->meca_set_arm.wrist;
+      int16_t upper = frame->meca_set_arm.upper;
+      int16_t elbow = frame->meca_set_arm.elbow;
+      int16_t wrist = frame->meca_set_arm.wrist;
       arm_set_position(A_UPPER, upper);
       arm_set_position(A_ELBOW, elbow);
       arm_set_position(A_WRIST, wrist);

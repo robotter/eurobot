@@ -70,7 +70,7 @@ register_messages(
   (0x50, [
     # __ ORDERS __
     # set arm position
-    _acked('meca_set_arm', [('upper','int32'),('elbow','int32'),('wrist','int32')]),
+    _acked('meca_set_arm', [('upper','int16'),('elbow','int16'),('wrist','int16')]),
     # set sucker #n on / off (default off)
     _acked('meca_set_sucker', [('n','uint8'),('active','bool')]),
     # set pump #n on / off (default off)
