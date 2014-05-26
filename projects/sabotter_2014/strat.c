@@ -19,6 +19,8 @@ robot_state_t robot_state;
 void goto_xya(int16_t x, int16_t y, int16_t a)
 {
   ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, x, y, a);
+  robot_state.asserv.xy = 0;
+  robot_state.asserv.a = 0;
   while(!robot_state.asserv.xy || !robot_state.asserv.a) {
     //TODO avoid opponent
     update_rome_interfaces();
@@ -29,6 +31,8 @@ void goto_xya(int16_t x, int16_t y, int16_t a)
 void goto_xya_rel(int16_t x, int16_t y, int16_t a)
 {
   ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, x, y, a);
+  robot_state.asserv.xy = 0;
+  robot_state.asserv.a = 0;
   while(!robot_state.asserv.xy || !robot_state.asserv.a) {
     //TODO avoid opponent
     update_rome_interfaces();
@@ -39,6 +43,7 @@ void goto_xya_rel(int16_t x, int16_t y, int16_t a)
 void autoset(uint8_t side, float x, float y)
 {
   ROME_SEND_AND_WAIT(ASSERV_AUTOSET, &rome_asserv, side, x, y);
+  robot_state.asserv.autoset = 0;
   while(!robot_state.asserv.autoset) {
     //TODO avoid opponent
     update_rome_interfaces();
