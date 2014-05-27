@@ -128,36 +128,31 @@ void strat_run_galipette(team_t team)
 
 
 
+#if (defined GALIPEUR)
+# define ROBOT_SUFFIX  galipeur
+#elif (defined GALIPETTE)
+# define ROBOT_SUFFIX  galipette
+#else
+# error Either GALIPEUR or GALIPETTE must be defined
+#endif
+
+#define CONCAT__(a,b)  a ## b
+#define CONCAT_(a,b)  CONCAT__(a,b)
+#define ROBOT_FUNCTION(f)  CONCAT_(f,ROBOT_SUFFIX)
+
+
 void strat_init(void)
 {
-#if (defined GALIPEUR)
-  strat_init_galipeur();
-#elif (defined GALIPETTE)
-  strat_init_galipette();
-#else
-# error Either GALIPEUR or GALIPETTE must be set
-#endif
+  ROBOT_FUNCTION(strat_init_)();
 }
 
 void strat_run(team_t team)
 {
-#if (defined GALIPEUR)
-  strat_run_galipeur(team);
-#elif (defined GALIPETTE)
-  strat_run_galipette(team);
-#else
-# error Either GALIPEUR or GALIPETTE must be set
-#endif
+  ROBOT_FUNCTION(strat_run_)(team);
 }
 
 void strat_test(void)
 {
-#if (defined GALIPEUR)
-  strat_test_galipeur();
-#elif (defined GALIPETTE)
-  strat_test_galipette();
-#else
-# error Either GALIPEUR or GALIPETTE must be set
-#endif
+  ROBOT_FUNCTION(strat_test_)();
 }
 
