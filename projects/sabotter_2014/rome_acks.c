@@ -55,7 +55,7 @@ bool rome_acks_wait(uint8_t fid) {
   uint32_t tend = get_uptime_us() + ROME_ACK_TIMEOUT_US;
   do {
     INTLVL_DISABLE_BLOCK(ROME_SEND_INTLVL) {
-      if(rome_acks_vector[fid]) {
+      if(!rome_acks_vector[fid]) {
         return true;
       }
       update_rome_interfaces();
