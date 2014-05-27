@@ -83,7 +83,7 @@ team_t strat_select_team(void)
   // wait for color to be selected
   // color is selected when starting cord is plugged
   team_t team = TEAM_NONE;
-  portpin_outset(&LED_B_PP);
+  portpin_outclr(&LED_B_PP);
   for(;;) {
     if(portpin_in(&COLOR_SELECTOR_PP)) {
       portpin_outset(&LED_R_PP);
@@ -94,7 +94,7 @@ team_t strat_select_team(void)
       portpin_outset(&LED_G_PP);
       team = TEAM_YELLOW;
     }
-    if(portpin_in(&PORTPIN(C,1))) {
+    if(!portpin_in(&STARTING_CORD_PP)) {
       portpin_outclr(&LED_B_PP);
       break;
     }

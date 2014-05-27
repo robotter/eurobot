@@ -182,6 +182,10 @@ int main(void)
   rome_paddock.uart = ROME_PADDOCK_UART;
   rome_paddock.handler = rome_paddock_handler;
 
+  // starting cord and color selector
+  portpin_dirclr(&STARTING_CORD_PP);
+  portpin_dirclr(&COLOR_SELECTOR_PP);
+
   // leds
   portpin_dirset(&LED_R_PP);
   portpin_dirset(&LED_G_PP);
@@ -207,10 +211,8 @@ int main(void)
   if(voltage < BATTERY_ALERT_LIMIT) {
     if((get_uptime_us() / 500000) % 2 == 0) {
       portpin_outset(&LED_R_PP);
-      portpin_outset(&LED_B_PP);
     } else {
       portpin_outclr(&LED_R_PP);
-      portpin_outclr(&LED_B_PP);
     }
     update_rome_interfaces();
   }
