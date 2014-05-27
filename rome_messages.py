@@ -20,7 +20,7 @@ register_messages(
     # same as asserv_goto_xy, but relative to previous coordinates
     _acked('asserv_goto_xy_rel', [('x','dist'),('y','dist'),('a','angle')]),
     
-    # autoset robot
+    # autoset robot, sides are (from 0 to 4): none, left, right, up, down
     _acked('asserv_autoset', [('side','uint8'),('x','float'),('y','float')]),
 
     # __ SETTERS __
