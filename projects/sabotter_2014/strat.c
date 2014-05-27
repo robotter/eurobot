@@ -146,7 +146,7 @@ void strat_init_galipeur(void)
   //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_STOP_WINDOWS, &rome_asserv, 5.0, 0.03);
 
   // disable asserv
-  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
+  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
 
   // initialize meca
   ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 1);
