@@ -68,7 +68,33 @@ void arm_set(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
 }
 
 
-void strat_run(team_t team)
+void strat_init_galipeur(void)
+{
+  // wait for other boards to be ready
+  _delay_ms(2000);
+
+  // initialize asserv variables
+  ROME_SEND_AND_WAIT(ASSERV_SET_X_PID, &rome_asserv, 3000, 0, 0, 50000, 100000, 0);
+  ROME_SEND_AND_WAIT(ASSERV_SET_Y_PID, &rome_asserv, 3000, 0, 0, 50000, 100000, 0);
+  ROME_SEND_AND_WAIT(ASSERV_SET_A_PID, &rome_asserv, 2500, 0, 0, 50000, 1000, 0);
+  ROME_SEND_AND_WAIT(ASSERV_SET_A_QRAMP, &rome_asserv, 10, 10);
+  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_CRUISE, &rome_asserv, 20.0, 100.0);
+  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_STEERING, &rome_asserv, 5.0, 0.1);
+  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_STOP, &rome_asserv, 1.0, 0.1);
+  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XYSTEERING_WINDOW, &rome_asserv, 50.0);
+  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_STOP_WINDOWS, &rome_asserv, 5.0, 0.03);
+
+  // initialize meca
+  ROME_SEND_AND_WAIT(MECA_SET_ARM, &rome_meca, 0, 0, 0);
+  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 0, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 1, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 0, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 1, 1);
+  //_delay_ms(1000);
+  //ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 0);
+}
+
+void strat_run_galipeur(team_t team)
 {
   int8_t kx = team == TEAM_RED ? 1 : -1;
   // set start position
@@ -86,8 +112,55 @@ void strat_run(team_t team)
   goto_xya_rel(kx*0, 100, 0);
 }
 
+void strat_test_galipeur(void)
+{
+}
+
+
+void strat_init_galipette(void)
+{
+}
+
+void strat_test_galipette(void)
+{
+}
+
+void strat_run_galipette(team_t team)
+{
+}
+
+
+
+void strat_init(void)
+{
+#if (defined GALIPEUR)
+  strat_init_galipeur();
+#elif (defined GALIPETTE)
+  strat_init_galipette();
+#else
+# error Either GALIPEUR or GALIPETTE must be set
+#endif
+}
+
+void strat_run(team_t team)
+{
+#if (defined GALIPEUR)
+  strat_run_galipeur(team);
+#elif (defined GALIPETTE)
+  strat_run_galipette(team);
+#else
+# error Either GALIPEUR or GALIPETTE must be set
+#endif
+}
 
 void strat_test(void)
 {
+#if (defined GALIPEUR)
+  strat_test_galipeur();
+#elif (defined GALIPETTE)
+  strat_test_galipette();
+#else
+# error Either GALIPEUR or GALIPETTE must be set
+#endif
 }
 

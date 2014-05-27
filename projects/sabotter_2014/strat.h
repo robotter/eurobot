@@ -8,6 +8,7 @@ typedef enum {
   TEAM_YELLOW,
 } team_t;
 
+void strat_init(void);
 void strat_run(team_t team);
 void strat_test(void);
 

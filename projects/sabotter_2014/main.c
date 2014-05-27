@@ -202,29 +202,7 @@ int main(void)
   timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0,50e3),
                      UPTIME_INTLVL, update_battery);
 
-  // wait for other boards to be ready
-  _delay_ms(2000);
-
-  // initialize asserv variables
-  ROME_SEND_AND_WAIT(ASSERV_SET_X_PID, &rome_asserv, 3000, 0, 0, 50000, 100000, 0);
-  ROME_SEND_AND_WAIT(ASSERV_SET_Y_PID, &rome_asserv, 3000, 0, 0, 50000, 100000, 0);
-  ROME_SEND_AND_WAIT(ASSERV_SET_A_PID, &rome_asserv, 2500, 0, 0, 50000, 1000, 0);
-  ROME_SEND_AND_WAIT(ASSERV_SET_A_QRAMP, &rome_asserv, 10, 10);
-  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_CRUISE, &rome_asserv, 20.0, 100.0);
-  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_STEERING, &rome_asserv, 5.0, 0.1);
-  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_STOP, &rome_asserv, 1.0, 0.1);
-  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XYSTEERING_WINDOW, &rome_asserv, 50.0);
-  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_STOP_WINDOWS, &rome_asserv, 5.0, 0.03);
-
-  // initialize meca
-  ROME_SEND_AND_WAIT(MECA_SET_ARM, &rome_meca, 0, 0, 0);
-  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 0, 1);
-  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 1, 1);
-  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 0, 1);
-  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 1, 1);
-  //_delay_ms(1000);
-  //ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 0);
-
+  strat_init();
   //TODO select color
   //TODO wait for starting cord
   strat_test();
