@@ -22,6 +22,12 @@
 #define ARM_LOWER_MARGIN  10  //TODO
 
 
+// Starting cord: 0 is plugged, 1 in unplugged
+#define STARTING_CORD_PP  PORTPIN(C,1)
+// Color selector: 0 is yellow, 1 is red
+#define COLOR_SELECTOR_PP  PORTPIN(C,0)
+
+
 // Leds
 #define LED_R_PP  PORTPIN(F,0)
 #define LED_G_PP  PORTPIN(F,7)
