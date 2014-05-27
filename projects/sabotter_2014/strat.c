@@ -16,9 +16,9 @@ extern rome_intf_t rome_paddock;
 robot_state_t robot_state;
 
 /// Go to given position, avoid opponents
-void goto_xya(int16_t x, int16_t y, int16_t a)
+void goto_xya(int16_t x, int16_t y, float a)
 {
-  ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, x, y, a);
+  ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, x, y, 1000*a);
   robot_state.asserv.xy = 0;
   robot_state.asserv.a = 0;
   while(!robot_state.asserv.xy || !robot_state.asserv.a) {
@@ -28,9 +28,9 @@ void goto_xya(int16_t x, int16_t y, int16_t a)
 }
 
 /// Go to given relative position, avoid opponents
-void goto_xya_rel(int16_t x, int16_t y, int16_t a)
+void goto_xya_rel(int16_t x, int16_t y, float a)
 {
-  ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, x, y, a);
+  ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, x, y, 1000*a);
   robot_state.asserv.xy = 0;
   robot_state.asserv.a = 0;
   while(!robot_state.asserv.xy || !robot_state.asserv.a) {
@@ -65,6 +65,12 @@ void arm_set(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
       }
     } while(get_uptime_us() < tend);
   }
+}
+
+/// Move arm but don't wait
+void arm_set_nowait(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
+{
+  ROME_SEND_AND_WAIT(MECA_SET_ARM, &rome_meca, shoulder, elbow, wrist);
 }
 
 
@@ -187,10 +193,10 @@ void strat_prepare_galipeur(team_t team)
   // here, for red side
   int8_t kx = team == TEAM_RED ? 1 : -1;
   autoset_side_t side = team == TEAM_RED ? AUTOSET_RIGHT : AUTOSET_LEFT;
-  autoset(side, kx*(1500-120), 0);
-  goto_xya_rel(kx*-80, 0, 0);
-  autoset(AUTOSET_DOWN, kx*(1500-120-80), 120);
-  goto_xya_rel(0, 100, 0);
+  autoset(side, kx*(1500-100), 0);
+  goto_xya_rel(kx*-120, 0, 0);
+  autoset(AUTOSET_DOWN, kx*(1500-100-120), 100);
+  goto_xya_rel(0, 280, 0);
 }
 
 void strat_run_galipeur(team_t team)
@@ -201,6 +207,18 @@ void strat_run_galipeur(team_t team)
 
 void strat_test_galipeur(team_t team)
 {
+  int8_t kx = team == TEAM_RED ? 1 : -1;
+
+  // exit starting area
+  goto_xya(kx*1050, 534, 0);
+  // deploy arm
+  arm_set(-9000, 400, -300);
+  // turn
+  goto_xya_rel(0, 0, M_PI/3);
+  // push fire
+  goto_xya_rel(0, 600, 0);
+
+  //end
 }
 
 

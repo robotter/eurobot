@@ -18,8 +18,8 @@
 #define STRAT_TIMEOUT_US  1000000
 
 // Margin for arm positions
-#define ARM_UPPER_MARGIN  5000  //TODO
-#define ARM_LOWER_MARGIN  10  //TODO
+#define ARM_UPPER_MARGIN  2000
+#define ARM_LOWER_MARGIN  10
 
 // Battery alert value
 #define BATTERY_ALERT_LIMIT  13500
