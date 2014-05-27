@@ -147,7 +147,7 @@ static void update_battery(void)
     it=0;
     // get battery voltage
     BATTMON_monitor(&battery);
-    uint16_t voltage = battery.BatteryVoltage_mV;
+    uint16_t voltage = battery.FilterMemory;
     // send telemetry message
     ROME_SEND_STRAT_TM_BATTERY(&rome_paddock, voltage);
   }
@@ -194,7 +194,7 @@ int main(void)
 
   // Initialize battery monitoring
   BATTMON_monitor(&battery);
-  uint16_t voltage = battery.BatteryVoltage_mV;
+  uint16_t voltage = battery.FilterMemory;
 
   // Initialize timers
   timer_init();

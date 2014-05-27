@@ -60,8 +60,14 @@ void BATTMON_monitor(BATTMON_t *Batt)
   
     /* filter analog value */
     float NewFilerVal;
-    NewFilerVal = Batt->FilterMemory + (float)(BATTERY_LOW_PASS_FILTER_COEFF)*((float)(Batt->BatteryVoltage_mV) - Batt->FilterMemory);
-    Batt->FilterMemory = NewFilerVal;
+    static bool first_value = true;
+    if(first_value) {
+      Batt->FilterMemory = Batt->BatteryVoltage_mV;
+      first_value = false;
+    } else {
+      NewFilerVal = Batt->FilterMemory + (float)(BATTERY_LOW_PASS_FILTER_COEFF)*((float)(Batt->BatteryVoltage_mV) - Batt->FilterMemory);
+      Batt->FilterMemory = NewFilerVal;
+    }
 
     /* update status */ 
     if (Batt->FilterMemory >= Battmon_GetDischargedThresholdVoltage_mV(Batt))
