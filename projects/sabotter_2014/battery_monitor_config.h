@@ -14,6 +14,7 @@
 
 #define BATTERY_ADC_PORTPIN PORTPIN(B,7)
 #define BATTERY_ADC   ADCB
+#define BATTERY_ADC_MUX   ADC_CH_MUXPOS_PIN7_gc
 
 /* @brief battery monitoring is performed by monitoring the voltage of the battery (lipo or other).
  * the adc input may have a divider bridge made of 2 resistors.

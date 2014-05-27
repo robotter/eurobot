@@ -197,6 +197,7 @@ int main(void)
   portpin_dirset(&LED3_PP);
 
   // Initialize battery monitoring
+  BATTMON_Init(&battery);
   BATTMON_monitor(&battery);
   uint16_t voltage = battery.FilterMemory;
 
@@ -209,12 +210,14 @@ int main(void)
 
   // if voltage is low, blink purple led and don't start anything
   if(voltage < BATTERY_ALERT_LIMIT) {
-    if((get_uptime_us() / 500000) % 2 == 0) {
-      portpin_outset(&LED_R_PP);
-    } else {
-      portpin_outclr(&LED_R_PP);
+    for(;;) {
+      if((get_uptime_us() / 500000) % 2 == 0) {
+        portpin_outset(&LED_R_PP);
+      } else {
+        portpin_outclr(&LED_R_PP);
+      }
+      update_rome_interfaces();
     }
-    update_rome_interfaces();
   }
 
   // initialize asserv and meca, fold arms, ...

@@ -16,6 +16,9 @@ void BATTMON_Init(BATTMON_t *Batt)
 {
   if (Batt != NULL)
   {
+    // initialize adc for battery mgmt
+    adc_init(&BATTERY_ADC);
+
     Batt->Type = BATTERY_TYPE;
 
 #if (BATTERY_TYPE == LIPO)
@@ -47,46 +50,16 @@ void BATTMON_monitor(BATTMON_t *Batt)
     /* get analog value from adc*/
     uint16_t AdcVal =0u;
    
-    AdcVal = adc_GetValue(&BATTERY_ADC, BATTERY_ADC_PORTPIN.pin);
+    AdcVal = adc_get_value(&BATTERY_ADC, BATTERY_ADC_MUX); 
     /* convert it to battery voltage*/
     Batt->BatteryVoltage_mV = (uint16_t)( ((uint32_t)AdcVal*((uint32_t)BATTERY_VOLT_DIVIDER_GROUND_RESISTOR_OHMS + (uint32_t)BATTERY_VOLT_DIVIDER_BATT_RESISTOR_OHMS))/(uint32_t)BATTERY_VOLT_DIVIDER_BATT_RESISTOR_OHMS);
-     
-    /* convert it from adc unit to voltage */
-    //Batt->BatteryVoltage_mV =  (uint16_t)(((uint32_t)Batt->BatteryVoltage_mV * 33000u)/16u/4096u); 
 
     /* add 0.6V due to protection diode */
     Batt->BatteryVoltage_mV += 1000;
-    //Batt->BatteryVoltage_mV = AdcVal;
   
     /* filter analog value */
-    float NewFilerVal;
-    static bool first_value = true;
-    if(first_value) {
-      Batt->FilterMemory = Batt->BatteryVoltage_mV;
-      first_value = false;
-    } else {
-      NewFilerVal = Batt->FilterMemory + (float)(BATTERY_LOW_PASS_FILTER_COEFF)*((float)(Batt->BatteryVoltage_mV) - Batt->FilterMemory);
-      Batt->FilterMemory = NewFilerVal;
-    }
-
-    /* update status */ 
-    if (Batt->FilterMemory >= Battmon_GetDischargedThresholdVoltage_mV(Batt))
-    {
-      Batt->Status = BATTERY_CHARGED;
-
-      if (Batt->LedDefined)
-      {
-        portpin_outclr(&(Batt->Led));
-      }
-    }
-    else
-    {
-      Batt->Status = BATTERY_DISCHARGED;
-      if (Batt->LedDefined)
-      {
-        portpin_outtgl(&(Batt->Led));
-      }
-    }
+    float NewFilterVal = Batt->BatteryVoltage_mV; //Batt->FilterMemory + (float)(BATTERY_LOW_PASS_FILTER_COEFF)*((float)(Batt->BatteryVoltage_mV) - Batt->FilterMemory);
+    Batt->FilterMemory = NewFilterVal;
   }
 }
 
