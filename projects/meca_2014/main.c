@@ -223,6 +223,7 @@ int main(void)
   uint32_t lluptime = uptime;
 
   uint32_t t = 0;
+  bool setted_up = false;
   // main loop
   for(;;) {
     
@@ -239,6 +240,13 @@ int main(void)
       uint16_t a = barometer_get_pressure(&baro0);
       uint16_t b = barometer_get_pressure(&baro1);
       TM_DL_SUCKERS(a < 250, b < 250);
+    }
+
+    if(!setted_up && arm_is_running()) {
+      setted_up = true;
+      arm_set_position(A_UPPER, 0);
+      arm_set_position(A_ELBOW, 500);
+      arm_set_position(A_WRIST, -300);
     }
     
     // update rome every 100 ms

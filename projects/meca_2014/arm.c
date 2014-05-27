@@ -138,12 +138,12 @@ void arm_init() {
   quadra_init(&quadra_arm,  &TCC1, 0, PORTPIN(E,0), PORTPIN(E,1), 8);
 
   pid_init(&pid_arm);
-  pid_set_gains(&pid_arm, 300, 20, 5);
-  pid_set_maximums(&pid_arm, 0, 100, 0);
+  pid_set_gains(&pid_arm, 400, 20, 5);
+  pid_set_maximums(&pid_arm, 0, 500, 0);
   pid_set_out_shift(&pid_arm, 8);
 
   ramp_init(&rampf);
-  ramp_set_vars(&rampf, 1000, 1000);
+  ramp_set_vars(&rampf, 2000, 2000);
 
   cs_init(&cs_arm);
   cs_set_consign_filter(&cs_arm, ramp_do_filter, &rampf);
