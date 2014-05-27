@@ -34,8 +34,7 @@
 #include "motor_encoders.h"
 #include "hrobot_manager.h"
 #include "adxrs/adxrs.h"
-// XXX NDJD : bring me back me ADC module is done
-//#include "avoidance.h"
+#include "avoidance.h"
 
 #include "settings.h"
 
@@ -49,8 +48,7 @@ htrajectory_t trajectory;
 extern struct quadramp_filter qramp_angle;
 
 // Avoidance system
-// XXX NDJD : bring me back me ADC module is done
-//avoidance_t avoidance;
+avoidance_t avoidance;
 
 void cs_initialize(void)
 {
@@ -93,16 +91,13 @@ void cs_initialize(void)
                             SETTING_POSITION_INIT_A);
 
   // Initialize avoidance system
-  // XXX NDJD : bring me back me ADC module is done
-  //avoidance_init(&avoidance);
-  // XXX
+  avoidance_init(&avoidance);
 }
 
 void cs_update(void* dummy)
 {
   // update avoidance system
-  // XXX NDJD : to be included when ADC module is avaible
-  //avoidance_update(&avoidance);
+  avoidance_update(&avoidance);
   // update trajectory management
   htrajectory_update(&trajectory);
 	// update robot position 

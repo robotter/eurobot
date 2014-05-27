@@ -20,11 +20,10 @@
   * \author JD
   */
 
-
-#include <adc.h>
-#include "settings.h"
-
 #include "avoidance.h"
+#include "adc.h"
+#include "settings.h"
+#include "telemetry.h"
 
 /** @brief Initialize avoidance systems */
 void avoidance_init(avoidance_t* av)
@@ -45,11 +44,12 @@ void avoidance_update(avoidance_t* av)
   uint8_t *pv;
 
   // get new ADC measure (from a previously launched one)
-  adcval = 
-    adc_get_value( av->gp2_muxs[av->gp2_it] | ADC_REF_AVCC );
-
+  adcval = adc_get_value(&SETTING_AVOIDANCE_GP2ARRAY_ADC,
+                          av->gp2_muxs[av->gp2_it]);
+  // store raw value
+  av->gp2_raws[av->gp2_it] = adcval;
+  // update dectection vector
   pv = av->gp2_detections + av->gp2_it;
-
   // if ADC over threshold (something detected)
   if( adcval > SETTING_AVOIDANCE_GP2ARRAY_THRESHOLD )
   {
@@ -65,9 +65,11 @@ void avoidance_update(avoidance_t* av)
   if(av->gp2_it >= SETTING_AVOIDANCE_GP2ARRAY_SIZE)
     av->gp2_it = 0;
 
-  // launch new ADC measure
-  adc_launch( av->gp2_muxs[av->gp2_it] | ADC_REF_AVCC );
-
+  // update telemetries
+  uint16_t *raws = av->gp2_raws;
+  TM_DL_GP2_RAWS(raws[0], raws[1], raws[2]);
+  uint8_t *det = av->gp2_detections;
+  TM_DL_GP2_DET(det[0], det[1], det[2]);
 }
 
 /** @brief Force avoidance to blocked 

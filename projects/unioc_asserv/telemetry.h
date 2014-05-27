@@ -51,5 +51,7 @@ if(_prescaler++>(N)) {\
 
 #define TM_DL_MOTORS(a,b,c) _PRESCALE(TM_PRESCALER, ROME_SEND_ASSERV_TM_MOTORS(&rome,a,b,c))
 
+#define TM_DL_GP2_RAWS(a,b,c) _PRESCALE(TM_PRESCALER, ROME_SEND_ASSERV_TM_GP2_RAWS(&rome,a,b,c))
+#define TM_DL_GP2_DET(a,b,c) _PRESCALE(TM_PRESCALER, ROME_SEND_ASSERV_TM_GP2_DET(&rome,a,b,c))
 
 #endif//TELEMETRY_H

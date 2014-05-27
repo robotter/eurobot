@@ -61,6 +61,10 @@ register_messages(
     ('asserv_tm_htraj_path_index', [('i','uint8'),('size','uint8')]),
     # motors consigns
     ('asserv_tm_motors', [('m1','int32'),('m2','int32'),('m3','int32')]),
+    # gp2 raw values
+    ('asserv_tm_gp2_raws', [('g0','uint16'),('g1','uint16'),('g2','uint16')]),
+    # gp2 detection vector
+    ('asserv_tm_gp2_det', [('g0','uint16'),('g1','uint16'),('g2','uint16')]),
 
     # __ DEBUG __
     # all purposes debug message

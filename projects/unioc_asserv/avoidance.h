@@ -32,13 +32,12 @@ typedef struct
 {
   // sensor multiplexing
   uint8_t gp2_it;
-  
   // sensors ADCs
-  uint16_t gp2_muxs[SETTING_AVOIDANCE_GP2ARRAY_SIZE];
-
+  uint8_t gp2_muxs[SETTING_AVOIDANCE_GP2ARRAY_SIZE];
+  // raw gp2 values
+  uint16_t gp2_raws[SETTING_AVOIDANCE_GP2ARRAY_SIZE];
   // gp2 detections status
   uint8_t gp2_detections[SETTING_AVOIDANCE_GP2ARRAY_SIZE];
-
   // detection forced to blocked state
   uint8_t forced_blocked;
 
