@@ -194,6 +194,7 @@ int main(void)
 
   // Initialize battery monitoring
   BATTMON_monitor(&battery);
+  uint16_t voltage = battery.BatteryVoltage_mV;
 
   // Initialize timers
   timer_init();
@@ -201,6 +202,18 @@ int main(void)
                      UPTIME_INTLVL, update_uptime);
   timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0,50e3),
                      UPTIME_INTLVL, update_battery);
+
+  // if voltage is low, blink purple led and don't start anything
+  if(voltage < BATTERY_ALERT_LIMIT) {
+    if((get_uptime_us() / 500000) % 2 == 0) {
+      portpin_outset(&LED_R_PP);
+      portpin_outset(&LED_B_PP);
+    } else {
+      portpin_outclr(&LED_R_PP);
+      portpin_outclr(&LED_B_PP);
+    }
+    update_rome_interfaces();
+  }
 
   // initialize asserv and meca, fold arms, ...
   strat_init();

@@ -21,6 +21,9 @@
 #define ARM_UPPER_MARGIN  5000  //TODO
 #define ARM_LOWER_MARGIN  10  //TODO
 
+// Battery alert value
+#define BATTERY_ALERT_LIMIT  13500
+
 
 // Starting cord: 0 is plugged, 1 in unplugged
 #define STARTING_CORD_PP  PORTPIN(C,1)
