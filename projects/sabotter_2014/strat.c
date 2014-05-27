@@ -68,10 +68,28 @@ void arm_set(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
 }
 
 
+bool starting_cord_plugged(void)
+{
+  for(;;) {
+    bool b = !portpin_in(&STARTING_CORD_PP);
+    bool ok = true;
+    for(uint16_t i=0; i<1000; i++) {
+      if(b != !portpin_in(&STARTING_CORD_PP)) {
+        ok = false;
+        break;
+      }
+    }
+    if(ok) {
+      return b;
+    }
+  }
+}
+
+
 team_t strat_select_team(void)
 {
   // wait for starting cord to be unplugged
-  while(!portpin_in(&STARTING_CORD_PP)) {
+  while(starting_cord_plugged()) {
     if((get_uptime_us() / 500000) % 2 == 0) {
       portpin_outset(&LED_B_PP);
     } else {
@@ -94,7 +112,7 @@ team_t strat_select_team(void)
       portpin_outset(&LED_G_PP);
       team = TEAM_YELLOW;
     }
-    if(!portpin_in(&STARTING_CORD_PP)) {
+    if(starting_cord_plugged()) {
       portpin_outclr(&LED_B_PP);
       break;
     }
@@ -112,7 +130,7 @@ team_t strat_select_team(void)
 
 void strat_wait_start(team_t team)
 {
-  while(!portpin_in(&STARTING_CORD_PP)) {
+  while(starting_cord_plugged()) {
     if((get_uptime_us() / 500000) % 2 == 0) {
       if(team == TEAM_RED) {
         portpin_outset(&LED_R_PP);
