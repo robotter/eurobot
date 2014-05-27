@@ -68,6 +68,70 @@ void arm_set(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
 }
 
 
+team_t strat_select_team(void)
+{
+  // wait for starting cord to be unplugged
+  while(!portpin_in(&STARTING_CORD_PP)) {
+    if((get_uptime_us() / 500000) % 2 == 0) {
+      portpin_outset(&LED_B_PP);
+    } else {
+      portpin_outclr(&LED_B_PP);
+    }
+    update_rome_interfaces();
+  }
+
+  // wait for color to be selected
+  // color is selected when starting cord is plugged
+  team_t team = TEAM_NONE;
+  portpin_outset(&LED_B_PP);
+  for(;;) {
+    if(portpin_in(&COLOR_SELECTOR_PP)) {
+      portpin_outset(&LED_R_PP);
+      portpin_outclr(&LED_G_PP);
+      team = TEAM_RED;
+    } else {
+      portpin_outset(&LED_R_PP);
+      portpin_outset(&LED_G_PP);
+      team = TEAM_YELLOW;
+    }
+    if(portpin_in(&PORTPIN(C,1))) {
+      portpin_outclr(&LED_B_PP);
+      break;
+    }
+    update_rome_interfaces();
+  }
+
+  // wait 2s before next step
+  uint32_t tend = get_uptime_us() + 2e6;
+  while(get_uptime_us() < tend) {
+    update_rome_interfaces();
+  }
+
+  return team;
+}
+
+void strat_wait_start(team_t team)
+{
+  while(!portpin_in(&STARTING_CORD_PP)) {
+    if((get_uptime_us() / 500000) % 2 == 0) {
+      if(team == TEAM_RED) {
+        portpin_outset(&LED_R_PP);
+        portpin_outclr(&LED_G_PP);
+      } else {
+        portpin_outset(&LED_R_PP);
+        portpin_outset(&LED_G_PP);
+      }
+      portpin_outclr(&LED_B_PP);
+    } else {
+      portpin_outclr(&LED_R_PP);
+      portpin_outclr(&LED_G_PP);
+      portpin_outset(&LED_B_PP);
+    }
+    update_rome_interfaces();
+  }
+}
+
+
 void strat_init_galipeur(void)
 {
   // initialize asserv variables
@@ -81,35 +145,43 @@ void strat_init_galipeur(void)
   //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XYSTEERING_WINDOW, &rome_asserv, 50.0);
   //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_STOP_WINDOWS, &rome_asserv, 5.0, 0.03);
 
+  // disable asserv
+  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
+
   // initialize meca
-  ROME_SEND_AND_WAIT(MECA_SET_ARM, &rome_meca, 0, 0, 0);
-  //ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 0, 1);
-  //ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 1, 1);
-  //ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 0, 1);
-  //ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 1, 1);
-  //_delay_ms(1000);
-  //ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 0);
+  ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 1);
+}
+
+void strat_prepare_galipeur(team_t team)
+{
+  // initialize asserv
+  ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, 0, 0, 0);
+  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
+
+  // prepare meca
+  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 0, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 1, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 0, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 1, 1);
+
+  // autoset robot
+  //TODO autoset/moves should depend on side
+  // here, for red side
+  int8_t kx = team == TEAM_RED ? 1 : -1;
+  autoset_side_t side = team == TEAM_RED ? AUTOSET_RIGHT : AUTOSET_LEFT;
+  autoset(side, kx*(1500-120), 0);
+  goto_xya_rel(kx*-80, 0, 0);
+  autoset(AUTOSET_DOWN, kx*(1500-120-80), 120);
+  goto_xya_rel(0, 100, 0);
 }
 
 void strat_run_galipeur(team_t team)
 {
   int8_t kx = team == TEAM_RED ? 1 : -1;
-  // set start position
-  //TODO adjust
-  ROME_SEND_AND_WAIT(ASSERV_SET_XYA, &rome_asserv,
-                     kx*(1500-120), 150, team == TEAM_RED ? M_PI/2 : M_PI/6);
-  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
-
-  // exit start zone
-  goto_xya_rel(kx*150, -500, 0);
-  //TODO deploy arm
-
-  // go in front of first fire and push it
-  goto_xya(kx*110, 800, 0);
-  goto_xya_rel(kx*0, 100, 0);
+  (void)kx;
 }
 
-void strat_test_galipeur(void)
+void strat_test_galipeur(team_t team)
 {
 }
 
@@ -118,11 +190,15 @@ void strat_init_galipette(void)
 {
 }
 
-void strat_test_galipette(void)
+void strat_prepare_galipette(team_t team)
 {
 }
 
 void strat_run_galipette(team_t team)
+{
+}
+
+void strat_test_galipette(team_t team)
 {
 }
 
@@ -146,13 +222,18 @@ void strat_init(void)
   ROBOT_FUNCTION(strat_init_)();
 }
 
+void strat_prepare(team_t team)
+{
+  ROBOT_FUNCTION(strat_prepare_)(team);
+}
+
 void strat_run(team_t team)
 {
   ROBOT_FUNCTION(strat_run_)(team);
 }
 
-void strat_test(void)
+void strat_test(team_t team)
 {
-  ROBOT_FUNCTION(strat_test_)();
+  ROBOT_FUNCTION(strat_test_)(team);
 }
 

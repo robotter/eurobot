@@ -202,11 +202,13 @@ int main(void)
   timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0,50e3),
                      UPTIME_INTLVL, update_battery);
 
+  // initialize asserv and meca, fold arms, ...
   strat_init();
-  //TODO select color
-  //TODO wait for starting cord
-  strat_test();
-  //strat_run(TEAM_NONE);
+  team_t team = strat_select_team();
+  strat_prepare(team);
+  strat_wait_start(team);
+  strat_test(team);
+  //strat_run(team);
 
   for(;;) {
     update_rome_interfaces();

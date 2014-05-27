@@ -17,8 +17,12 @@ typedef enum {
   AUTOSET_DOWN,
 } autoset_side_t;
 
+
 void strat_init(void);
+team_t strat_select_team(void);
+void strat_prepare(team_t team);
+void strat_wait_start(team_t team);
 void strat_run(team_t team);
-void strat_test(void);
+void strat_test(team_t team);
 
 #endif
