@@ -40,7 +40,7 @@ void goto_xya_rel(int16_t x, int16_t y, int16_t a)
 }
 
 /// Do an autoset
-void autoset(uint8_t side, float x, float y)
+void autoset(autoset_side_t side, float x, float y)
 {
   ROME_SEND_AND_WAIT(ASSERV_AUTOSET, &rome_asserv, side, x, y);
   robot_state.asserv.autoset = 0;

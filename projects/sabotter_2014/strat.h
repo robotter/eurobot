@@ -8,6 +8,15 @@ typedef enum {
   TEAM_YELLOW,
 } team_t;
 
+/// Side for autoset
+typedef enum {
+  AUTOSET_NONE,
+  AUTOSET_LEFT,
+  AUTOSET_RIGHT,
+  AUTOSET_UP,
+  AUTOSET_DOWN,
+} autoset_side_t;
+
 void strat_init(void);
 void strat_run(team_t team);
 void strat_test(void);
