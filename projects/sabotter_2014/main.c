@@ -135,16 +135,21 @@ uint32_t get_uptime_us(void)
 static void update_uptime(void)
 {
   uptime += UPDATE_TICK_US;
-  
-  // check battery voltage every .5 second and downlink value
-  static uint32_t luptime = UINT32_MAX;
-  if(uptime - luptime > 500e3) {
+}
+
+static void update_battery(void)
+{
+  // function called every 50ms
+
+  // call battery mgmt and downlink every 500ms
+  static uint8_t it=0; it++;
+  if(it > 10) {
+    it=0;
     // get battery voltage
     BATTMON_monitor(&battery);
     uint16_t voltage = battery.BatteryVoltage_mV;
     // send telemetry message
     ROME_SEND_STRAT_TM_BATTERY(&rome_paddock, voltage);
-    luptime = uptime;
   }
 }
 
@@ -194,6 +199,8 @@ int main(void)
   timer_init();
   timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US),
                      UPTIME_INTLVL, update_uptime);
+  timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0,50e3),
+                     UPTIME_INTLVL, update_battery);
 
   // wait for other boards to be ready
   _delay_ms(2000);
