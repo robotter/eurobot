@@ -14,7 +14,7 @@ uint16_t adc_GetValue(ADC_t *Adc, uint8_t channel)
   while((Adc->INTFLAGS & ADC_CH0IF_bm) == 0x00u); 
 
   // adc incorporates an offset of 205 to ensure proper 0V measure)
-  return (Adc->CH0RES - 515u);
+  return (Adc->CH0RES - 205);
 }
 
 uint16_t adc_Get3v3Value(ADC_t *Adc)

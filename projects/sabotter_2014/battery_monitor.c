@@ -49,13 +49,13 @@ void BATTMON_monitor(BATTMON_t *Batt)
    
     AdcVal = adc_GetValue(&BATTERY_ADC, BATTERY_ADC_PORTPIN.pin);
     /* convert it to battery voltage*/
-    Batt->BatteryVoltage_mV = (uint16_t)( ((uint32_t)AdcVal*((uint32_t)BATTERY_VOLT_DIVIDER_GROUND_RESISTOR_OHMS + (uint32_t)BATTERY_VOLT_DIVIDER_BATT_RESISTOR_OHMS))/(uint32_t)BATTERY_VOLT_DIVIDER_GROUND_RESISTOR_OHMS);
+    Batt->BatteryVoltage_mV = (uint16_t)( ((uint32_t)AdcVal*((uint32_t)BATTERY_VOLT_DIVIDER_GROUND_RESISTOR_OHMS + (uint32_t)BATTERY_VOLT_DIVIDER_BATT_RESISTOR_OHMS))/(uint32_t)BATTERY_VOLT_DIVIDER_BATT_RESISTOR_OHMS);
      
     /* convert it from adc unit to voltage */
-    Batt->BatteryVoltage_mV =  (uint16_t)(((uint32_t)Batt->BatteryVoltage_mV * 33000u)/16u/4096u); 
+    //Batt->BatteryVoltage_mV =  (uint16_t)(((uint32_t)Batt->BatteryVoltage_mV * 33000u)/16u/4096u); 
 
     /* add 0.6V due to protection diode */
-    Batt->BatteryVoltage_mV += 600;
+    Batt->BatteryVoltage_mV += 1000;
     //Batt->BatteryVoltage_mV = AdcVal;
   
     /* filter analog value */

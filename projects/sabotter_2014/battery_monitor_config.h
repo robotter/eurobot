@@ -12,8 +12,8 @@
  */
 //#define BATTERY_PB_VOLTAGE_V  12 
 
-#define BATTERY_ADC_PORTPIN PORTPIN(A,5)
-#define BATTERY_ADC   ADCA
+#define BATTERY_ADC_PORTPIN PORTPIN(B,7)
+#define BATTERY_ADC   ADCB
 
 /* @brief battery monitoring is performed by monitoring the voltage of the battery (lipo or other).
  * the adc input may have a divider bridge made of 2 resistors.
