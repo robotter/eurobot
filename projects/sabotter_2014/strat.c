@@ -189,8 +189,6 @@ void strat_prepare_galipeur(team_t team)
   ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 1, 1);
 
   // autoset robot
-  //TODO autoset/moves should depend on side
-  // here, for red side
   int8_t kx = team == TEAM_RED ? 1 : -1;
   autoset_side_t side = team == TEAM_RED ? AUTOSET_RIGHT : AUTOSET_LEFT;
   autoset(side, kx*(1500-100), 0);
