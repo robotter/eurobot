@@ -86,4 +86,11 @@ register_messages(
     # return pressure sensors
     ('meca_tm_suckers', [('a','bool'),('b','bool')]),
    ]),
+
+  (0x60, [
+    # __ TELEMETRY __
+    # robot main battery voltage (in mv)
+    ('strat_tm_battery', [('voltage','uint16')]),
+  ]),
+
 )

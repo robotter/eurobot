@@ -30,6 +30,10 @@
 #include "strat.h"
 #include "common.h"
 #include "config.h"
+#include "battery_monitor.h"
+
+// battery monitoring
+BATTMON_t battery;
 
 // ROME interfaces
 rome_intf_t rome_asserv;
@@ -131,6 +135,17 @@ uint32_t get_uptime_us(void)
 static void update_uptime(void)
 {
   uptime += UPDATE_TICK_US;
+  
+  // check battery voltage every .5 second and downlink value
+  static uint32_t luptime = UINT32_MAX;
+  if(uptime - luptime > 500e3) {
+    // get battery voltage
+    BATTMON_monitor(&battery);
+    uint16_t voltage = battery.BatteryVoltage_mV;
+    // send telemetry message
+    ROME_SEND_STRAT_TM_BATTERY(&rome_paddock, voltage);
+    luptime = uptime;
+  }
 }
 
 
@@ -171,6 +186,9 @@ int main(void)
   portpin_dirset(&LED1_PP);
   portpin_dirset(&LED2_PP);
   portpin_dirset(&LED3_PP);
+
+  // Initialize battery monitoring
+  BATTMON_monitor(&battery);
 
   // Initialize timers
   timer_init();
