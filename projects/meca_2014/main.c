@@ -245,7 +245,7 @@ int main(void)
     if(!setted_up && arm_is_running()) {
       setted_up = true;
       arm_set_position(A_UPPER, 0);
-      arm_set_position(A_ELBOW, 500);
+      arm_set_position(A_ELBOW, 400);
       arm_set_position(A_WRIST, -300);
     }
     

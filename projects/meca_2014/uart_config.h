@@ -1,6 +1,6 @@
 
-#define UART_RX_BUF_SIZE  64
-#define UART_TX_BUF_SIZE  64
+#define UART_RX_BUF_SIZE  250
+#define UART_TX_BUF_SIZE  250
 
 #define UART_BAUDRATE  38400
 #define UART_BSCALE  0
