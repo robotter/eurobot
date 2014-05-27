@@ -3,7 +3,7 @@
 #define MOTORS_SCALES_H
 
 #if defined(BUILD_GALIPEUR)
-#define M (24.0/32.0)
+#define M (24.0/16.0)
 static const float motors_scales[] = {M, M, M};
 static const float encoders_scales[] = {1.0, 1.0, 1.0};
 #elif defined(BUILD_GALIPETTE)
