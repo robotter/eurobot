@@ -23,6 +23,7 @@
 #ifndef _AVOIDANCE_H_
 #define _AVOIDANCE_H_
 
+#include <stdbool.h>
 #include "hposition_manager.h"
 #include "settings.h"
 
@@ -40,11 +41,16 @@ typedef struct
   uint8_t gp2_detections[SETTING_AVOIDANCE_GP2ARRAY_SIZE];
   // detection forced to blocked state
   uint8_t forced_blocked;
+  // detection inhibited
+  bool inhibited;
 
 }avoidance_t;
 
 /** @brief Initialize avoidance systems */
 void avoidance_init(avoidance_t*);
+
+/** @brief Inhibit avoidance */
+void avoidance_inhibit(avoidance_t*,bool);
 
 /** @brief Update avoidance system */
 void avoidance_update(avoidance_t*);

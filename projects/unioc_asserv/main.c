@@ -31,6 +31,7 @@
 #include "cs.h"
 #include "robot_cs.h"
 #include "htrajectory.h"
+#include "avoidance.h"
 #include "cli.h"
 #include "motor_encoders.h"
 
@@ -53,6 +54,9 @@ extern struct pid_filter pid_angle;
 #include "quadramp.h"
 extern struct quadramp_filter qramp_angle;
 
+// avoidance system
+extern avoidance_t avoidance;
+
 // match timer
 bool match_timer_counting = false;
 int32_t match_timer_ms = -1;
@@ -72,7 +76,10 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
     }
     case ROME_MID_START_TIMER: {
       uint8_t fid = frame->start_timer.fid;
+      // start match
       match_timer_counting = true;
+      // XXX turn avoidance on at the same time XXX
+      avoidance_inhibit(&avoidance,false);
       ROME_SEND_ACK(intf,fid);
       break;
     }
