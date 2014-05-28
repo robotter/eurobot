@@ -307,7 +307,9 @@ int main(void)
   //adxrs_calibration_mode(false);
   printf("-- reboot --\n");
   //----------------------------------------------------------------------
+  PORTQ.OUT = 0;
   for(;;) {
+    PORTQ.OUT++;
     _delay_ms(10);
     rome_handle_input(&rome);
   }

@@ -38,9 +38,9 @@
 typedef enum
 {
   DIR_NONE = 0,
-  DIR_60 = 1,
-  DIR_180 = 2,
-  DIR_300 = 4
+  DIR_30 = 1,
+  DIR_150 = 2,
+  DIR_270 = 4
 
 }direction_t;
 

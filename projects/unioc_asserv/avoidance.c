@@ -28,11 +28,13 @@
 /** @brief Initialize avoidance systems */
 void avoidance_init(avoidance_t* av)
 {
+  adc_init(&SETTING_AVOIDANCE_GP2ARRAY_ADC);
+
   av->gp2_it = 0;
 
-  av->gp2_muxs[0] = SETTING_AVOIDANCE_GP2ARRAY_60;
-  av->gp2_muxs[1] = SETTING_AVOIDANCE_GP2ARRAY_180;
-  av->gp2_muxs[2] = SETTING_AVOIDANCE_GP2ARRAY_300;
+  av->gp2_muxs[0] = SETTING_AVOIDANCE_GP2ARRAY_30;
+  av->gp2_muxs[1] = SETTING_AVOIDANCE_GP2ARRAY_150;
+  av->gp2_muxs[2] = SETTING_AVOIDANCE_GP2ARRAY_270;
 
   av->forced_blocked = 0;
 }
@@ -84,16 +86,16 @@ direction_t avoidance_check(avoidance_t* av)
 {
   // if avoidance is blocked set all direction
   if( av->forced_blocked )
-    return DIR_60|DIR_180|DIR_300;
+    return DIR_30|DIR_150|DIR_270;
 
 #ifdef SETTING_AVOIDANCE_ENABLED
   uint16_t rv = DIR_NONE;
   if( av->gp2_detections[0] > SETTING_AVOIDANCE_GP2ARRAY_COUNT )
-    rv |= DIR_60;
+    rv |= DIR_30;
   if( av->gp2_detections[1] > SETTING_AVOIDANCE_GP2ARRAY_COUNT )
-    rv |= DIR_180;
+    rv |= DIR_150;
   if( av->gp2_detections[2] > SETTING_AVOIDANCE_GP2ARRAY_COUNT )
-    rv |= DIR_300;
+    rv |= DIR_270;
   return rv;
 #else
   return DIR_NONE;

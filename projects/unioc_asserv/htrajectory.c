@@ -31,12 +31,10 @@
 
 #include "telemetry.h"
 
-// XXX NDJD : bring me back me ADC module is done
-//#include "avoidance.h"
+#include "avoidance.h"
 
 // avoidance system
-// XXX NDJD : bring me back me ADC module is done
-//extern avoidance_t avoidance;
+extern avoidance_t avoidance;
 
 /* -- private functions -- */
 
@@ -430,10 +428,7 @@ static void _htrajectory_update( htrajectory_t *htj )
   }
 
   // is robot blocked by something ?
-  // XXX NDJD : to be included when ADC module is avaible
-  //dir = avoidance_check(&avoidance);
-  dir = DIR_NONE;
-  // XXX
+  dir = avoidance_check(&avoidance);
 
   // if blocked ...
   if( dir != DIR_NONE )
