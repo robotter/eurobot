@@ -234,10 +234,18 @@ void vcs_update(void)
   up_cnt++;
   cs_update(NULL);
 
-  // update match timer
-  if(match_timer_counting) {
-    match_timer_ms += CONTROL_SYSTEM_PERIOD_US/1000;
+  // check match timer
+  if(match_timer_ms > 1000*(int32_t)SETTING_MATCH_DURATION_SECS) {
+    // out of time
+    hrobot_break(1);
   }
+  else {
+    // update match timer
+    if(match_timer_counting) {
+      match_timer_ms += CONTROL_SYSTEM_PERIOD_US/1000;
+    }
+  }
+
   // downlink match timer telemetry
   TM_DL_MATCH_TIMER(match_timer_ms/1000);
 }
