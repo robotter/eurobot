@@ -38,6 +38,8 @@
 
 #include "adxrs/adxrs.h"
 
+#include "telemetry.h"
+
 volatile uint8_t init0, init1;
 
 portpin_t leds[4];
@@ -51,6 +53,10 @@ extern struct pid_filter pid_angle;
 #include "quadramp.h"
 extern struct quadramp_filter qramp_angle;
 
+// match timer
+bool match_timer_counting = false;
+int32_t match_timer_ms = -1;
+
 // ROME interface
 rome_intf_t rome;
 // ROME messages handler
@@ -62,6 +68,12 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       uint8_t b = frame->asserv_activate.activate;
       (void)b;// TODO
       ROME_SEND_ACK(intf, fid);
+      break;
+    }
+    case ROME_MID_ASSERV_START_TIMER: {
+      uint8_t fid = frame->asserv_start_timer.fid;
+      match_timer_counting = true;
+      ROME_SEND_ACK(intf,fid);
       break;
     }
     case ROME_MID_ASSERV_AUTOSET: {
@@ -221,6 +233,13 @@ void vcs_update(void)
 {
   up_cnt++;
   cs_update(NULL);
+
+  // update match timer
+  if(match_timer_counting) {
+    match_timer_ms += CONTROL_SYSTEM_PERIOD_US/1000;
+  }
+  // downlink match timer telemetry
+  TM_DL_MATCH_TIMER(match_timer_ms/1000);
 }
 
 

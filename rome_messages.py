@@ -15,6 +15,9 @@ register_messages(
     # turn on control systems if activate is TRUE, turn it off otherwise
     _acked('asserv_activate', [('activate','bool')]),
 
+    # start asserv match timer 
+    _acked('asserv_start_timer', [],),
+
     # order robot to go directly to point (x,y) then turn to heading a 
     _acked('asserv_goto_xy',     [('x','dist'),('y','dist'),('a','angle')]),
     # same as asserv_goto_xy, but relative to previous coordinates
@@ -65,6 +68,8 @@ register_messages(
     ('asserv_tm_gp2_raws', [('g0','uint16'),('g1','uint16'),('g2','uint16')]),
     # gp2 detection vector
     ('asserv_tm_gp2_det', [('g0','uint16'),('g1','uint16'),('g2','uint16')]),
+    # match timer 
+    ('asserv_tm_match_timer', [('seconds','int16')]),
 
     # __ DEBUG __
     # all purposes debug message
