@@ -23,8 +23,8 @@ PRINTF_LEVEL = standard
 CFLAGS += -g -Wextra -Werror
 LDFLAGS += -g
 
-ROOM_TRANSACTIONS = ../../room_transactions.py
-export ROOM_TRANSACTIONS
+ROME_MESSAGES = ../../rome_messages.py
+export ROME_MESSAGES
 
 include ../../avarix/mk/project.mk
 

@@ -2,9 +2,7 @@
 #define CONFIG_H
 
 /// Perlimpinpin node address
-#define PPP_ADDR  0x13
-
-#define UART_PPP  uartF1
+#define UART_ROME  uartF1
 
 
 // pinout

@@ -52,8 +52,9 @@ int main(void)
   clock_init();
   timer_init();
   uart_init();
-  CPU_SREG |= CPU_I_bm;
+
   INTLVL_ENABLE_ALL();
+  __asm__("sei");
 
   portpin_dirset(&LED_RUN_PP);
   portpin_dirset(&LED_ERROR_PP);
@@ -64,7 +65,7 @@ int main(void)
   portpin_dirset(&LED_SOUTH_PP);
 
   rome_intf_init(&rome_intf);
-  rome_intf.uart = uartF1;
+  rome_intf.uart = UART_ROME;
   rome_intf.handler = rome_handler;
 
   // init R3D2

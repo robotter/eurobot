@@ -27,7 +27,7 @@
 
 
 // We need motor and sensor interrupts to have a higher level
-#define UART_INTLVL  INTLVL_MED
+#define UART_INTLVL  INTLVL_HI
 
 //@}
 //@}
