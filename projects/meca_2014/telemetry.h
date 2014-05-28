@@ -40,4 +40,6 @@ if(_prescaler++>(N)) {\
 #define TM_DL_ARM(a,b,c) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_ARM(&rome,a,b,c))
 #define TM_DL_SUCKERS(a,b) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_SUCKERS(&rome,a,b))
 
+#define TM_DL_MATCH_TIMER(a) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_MATCH_TIMER(&rome,a))
+
 #endif//TELEMETRY_H

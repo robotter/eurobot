@@ -15,12 +15,22 @@
 #include "telemetry.h"
 #include "pumps_valves.h"
 
+// match timer   
+bool match_timer_counting = false;
+int32_t match_timer_ms = -1;
+
 // ROME interface
 rome_intf_t rome;
 // ROME messages handler
 void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
   switch(frame->mid) {
-  
+    case ROME_MID_START_TIMER: {
+      uint8_t fid = frame->start_timer.fid;
+      match_timer_counting = true;
+      ROME_SEND_ACK(intf,fid);
+      break;
+    }
+
     case ROME_MID_MECA_SET_ARM: {
       uint8_t fid = frame->meca_set_arm.fid;
       int16_t upper = frame->meca_set_arm.upper;
@@ -236,10 +246,27 @@ int main(void)
       luptime = uptime;
       // update arm
       arm_update();
-      // update telemetries
+
+      // update barometers
       uint16_t a = barometer_get_pressure(&baro0);
       uint16_t b = barometer_get_pressure(&baro1);
       TM_DL_SUCKERS(a < 250, b < 250);
+
+      // update match timer
+      // check match timer
+      if(match_timer_ms > 1000*(int32_t)MATCH_DURATION_SECS) {
+        // out of time
+        arm_activate_power(false);
+      }
+      else {
+        // update match timer
+        if(match_timer_counting) {
+          match_timer_ms += UPDATE_ARM_US/1000;
+        }
+      }
+      // downlink match timer telemetry
+      TM_DL_MATCH_TIMER(match_timer_ms/1000);
+
     }
 
     if(!setted_up && arm_is_running()) {

@@ -7,6 +7,8 @@
  */
 
 
+#define MATCH_DURATION_SECS (89)
+
 /// Perlimpinpin node address
 #define PPP_ADDR  0x12
 

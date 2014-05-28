@@ -94,6 +94,8 @@ register_messages(
     ('meca_tm_arm', [('upper','int16'),('elbow','int16'),('wrist','int16')]),
     # return pressure sensors
     ('meca_tm_suckers', [('a','bool'),('b','bool')]),
+    # match timer 
+    ('meca_tm_match_timer', [('seconds','int16')]),
    ]),
 
   (0x60, [
