@@ -18,6 +18,8 @@
 
 // Tick period of uptime counter, in microseconds
 #define UPDATE_TICK_US  10000
+// Tick period of match timer, in microseconds
+#define UPDATE_MATCH_TIMER_TICK_US  10000
 // Interrupt level of tick interrupt
 #define UPTIME_INTLVL  INTLVL_HI
 

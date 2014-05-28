@@ -176,6 +176,29 @@ void update(void)
   }
 }
 
+void update_match_timer(void)
+{
+  // update match timer
+  // check match timer
+  if(match_timer_ms > 1000*(int32_t)MATCH_DURATION_SECS) {
+    // out of time
+    arm_activate_power(false);
+    // turn off all pumps, open valves
+    pump_valves_activate_pump_A(false);
+    pump_valves_activate_pump_B(false);
+    pump_valves_activate_valve_A(true);
+    pump_valves_activate_valve_B(true);
+  }
+  else {
+    // update match timer
+    if(match_timer_counting) {
+      match_timer_ms += UPDATE_MATCH_TIMER_TICK_US/1000;
+    }
+  }
+  // downlink match timer telemetry
+  TM_DL_MATCH_TIMER(match_timer_ms/1000);
+}
+
 int main(void)
 {
   clock_init();
@@ -220,6 +243,7 @@ int main(void)
   // timer
   timer_init();
   timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US), UPTIME_INTLVL, update);
+  timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0,UPDATE_MATCH_TIMER_TICK_US), UPTIME_INTLVL, update_match_timer);
 
   // Initialize ROME
   rome_intf_init(&rome);
@@ -229,9 +253,8 @@ int main(void)
   // start arm calibration procedure
   arm_start_calibration();
 
-  uint32_t luptime = uptime;
-  uint32_t lluptime = uptime;
-  uint32_t delta;
+  uint32_t luptime = UINT32_MAX;
+  uint32_t lluptime = UINT32_MAX;
 
   uint32_t t = 0;
   bool setted_up = false;
@@ -243,8 +266,7 @@ int main(void)
 
     // update arm every 100 ms
     uptime = get_uptime_us();
-    delta = uptime - luptime;
-    if(delta > UPDATE_ARM_US) {
+    if(uptime - luptime > UPDATE_ARM_US) {
       luptime = uptime;
       // update arm
       arm_update();
@@ -253,27 +275,6 @@ int main(void)
       uint16_t a = barometer_get_pressure(&baro0);
       uint16_t b = barometer_get_pressure(&baro1);
       TM_DL_SUCKERS(a < 250, b < 250);
-
-      // update match timer
-      // check match timer
-      if(match_timer_ms > 1000*(int32_t)MATCH_DURATION_SECS) {
-        // out of time
-        arm_activate_power(false);
-        // turn off all pumps, open valves
-        pump_valves_activate_pump_A(false);
-        pump_valves_activate_pump_B(false);
-        pump_valves_activate_valve_A(true);
-        pump_valves_activate_valve_B(true);
-      }
-      else {
-        // update match timer
-        if(match_timer_counting) {
-          match_timer_ms += delta/1000;
-        }
-      }
-      // downlink match timer telemetry
-      TM_DL_MATCH_TIMER(match_timer_ms/1000);
-
     }
 
     if(!setted_up && arm_is_running()) {
