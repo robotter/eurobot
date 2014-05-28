@@ -189,10 +189,11 @@ void strat_prepare_galipeur(team_t team)
 
   // autoset robot
   int8_t kx = team == TEAM_RED ? 1 : -1;
+  int16_t xoffset = TEAM_RED ? 120 : 70;
   autoset_side_t side = team == TEAM_RED ? AUTOSET_RIGHT : AUTOSET_LEFT;
   autoset(side, kx*(1500-100), 0);
-  goto_xya_rel(kx*-120, 0, 0);
-  autoset(AUTOSET_DOWN, kx*(1500-100-120), 100);
+  goto_xya_rel(kx*-xoffset, 0, 0);
+  autoset(AUTOSET_DOWN, kx*(1500-100-xoffset), 100);
   goto_xya_rel(0, 280, 0);
 
   // prepare meca
@@ -213,7 +214,7 @@ void strat_test_galipeur(team_t team)
   int8_t kx = team == TEAM_RED ? 1 : -1;
 
   // exit starting area
-  goto_xya(kx*1050, 534, 0);
+  goto_xya(kx*1160, 534, 0);
   // turn
   goto_xya_rel(0, 0, M_PI/3);
   // push fire
