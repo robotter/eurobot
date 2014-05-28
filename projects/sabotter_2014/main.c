@@ -246,8 +246,8 @@ int main(void)
   timer_set_callback(timerF0, 'A', TIMER_US_TO_TICKS(F0,1e6),
                      ROME_SEND_INTLVL, match_end);
 
-  strat_test(team);
-  //strat_run(team);
+  //strat_test(team);
+  strat_run(team);
 
   for(;;) {
     update_rome_interfaces();

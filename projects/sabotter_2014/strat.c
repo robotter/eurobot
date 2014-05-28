@@ -212,6 +212,12 @@ void strat_run_galipeur(team_t team)
 void strat_test_galipeur(team_t team)
 {
   int8_t kx = team == TEAM_RED ? 1 : -1;
+  (void)kx;
+}
+
+void strat_homologation_galipeur(team_t team)
+{
+  int8_t kx = team == TEAM_RED ? 1 : -1;
 
   // exit starting area
   goto_xya(kx*1160, 534, 0);
