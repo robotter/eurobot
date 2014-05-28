@@ -211,8 +211,6 @@ void strat_test_galipeur(team_t team)
 
   // exit starting area
   goto_xya(kx*1050, 534, 0);
-  // deploy arm
-  arm_set(-9000, 400, -300);
   // turn
   goto_xya_rel(0, 0, M_PI/3);
   // push fire
