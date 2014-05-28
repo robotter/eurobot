@@ -15,6 +15,13 @@ void update_rome_interfaces(void);
 // Get uptime value
 uint32_t get_uptime_us(void);
 
+// R3D2 object detection state
+typedef struct {
+  float a;
+  float r;
+  bool detected;
+} r3d2_object_t;
+
 // Robot state
 typedef struct {
   // asserv, "in position" flags
@@ -34,6 +41,10 @@ typedef struct {
     bool a:1;
     bool b:1;
   } suckers;
+  // R3D2
+  struct {
+    r3d2_object_t objects[2];
+  } r3d2;
 } robot_state_t;
 
 extern robot_state_t robot_state;

@@ -15,27 +15,84 @@ extern rome_intf_t rome_paddock;
 
 robot_state_t robot_state;
 
+
+// Return true if an opponent is detected
+bool opponent_detected(void)
+{
+  for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
+    r3d2_object_t *object = &robot_state.r3d2.objects[i];
+    if(object->detected && object->r < R3D2_AVOID_DISTANCE) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Return true if an opponent is detected within an arc
+// We assume 0 <= a1 < a2 < 2Pi
+bool opponent_detected_arc(float a1, float a2)
+{
+  for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
+    r3d2_object_t *object = &robot_state.r3d2.objects[i];
+    // note: object->a is already in [0;2Pi[
+    if(object->detected && object->r < R3D2_AVOID_DISTANCE &&
+       object->a >= a1 && object->a >= a2) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
 /// Go to given position, avoid opponents
 void goto_xya(int16_t x, int16_t y, float a)
 {
-  ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, x, y, 1000*a);
-  robot_state.asserv.xy = 0;
-  robot_state.asserv.a = 0;
-  while(!robot_state.asserv.xy || !robot_state.asserv.a) {
-    //TODO avoid opponent
-    update_rome_interfaces();
+  for(;;) {
+    ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, x, y, 1000*a);
+    robot_state.asserv.xy = 0;
+    robot_state.asserv.a = 0;
+    for(;;) {
+      if(robot_state.asserv.xy && robot_state.asserv.a) {
+        return;
+      }
+      if(opponent_detected()) {
+        ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, 0, 0, 0);
+        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+        //TODO use opponent_detected_arc()
+        while(opponent_detected()) {
+          update_rome_interfaces();
+        }
+        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+        break; // to resend goto order
+      }
+      update_rome_interfaces();
+    }
   }
 }
 
 /// Go to given relative position, avoid opponents
 void goto_xya_rel(int16_t x, int16_t y, float a)
 {
-  ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, x, y, 1000*a);
-  robot_state.asserv.xy = 0;
-  robot_state.asserv.a = 0;
-  while(!robot_state.asserv.xy || !robot_state.asserv.a) {
-    //TODO avoid opponent
-    update_rome_interfaces();
+  for(;;) {
+    ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, x, y, 1000*a);
+    robot_state.asserv.xy = 0;
+    robot_state.asserv.a = 0;
+    for(;;) {
+      if(robot_state.asserv.xy && robot_state.asserv.a) {
+        return;
+      }
+      if(opponent_detected()) {
+        ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, 0, 0, 0);
+        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+        //TODO use opponent_detected_arc()
+        while(opponent_detected()) {
+          update_rome_interfaces();
+        }
+        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+        break; // to resend goto order
+      }
+      update_rome_interfaces();
+    }
   }
 }
 
