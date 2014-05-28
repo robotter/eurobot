@@ -153,6 +153,9 @@ void strat_wait_start(team_t team)
     }
     update_rome_interfaces();
   }
+  portpin_outclr(&LED_R_PP);
+  portpin_outclr(&LED_G_PP);
+  portpin_outclr(&LED_B_PP);
   ROME_SEND_AND_WAIT(START_TIMER, &rome_asserv);
   ROME_SEND_AND_WAIT(START_TIMER, &rome_meca);
 }
