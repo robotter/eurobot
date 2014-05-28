@@ -206,7 +206,13 @@ void strat_prepare_galipeur(team_t team)
 void strat_run_galipeur(team_t team)
 {
   int8_t kx = team == TEAM_RED ? 1 : -1;
-  (void)kx;
+
+  // autoset before starting, to avoid gyro's drift
+  //XXX values copy-pasted from above
+  // Y value must be the same
+  autoset_side_t side = team == TEAM_RED ? AUTOSET_RIGHT : AUTOSET_LEFT;
+  autoset(side, kx*(1500-100), 380);
+  goto_xya_rel(kx*-100, 0, 0);
 }
 
 void strat_test_galipeur(team_t team)
