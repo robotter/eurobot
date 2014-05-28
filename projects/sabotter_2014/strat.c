@@ -153,6 +153,8 @@ void strat_wait_start(team_t team)
     }
     update_rome_interfaces();
   }
+  ROME_SEND_AND_WAIT(START_TIMER, &rome_asserv);
+  ROME_SEND_AND_WAIT(START_TIMER, &rome_meca);
 }
 
 
