@@ -14,11 +14,15 @@
 
 #define UPPER_ARM_POSITION_OFFSET 12000
 #define LOWER_ARM_SPEED 0x50
+#define EXT_SERVO_SPEED 0x100
 
 typedef enum {
   LA_ELBOW = 0x01,
   LA_WRIST = 0x02,
-  LA_BACK = 0x10,
+
+  LA_LEFT = 0x11,
+  LA_FRONT = 0x12,
+  LA_RIGHT = 0x13,
 }lower_arm_t;
 
 extern ax12_t ax12;
@@ -213,7 +217,7 @@ void arm_update() {
     case ARM_STATE_CALIBRATION_STARTING:
       arm.count = 0;
       arm.state = ARM_STATE_CALIBRATION_STARTING_WAITING;
-      _arm_lower_set_position(LA_ELBOW, -300);
+      _arm_lower_set_position(LA_ELBOW, 300);
       _arm_lower_set_position(LA_WRIST, 0);
       break;
 
@@ -221,7 +225,7 @@ void arm_update() {
       if(arm.count > 10) {
         arm.state = ARM_STATE_CALIBRATION_IN_POSITION;
         // secure arm
-        _arm_lower_set_position(LA_ELBOW, -300);
+        _arm_lower_set_position(LA_ELBOW, 300);
         _arm_lower_set_position(LA_WRIST, 0);
 
         arm.count = 0;
@@ -283,3 +287,17 @@ void arm_get_debug(arm_debug_t *debug) {
   debug->wrist = w-0x1FF;
 }
 
+void arm_set_external_servo(external_servo_t n, int16_t position) {
+
+  ax12_addr_t addr;
+  switch(n) {
+    case S_LEFT:  addr = LA_LEFT; break;
+    case S_FRONT: addr = LA_FRONT; break;
+    case S_RIGHT: addr = LA_RIGHT; break;
+    default: return;
+  }
+
+  ax12_write_byte(&ax12, addr, AX12_ADDR_TORQUE_ENABLE, 0x01);
+  ax12_write_word(&ax12, addr, AX12_ADDR_GOAL_POSITION_L, 0x1FF + position);
+  ax12_write_word(&ax12, addr, AX12_ADDR_MOVING_SPEED_L, EXT_SERVO_SPEED);
+}

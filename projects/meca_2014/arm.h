@@ -10,6 +10,12 @@ typedef enum {
   A_WRIST,
 }arm_part_t;
 
+typedef enum {
+  S_LEFT,
+  S_FRONT,
+  S_RIGHT,
+}external_servo_t;
+
 typedef struct {
   int32_t upper;
   int16_t elbow;
@@ -36,5 +42,8 @@ void arm_activate_power(bool);
 
 /** @brief Fill debug structure */
 void arm_get_debug(arm_debug_t*);
+
+/** @brief Set consign to external servo */
+void arm_set_external_servo(external_servo_t n, int16_t position);
 
 #endif/*_ARM_H_*/

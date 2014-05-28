@@ -89,6 +89,16 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       break;
     }
 
+    case ROME_MID_MECA_SET_SERVO: {
+      uint8_t fid = frame->meca_set_servo.fid;
+      uint8_t n = frame->meca_set_servo.n;
+      int16_t position = frame->meca_set_servo.position;
+
+      arm_set_external_servo(n,position);
+
+      ROME_SEND_ACK(intf, fid);
+    }
+
     default:
       break;
   }
@@ -255,6 +265,8 @@ int main(void)
 
   uint32_t luptime = UINT32_MAX;
   uint32_t lluptime = UINT32_MAX;
+
+  arm_set_external_servo(S_LEFT, 120);
 
   uint32_t t = 0;
   bool setted_up = false;
