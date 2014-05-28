@@ -158,7 +158,7 @@ static void match_end(void)
 {
   // count time second by second
   static unsigned int match_time = 0;
-  if(++match_time >= 90) {
+  if(++match_time >= 89) {
     // end of match
     ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
     ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 0);
