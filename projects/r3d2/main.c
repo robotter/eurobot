@@ -15,42 +15,50 @@ static rome_intf_t rome_intf;
 
 static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
-  /*TODO
   switch(frame->mid) {
+    case ROME_MID_R3D2_CALIBRATE_ANGLE:
+      r3d2_calibrate_angle(1000*frame->r3d2_calibrate_angle.a);
+      break;
+    case ROME_MID_R3D2_CALIBRATE_DIST:
+      r3d2_calibrate_angle(frame->r3d2_calibrate_dist.d);
+      break;
+    case ROME_MID_R3D2_CONF_LOAD:
+      r3d2_conf_load();
+      break;
+    case ROME_MID_R3D2_CONF_SAVE:
+      r3d2_conf_save();
+      break;
+    case ROME_MID_R3D2_SET_MOTOR_SPEED:
+      r3d2_set_motor_speed(frame->r3d2_set_motor_speed.speed);
+      break;
+    default:
+      break;
   }
-  */
 }
 
+/// current time in microseconds
+static volatile uint32_t uptime;
 
-void update_data_cb(void)
+/// Get uptime value
+uint32_t get_uptime_us(void)
 {
-  r3d2_update(&r3d2_data);
+  uint32_t tmp;
+  INTLVL_DISABLE_ALL_BLOCK() {
+    tmp = uptime;
+  }
+  return tmp;
 }
 
-void send_rome_events_cb(void)
+/// Called on uptime timer tick
+static void update_uptime(void)
 {
-  // north east south west
-  bool leds[4] = {false, false, false, false};
-
-  uint8_t i = 0;
-  for(i=0; i<r3d2_data.count; i++) {
-    const r3d2_object_t *object = r3d2_data.objects+i;
-    //TODO ROME_SEND_R3D2_DETECTED(&rome_intf, i, object->angle*1000, object->dist*1000);
-    int8_t iangle = object->angle/M_PI_4;
-    leds[((iangle+1)/2) % 4] = true;
-  }
-
-  if(leds[0]) portpin_outset(&LED_WEST_PP); else portpin_outclr(&LED_WEST_PP);
-  if(leds[1]) portpin_outset(&LED_SOUTH_PP); else portpin_outclr(&LED_SOUTH_PP);
-  if(leds[2]) portpin_outset(&LED_NORTH_PP); else portpin_outclr(&LED_NORTH_PP);
-  if(leds[3]) portpin_outset(&LED_EAST_PP); else portpin_outclr(&LED_EAST_PP);
+  uptime += UPDATE_TICK_US;
 }
 
 
 int main(void)
 {
   clock_init();
-  timer_init();
   uart_init();
 
   INTLVL_ENABLE_ALL();
@@ -73,12 +81,24 @@ int main(void)
   r3d2_conf_load();
   r3d2_start();
 
-  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,20000), INTLVL_LO, update_data_cb);
-  timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0,200000), INTLVL_LO, send_rome_events_cb);
+  timer_init();
+  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US),
+                     UPTIME_INTLVL, update_uptime);
 
   // main loop
+  uint32_t t_capture = 0;
+  uint32_t t_tm = 0;
   for(;;) {
     rome_handle_input(&rome_intf);
+    uint32_t t = get_uptime_us();
+    if(t > t_capture) {
+      r3d2_update(&r3d2_data);
+      t_capture = t + CAPTURE_PERIOD_US;
+    }
+    if(t > t_tm) {
+      r3d2_telemetry(&rome_intf, &r3d2_data);
+      t_capture = t + TELEMETRY_PERIOD_US;
+    }
   }
 }
 

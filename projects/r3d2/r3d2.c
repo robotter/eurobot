@@ -7,6 +7,7 @@
 #include <pwm/motor.h>
 #include <clock/defs.h>
 #include <util/delay.h>
+#include <rome/rome.h>
 #include "r3d2.h"
 #include "config.h"
 
@@ -219,6 +220,29 @@ void r3d2_conf_load(void)
 void r3d2_conf_save(void)
 {
   eeprom_update_block(&r3d2.conf, &eeprom_conf, sizeof(eeprom_conf));
+}
+
+
+void r3d2_telemetry(rome_intf_t *intf, const r3d2_data_t *data)
+{
+  // north east south west
+  bool leds[4] = {false, false, false, false};
+
+  for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
+    if(i < data->count) {
+      const r3d2_object_t *object = &data->objects[i];
+      ROME_SEND_R3D2_TM_DETECTION(intf, i, 1, object->angle*1000, object->dist*1000);
+      int8_t iangle = object->angle/M_PI_4;
+      leds[((iangle+1)/2) % 4] = true;
+    } else {
+      ROME_SEND_R3D2_TM_DETECTION(intf, i, 0, 0, 0);
+    }
+  }
+
+  if(leds[0]) portpin_outset(&LED_WEST_PP); else portpin_outclr(&LED_WEST_PP);
+  if(leds[1]) portpin_outset(&LED_SOUTH_PP); else portpin_outclr(&LED_SOUTH_PP);
+  if(leds[2]) portpin_outset(&LED_NORTH_PP); else portpin_outclr(&LED_NORTH_PP);
+  if(leds[3]) portpin_outset(&LED_EAST_PP); else portpin_outclr(&LED_EAST_PP);
 }
 
 

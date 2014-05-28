@@ -104,4 +104,14 @@ register_messages(
     ('strat_tm_battery', [('voltage','uint16')]),
   ]),
 
+  (0x70, [
+    # Detection of object i (i is 0 or 1)
+    ('r3d2_tm_detection', [('i', 'int8'), ('detected', 'bool'), ('a', 'angle'), ('r', 'dist')]),
+    _acked('r3d2_calibrate_angle', [('a', 'angle')]),
+    _acked('r3d2_calibrate_dist', [('d', 'dist')]),
+    _acked('r3d2_conf_load', []),
+    _acked('r3d2_conf_save', []),
+    _acked('r3d2_set_motor_speed', [('speed', 'uint16')]),
+    ]),
+
 )

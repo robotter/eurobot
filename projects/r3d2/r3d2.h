@@ -78,4 +78,7 @@ void r3d2_conf_load(void);
 /// Save R3D2 configuration to EEPROM
 void r3d2_conf_save(void);
 
+/// Send R3D2 telemetry
+void r3d2_telemetry(rome_intf_t *intf, const r3d2_data_t *data);
+
 #endif
