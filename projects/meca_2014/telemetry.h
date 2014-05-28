@@ -26,6 +26,7 @@ extern rome_intf_t rome;
 
 #define TM_FREQUENCY (3)
 #define TM_PRESCALER ((int32_t)1e6/((int32_t)TM_FREQUENCY*UPDATE_ARM_US))
+#define TM_PRESCALER_MATCH ((int32_t)1e6/((int32_t)TM_FREQUENCY*UPDATE_MATCH_TIMER_TICK_US))
 
 #define _DWZ(f) do{f}while(0)
 
@@ -40,6 +41,6 @@ if(_prescaler++>(N)) {\
 #define TM_DL_ARM(a,b,c) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_ARM(&rome,a,b,c))
 #define TM_DL_SUCKERS(a,b) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_SUCKERS(&rome,a,b))
 
-#define TM_DL_MATCH_TIMER(a) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_MATCH_TIMER(&rome,a))
+#define TM_DL_MATCH_TIMER(a) _PRESCALE(TM_PRESCALER_MATCH, ROME_SEND_MECA_TM_MATCH_TIMER(&rome,a))
 
 #endif//TELEMETRY_H
