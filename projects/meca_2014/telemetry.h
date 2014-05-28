@@ -33,7 +33,7 @@ extern rome_intf_t rome;
 static int32_t _prescaler = 0;\
 if(_prescaler++>(N)) {\
   _prescaler = 0;\
-  f\
+  f;\
 })
 
 #define TM_PERIODIC(f) _PRESCALE(TM_PRESCALER, f;)
