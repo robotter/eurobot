@@ -309,9 +309,10 @@ int main(void)
   // remove break
   hrobot_break(0);
 
-  //adxrs_calibration_mode(true);
-  //_delay_ms(2000);
-  //adxrs_calibration_mode(false);
+  adxrs_calibration_mode(true);
+  _delay_ms(2000);
+  adxrs_calibration_mode(false);
+
   printf("-- reboot --\n");
   //----------------------------------------------------------------------
   PORTQ.OUT = 0;
