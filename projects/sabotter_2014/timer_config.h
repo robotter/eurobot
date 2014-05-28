@@ -23,5 +23,9 @@
 /// Enable TIMERxn
 #define TIMERE0_ENABLED
 
+// Timer for matche end, it requires a high prescaler value
+#define TIMERF0_ENABLED
+#define TIMERF0_PRESCALER_DIV 1024
+
 //@}
 //@}

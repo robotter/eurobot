@@ -153,6 +153,24 @@ static void update_battery(void)
   }
 }
 
+/// Scheduler function called at match end
+static void match_end(void)
+{
+  // count time second by second
+  static unsigned int match_time = 0;
+  if(++match_time >= 90) {
+    // end of match
+    ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+    ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 0);
+    portpin_outset(&LED_R_PP);
+    portpin_outset(&LED_G_PP);
+    portpin_outset(&LED_B_PP);
+    for(;;) {
+      update_rome_interfaces();
+    }
+  }
+}
+
 
 int main(void)
 {
@@ -225,6 +243,9 @@ int main(void)
   team_t team = strat_select_team();
   strat_prepare(team);
   strat_wait_start(team);
+  timer_set_callback(timerF0, 'A', TIMER_US_TO_TICKS(F0,1e6),
+                     ROME_SEND_INTLVL, match_end);
+
   strat_test(team);
   //strat_run(team);
 
