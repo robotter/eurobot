@@ -70,8 +70,8 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       ROME_SEND_ACK(intf, fid);
       break;
     }
-    case ROME_MID_ASSERV_START_TIMER: {
-      uint8_t fid = frame->asserv_start_timer.fid;
+    case ROME_MID_START_TIMER: {
+      uint8_t fid = frame->start_timer.fid;
       match_timer_counting = true;
       ROME_SEND_ACK(intf,fid);
       break;
