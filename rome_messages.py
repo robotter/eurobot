@@ -8,15 +8,15 @@ register_messages(
   (0x10, [
     # __ MISC __
     ('ack', [('fid','uint8')]),
+    # start match timer
+    _acked('start_timer', [],),
+
     ]),
 
   (0x20, [
     # __ ORDERS __
     # turn on control systems if activate is TRUE, turn it off otherwise
     _acked('asserv_activate', [('activate','bool')]),
-
-    # start asserv match timer 
-    _acked('asserv_start_timer', [],),
 
     # order robot to go directly to point (x,y) then turn to heading a 
     _acked('asserv_goto_xy',     [('x','dist'),('y','dist'),('a','angle')]),
