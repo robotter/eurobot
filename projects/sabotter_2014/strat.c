@@ -184,12 +184,6 @@ void strat_prepare_galipeur(team_t team)
   ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, 0, 0, 0);
   ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
 
-  // prepare meca
-  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 0, 1);
-  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 1, 1);
-  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 0, 1);
-  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 1, 1);
-
   // autoset robot
   int8_t kx = team == TEAM_RED ? 1 : -1;
   autoset_side_t side = team == TEAM_RED ? AUTOSET_RIGHT : AUTOSET_LEFT;
@@ -197,6 +191,12 @@ void strat_prepare_galipeur(team_t team)
   goto_xya_rel(kx*-120, 0, 0);
   autoset(AUTOSET_DOWN, kx*(1500-100-120), 100);
   goto_xya_rel(0, 280, 0);
+
+  // prepare meca
+  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 0, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 1, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 0, 1);
+  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 1, 1);
 }
 
 void strat_run_galipeur(team_t team)
