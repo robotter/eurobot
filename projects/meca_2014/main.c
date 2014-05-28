@@ -231,6 +231,7 @@ int main(void)
 
   uint32_t luptime = uptime;
   uint32_t lluptime = uptime;
+  uint32_t delta;
 
   uint32_t t = 0;
   bool setted_up = false;
@@ -242,7 +243,8 @@ int main(void)
 
     // update arm every 100 ms
     uptime = get_uptime_us();
-    if(uptime - luptime > UPDATE_ARM_US) {
+    delta = uptime - luptime;
+    if(delta > UPDATE_ARM_US) {
       luptime = uptime;
       // update arm
       arm_update();
@@ -257,11 +259,16 @@ int main(void)
       if(match_timer_ms > 1000*(int32_t)MATCH_DURATION_SECS) {
         // out of time
         arm_activate_power(false);
+        // turn off all pumps, open valves
+        pump_valves_activate_pump_A(false);
+        pump_valves_activate_pump_B(false);
+        pump_valves_activate_valve_A(true);
+        pump_valves_activate_valve_B(true);
       }
       else {
         // update match timer
         if(match_timer_counting) {
-          match_timer_ms += UPDATE_ARM_US/1000;
+          match_timer_ms += delta/1000;
         }
       }
       // downlink match timer telemetry
@@ -271,9 +278,9 @@ int main(void)
 
     if(!setted_up && arm_is_running()) {
       setted_up = true;
-      arm_set_position(A_UPPER, 0);
+      arm_set_position(A_UPPER, -10000);
       arm_set_position(A_ELBOW, 400);
-      arm_set_position(A_WRIST, -300);
+      arm_set_position(A_WRIST, -200);
     }
     
     // update rome every 100 ms

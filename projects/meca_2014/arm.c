@@ -213,7 +213,7 @@ void arm_update() {
     case ARM_STATE_CALIBRATION_STARTING:
       arm.count = 0;
       arm.state = ARM_STATE_CALIBRATION_STARTING_WAITING;
-      _arm_lower_set_position(LA_ELBOW, 0);
+      _arm_lower_set_position(LA_ELBOW, -300);
       _arm_lower_set_position(LA_WRIST, 0);
       break;
 
@@ -221,7 +221,7 @@ void arm_update() {
       if(arm.count > 10) {
         arm.state = ARM_STATE_CALIBRATION_IN_POSITION;
         // secure arm
-        _arm_lower_set_position(LA_ELBOW, 0);
+        _arm_lower_set_position(LA_ELBOW, -300);
         _arm_lower_set_position(LA_WRIST, 0);
 
         arm.count = 0;
@@ -238,7 +238,7 @@ void arm_update() {
         arm.upper_arm_offset = arm_position + UPPER_ARM_POSITION_OFFSET;
 
         // set arm position to neutral
-        _arm_lower_set_position(LA_ELBOW, 0);
+        _arm_lower_set_position(LA_ELBOW, -300);
         _arm_lower_set_position(LA_WRIST, 0);
         _arm_upper_set_position(-UPPER_ARM_POSITION_OFFSET);
         // reset CS and PID
