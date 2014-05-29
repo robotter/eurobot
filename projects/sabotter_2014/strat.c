@@ -294,7 +294,7 @@ void strat_prepare_galipeur(team_t team)
   autoset(side, kx*(1500-100), 0);
   goto_xya_rel(kx*-xoffset, 0, 0);
   autoset(AUTOSET_DOWN, kx*(1500-100-xoffset), 100);
-  goto_xya_rel(-50, 280, 0);
+  goto_xya_rel(kx*50, 280, 0);
 
   // prepare meca
   ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 0, 1);
@@ -315,10 +315,12 @@ void strat_run_galipeur(team_t team)
   goto_xya_rel(kx*(-100), 0, 0);
 
   // go for first fire
-  external_arm_t arm = (team == TEAM_RED) ? EXTARM_LEFT : EXTARM_RIGHT;
-  goto_xya(kx*(1500-650), 600, -2.0*M_PI/3.0);
+  external_arm_t arm = (team == TEAM_RED) ? EXTARM_RIGHT : EXTARM_RIGHT;
+  double angle_offset = (team == TEAM_RED) ? +M_PI : 0.0;
+
+  goto_xya(kx*(1500-650), 600, angle_offset - (2.0*M_PI/3.0));
   ext_arm_lower(arm);
-  goto_xya(kx*(1500-650), 1400, -2.0*M_PI/3.0);
+  goto_xya(kx*(1500-650), 1400, angle_offset - (2.0*M_PI/3.0));
   ext_arm_raise(arm);
 
   // go for second fire
@@ -332,10 +334,22 @@ void strat_run_galipeur(team_t team)
   autoset(side, kx*(1500-100), 500);
 
   // push fire from border
-  arm = (team == TEAM_RED) ? EXTARM_LEFT : EXTARM_RIGHT;
-  ext_arm_over_border(arm);
-  goto_xya_rel(kx*(-150),150,0);
-  goto_xya_rel(0,0,-2*M_PI/3.0);
+  arm = (team == TEAM_RED) ? EXTARM_RIGHT : EXTARM_RIGHT;
+  if(team == TEAM_RED) {
+    goto_xya_rel(kx*(-150),50,0);
+    ext_arm_over_border(arm);
+    goto_xya_rel(0,0,-M_PI/3.0);
+    goto_xya_rel(0,0,M_PI);
+  }
+  else {
+    ext_arm_over_border(arm);
+    goto_xya_rel(kx*(-150),150,0);
+    goto_xya_rel(0,0,-2*M_PI/3.0);
+  }
+
+  _delay_ms(3000);
+  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+  ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 0);
 }
 
 void strat_test_galipeur(team_t team)
