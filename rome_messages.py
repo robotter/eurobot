@@ -77,6 +77,7 @@ register_messages(
 
     # turn on/off gyro calibration (warning : asserv must be deactivated)
     _acked('asserv_calibrate', [('b','uint8')]),
+
     ]),
 
   (0x50, [
@@ -105,6 +106,14 @@ register_messages(
     # __ TELEMETRY __
     # robot main battery voltage (in mv)
     ('strat_tm_battery', [('voltage','uint16')]),
+  ]),
+
+  (0x65, [
+    # __ KATIOUCHA ___
+    # fire n KATIOUCHA tubes
+    _acked('katioucha_fire', [('n','uint8')]),
+    # 
+    ('katioucha_tm_rounds_fired', [('i','uint8')]),
   ]),
 
   (0x70, [
