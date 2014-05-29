@@ -285,6 +285,7 @@ void strat_prepare_galipeur(team_t team)
   // raise both arms
   ext_arm_raise(EXTARM_LEFT);
   ext_arm_raise(EXTARM_RIGHT);
+  arm_set(0,400,200);
 
   // autoset robot
   int8_t kx = team == TEAM_RED ? 1 : -1;
@@ -293,7 +294,7 @@ void strat_prepare_galipeur(team_t team)
   autoset(side, kx*(1500-100), 0);
   goto_xya_rel(kx*-xoffset, 0, 0);
   autoset(AUTOSET_DOWN, kx*(1500-100-xoffset), 100);
-  goto_xya_rel(+20, 280, 0);
+  goto_xya_rel(-50, 280, 0);
 
   // prepare meca
   ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 0, 1);
@@ -326,8 +327,6 @@ void strat_run_galipeur(team_t team)
   goto_xya(kx*(1500-1300), 800, -M_PI/6.0);
   ext_arm_raise(EXTARM_RIGHT);
 
-  // raise arm to avoid border
-  arm_set_nowait(0,400,200);
   goto_xya(kx*(1500-700), 800, -M_PI/6.0);
   goto_xya(kx*(1500-300), 500, -M_PI/6.0);
   autoset(side, kx*(1500-100), 500);
@@ -335,9 +334,8 @@ void strat_run_galipeur(team_t team)
   // push fire from border
   arm = (team == TEAM_RED) ? EXTARM_LEFT : EXTARM_RIGHT;
   ext_arm_over_border(arm);
-  _delay_ms(1000);
-  goto_xya_rel(-200,0,0);
-
+  goto_xya_rel(kx*(-150),150,0);
+  goto_xya_rel(0,0,-2*M_PI/3.0);
 }
 
 void strat_test_galipeur(team_t team)
