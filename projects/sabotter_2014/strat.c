@@ -15,6 +15,11 @@ extern rome_intf_t rome_paddock;
 
 robot_state_t robot_state;
 
+typedef enum {
+  EXTARM_LEFT = 0,
+  EXTARM_FRONT = 1,
+  EXTARM_RIGHT = 2,
+}external_arm_t;
 
 // Return true if an opponent is detected
 bool opponent_detected(void)
@@ -41,6 +46,39 @@ bool opponent_detected_arc(float a1, float a2)
     }
   }
   return false;
+}
+
+void ext_arm_set(external_arm_t n, int16_t pos)
+{
+  ROME_SEND_AND_WAIT(MECA_SET_SERVO, &rome_meca, n, pos);
+}
+
+/// Set side arm position
+void ext_arm_raise(external_arm_t n)
+{
+  switch(n) {
+    case EXTARM_LEFT:  ext_arm_set(n, 120); break;
+    case EXTARM_RIGHT: ext_arm_set(n, -60); break;
+    default: return;
+  }
+}
+
+void ext_arm_lower(external_arm_t n)
+{
+  switch(n) {
+    case EXTARM_LEFT:  ext_arm_set(n, -290); break;
+    case EXTARM_RIGHT: ext_arm_set(n, 350); break;
+    default: return;
+  }
+}
+
+void ext_arm_over_border(external_arm_t n)
+{
+  switch(n) {
+    case EXTARM_LEFT:  ext_arm_set(n, -240); break;
+    case EXTARM_RIGHT: ext_arm_set(n, 300); break;
+    default: return;
+  }
 }
 
 
@@ -244,14 +282,18 @@ void strat_prepare_galipeur(team_t team)
   ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, 0, 0, 0);
   ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
 
+  // raise both arms
+  ext_arm_raise(EXTARM_LEFT);
+  ext_arm_raise(EXTARM_RIGHT);
+
   // autoset robot
   int8_t kx = team == TEAM_RED ? 1 : -1;
-  int16_t xoffset = TEAM_RED ? 120 : 70;
+  int16_t xoffset = TEAM_RED ? 120 : 100;
   autoset_side_t side = team == TEAM_RED ? AUTOSET_RIGHT : AUTOSET_LEFT;
   autoset(side, kx*(1500-100), 0);
   goto_xya_rel(kx*-xoffset, 0, 0);
   autoset(AUTOSET_DOWN, kx*(1500-100-xoffset), 100);
-  goto_xya_rel(0, 280, 0);
+  goto_xya_rel(+20, 280, 0);
 
   // prepare meca
   ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 0, 1);
@@ -269,7 +311,33 @@ void strat_run_galipeur(team_t team)
   // Y value must be the same
   autoset_side_t side = team == TEAM_RED ? AUTOSET_RIGHT : AUTOSET_LEFT;
   autoset(side, kx*(1500-100), 380);
-  goto_xya_rel(kx*-100, 0, 0);
+  goto_xya_rel(kx*(-100), 0, 0);
+
+  // go for first fire
+  external_arm_t arm = (team == TEAM_RED) ? EXTARM_LEFT : EXTARM_RIGHT;
+  goto_xya(kx*(1500-650), 600, -2.0*M_PI/3.0);
+  ext_arm_lower(arm);
+  goto_xya(kx*(1500-650), 1400, -2.0*M_PI/3.0);
+  ext_arm_raise(arm);
+
+  // go for second fire
+  ext_arm_lower(EXTARM_RIGHT);
+  goto_xya(kx*(1500-700), 800, -M_PI/6.0);
+  goto_xya(kx*(1500-1300), 800, -M_PI/6.0);
+  ext_arm_raise(EXTARM_RIGHT);
+
+  // raise arm to avoid border
+  arm_set_nowait(0,400,200);
+  goto_xya(kx*(1500-700), 800, -M_PI/6.0);
+  goto_xya(kx*(1500-300), 500, -M_PI/6.0);
+  autoset(side, kx*(1500-100), 500);
+
+  // push fire from border
+  arm = (team == TEAM_RED) ? EXTARM_LEFT : EXTARM_RIGHT;
+  ext_arm_over_border(arm);
+  _delay_ms(1000);
+  goto_xya_rel(-200,0,0);
+
 }
 
 void strat_test_galipeur(team_t team)
