@@ -348,6 +348,9 @@ int main(void)
     PORTQ.OUT++;
     _delay_ms(10);
     rome_handle_input(&rome);
+#if defined(BUILD_GALIPEUR)
+    rome_handle_input(&rome_r3d2);
+#endif
   }
 }
 
