@@ -267,6 +267,7 @@ int main(void)
   uint32_t lluptime = UINT32_MAX;
 
   arm_set_external_servo(S_LEFT, 120);
+  arm_set_external_servo(S_RIGHT, -120);
 
   uint32_t t = 0;
   bool setted_up = false;
@@ -295,7 +296,7 @@ int main(void)
       arm_set_position(A_ELBOW, 400);
       arm_set_position(A_WRIST, -200);
     }
-    
+
     // update rome every 100 ms
     uptime = get_uptime_us();
     if(uptime - lluptime > 100000) {
