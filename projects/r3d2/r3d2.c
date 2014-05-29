@@ -314,7 +314,7 @@ ISR(R3D2_SENSOR_INT_VECT)
       capture->len = motor_pos+capture_state.motor_period - capture->start;
       capture_state.capture_end = 0;
       r3d2_capture_swap();
-    } else {
+    } else if(capture_state.index < R3D2_OBJECTS_MAX) {
       capture->len = motor_pos - capture->start;
       capture_state.index++;
     }
