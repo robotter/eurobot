@@ -48,6 +48,16 @@ bool opponent_detected_arc(float a1, float a2)
   return false;
 }
 
+void calibrate_gyro(bool b)
+{
+  ROME_SEND_AND_WAIT(ASSERV_CALIBRATE, &rome_asserv, b);
+}
+
+void activate_asserv(bool b)
+{
+  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, b);
+}
+
 void ext_arm_set(external_arm_t n, int16_t pos)
 {
   ROME_SEND_AND_WAIT(MECA_SET_SERVO, &rome_meca, n, pos);
@@ -231,6 +241,10 @@ team_t strat_select_team(void)
 
 void strat_wait_start(team_t team)
 {
+  // deactivate asserv, turn gyro calibration mode on
+  activate_asserv(false);
+  calibrate_gyro(true);
+
   while(starting_cord_plugged()) {
     if((get_uptime_us() / 500000) % 2 == 0) {
       if(team == TEAM_RED) {
@@ -248,6 +262,12 @@ void strat_wait_start(team_t team)
     }
     update_rome_interfaces();
   }
+
+  // stop gyro calibration, turn asserv on 
+  calibrate_gyro(true);
+  _delay_ms(100);
+  activate_asserv(false);
+
   portpin_outclr(&LED_R_PP);
   portpin_outclr(&LED_G_PP);
   portpin_outclr(&LED_B_PP);
@@ -375,6 +395,16 @@ void strat_homologation_galipeur(team_t team)
 
 void strat_init_galipette(void)
 {
+  // initialize asserv variables
+  //ROME_SEND_AND_WAIT(ASSERV_SET_X_PID, &rome_asserv, 3000, 0, 0, 50000, 100000, 0);
+  //ROME_SEND_AND_WAIT(ASSERV_SET_Y_PID, &rome_asserv, 3000, 0, 0, 50000, 100000, 0);
+  //ROME_SEND_AND_WAIT(ASSERV_SET_A_PID, &rome_asserv, 2500, 0, 0, 50000, 1000, 0);
+  //ROME_SEND_AND_WAIT(ASSERV_SET_A_QRAMP, &rome_asserv, 200.0, 100.0);
+  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_CRUISE, &rome_asserv, 20.0, 100.0);
+  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_STEERING, &rome_asserv, 5.0, 0.1);
+  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_STOP, &rome_asserv, 1.0, 0.05);
+  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XYSTEERING_WINDOW, &rome_asserv, 50.0);
+  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_STOP_WINDOWS, &rome_asserv, 5.0, 0.03);
 }
 
 void strat_prepare_galipette(team_t team)
