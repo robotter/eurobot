@@ -70,7 +70,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
     case ROME_MID_ASSERV_ACTIVATE: {
       uint8_t fid = frame->asserv_autoset.fid;
       uint8_t b = frame->asserv_activate.activate;
-      (void)b;// TODO
+      robot_cs_activate(&robot_cs, b);
       ROME_SEND_ACK(intf, fid);
       break;
     }
