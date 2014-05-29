@@ -301,7 +301,6 @@ ISR(R3D2_MOTOR_INT_VECT)
 /// Sensor interrupt routine
 ISR(R3D2_SENSOR_INT_VECT)
 {
-  portpin_outtgl(&LED_RUN_PP);
   r3d2_capture_t *capture = capture_state.captures + capture_state.index;
   uint16_t motor_pos = R3D2_MOTOR_POS_TC.CNT;
   if(!capture_state.capturing) {
@@ -320,6 +319,11 @@ ISR(R3D2_SENSOR_INT_VECT)
       capture_state.index++;
     }
     capture_state.capturing = 0;
+  }
+  if(capture_state.capturing) {
+    portpin_outclr(&LED_RUN_PP);
+  } else {
+    portpin_outset(&LED_RUN_PP);
   }
 }
 
