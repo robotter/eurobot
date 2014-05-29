@@ -252,6 +252,7 @@ int main(void)
   team_t team = strat_select_team();
   strat_prepare(team);
   strat_wait_start(team);
+
   timer_set_callback(timerF0, 'A', TIMER_US_TO_TICKS(F0,1e6),
                      ROME_SEND_INTLVL, match_end);
 

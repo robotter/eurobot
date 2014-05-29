@@ -63,6 +63,11 @@ void ext_arm_set(external_arm_t n, int16_t pos)
   ROME_SEND_AND_WAIT(MECA_SET_SERVO, &rome_meca, n, pos);
 }
 
+void katioucha_fire(uint8_t n)
+{
+  ROME_SEND_AND_WAIT(KATIOUCHA_FIRE, &rome_asserv, n);
+}
+
 /// Set side arm position
 void ext_arm_raise(external_arm_t n)
 {
@@ -117,6 +122,38 @@ void goto_xya(int16_t x, int16_t y, float a)
     }
   }
 }
+
+/// Go to given position, avoid opponents
+void goto_xya_limited(int16_t x, int16_t y, float a, uint32_t tout)
+{
+  for(;;) {
+    ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, x, y, 1000*a);
+    robot_state.asserv.xy = 0;
+    robot_state.asserv.a = 0;
+
+    uint32_t tend = get_uptime_us() + tout;
+    for(;;) {
+      if(robot_state.asserv.xy && robot_state.asserv.a) {
+        return;
+      }
+      if(get_uptime_us() >= tend) {
+        return;
+      }
+      if(opponent_detected()) {
+        ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, 0, 0, 0);
+        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+        //TODO use opponent_detected_arc()
+        while(opponent_detected()) {
+          update_rome_interfaces();
+        }
+        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
+        break; // to resend goto order
+      }
+      update_rome_interfaces();
+    }
+  }
+}
+
 
 /// Go to given relative position, avoid opponents
 void goto_xya_rel(int16_t x, int16_t y, float a)
@@ -241,10 +278,11 @@ team_t strat_select_team(void)
 
 void strat_wait_start(team_t team)
 {
+/*
   // deactivate asserv, turn gyro calibration mode on
   activate_asserv(false);
   calibrate_gyro(true);
-
+*/
   while(starting_cord_plugged()) {
     if((get_uptime_us() / 500000) % 2 == 0) {
       if(team == TEAM_RED) {
@@ -263,16 +301,19 @@ void strat_wait_start(team_t team)
     update_rome_interfaces();
   }
 
+  /*
   // stop gyro calibration, turn asserv on 
-  calibrate_gyro(true);
+  calibrate_gyro(false);
   _delay_ms(100);
-  activate_asserv(false);
-
+  activate_asserv(true);
+*/
   portpin_outclr(&LED_R_PP);
   portpin_outclr(&LED_G_PP);
   portpin_outclr(&LED_B_PP);
   ROME_SEND_AND_WAIT(START_TIMER, &rome_asserv);
+#if (defined GALIPEUR)
   ROME_SEND_AND_WAIT(START_TIMER, &rome_meca);
+#endif
 }
 
 
@@ -405,21 +446,41 @@ void strat_init_galipette(void)
   ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_STOP, &rome_asserv, 1.0, 0.05);
   //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XYSTEERING_WINDOW, &rome_asserv, 50.0);
   //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_STOP_WINDOWS, &rome_asserv, 5.0, 0.03);
+  //
+  // disable asserv
+  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
 }
 
 void strat_prepare_galipette(team_t team)
 {
+  // initialize asserv
+  portpin_outset(&LED_R_PP);
+  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
 }
 
 void strat_run_galipette(team_t team)
 {
+  int8_t kx = team == TEAM_RED ? 1 : -1;
+
+  int lof = 450;
+
+  portpin_outset(&LED_B_PP);
+  goto_xya(-kx*50,-200,0);
+  goto_xya(-kx*50,-lof,0);
+  goto_xya(kx*400,-lof,0);
+
+  katioucha_fire(6);
+
+  goto_xya(kx*1000,-lof,0);
+  goto_xya(kx*1000,-lof,M_PI);
+  goto_xya(kx*1000,-200,M_PI);
+  goto_xya_limited(kx*1000,60,M_PI,3e6);
+  goto_xya_rel(0,-500,0);
 }
 
 void strat_test_galipette(team_t team)
 {
 }
-
-
 
 #if (defined GALIPEUR)
 # define ROBOT_SUFFIX  galipeur
