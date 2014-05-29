@@ -141,6 +141,10 @@ void r3d2_set_conf(const r3d2_conf_t *conf)
 
 void r3d2_update(r3d2_data_t *data)
 {
+  INTLVL_DISABLE_ALL_BLOCK() {
+    data->count = r3d2.capture_count;
+  }
+  return;
   // get a local copy of capture state
   uint8_t count;
   r3d2_capture_t captures[R3D2_OBJECTS_MAX];
@@ -225,6 +229,15 @@ void r3d2_conf_save(void)
 
 void r3d2_telemetry(rome_intf_t *intf, const r3d2_data_t *data)
 {
+  if(data->count) {
+    ROME_SEND_R3D2_TM_DETECTION(intf, 0, 1, 0, 20);
+    portpin_outset(&LED_RUN_PP);
+  } else {
+    ROME_SEND_R3D2_TM_DETECTION(intf, 0, 0, 0, 0);
+    portpin_outclr(&LED_RUN_PP);
+  }
+  return;
+
   // north east south west
   bool leds[4] = {false, false, false, false};
 
@@ -301,6 +314,10 @@ ISR(R3D2_MOTOR_INT_VECT)
 /// Sensor interrupt routine
 ISR(R3D2_SENSOR_INT_VECT)
 {
+  //XXX hack: if we see something, simulate an object
+  capture_state.index = 1;
+  return;
+
   r3d2_capture_t *capture = capture_state.captures + capture_state.index;
   uint16_t motor_pos = R3D2_MOTOR_POS_TC.CNT;
   if(!capture_state.capturing) {
