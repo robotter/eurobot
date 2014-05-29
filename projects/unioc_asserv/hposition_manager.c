@@ -177,7 +177,6 @@ void hposition_update(void *dummy)
   // put gyro in calibration mode
   // XXX NDJD : is_moving will be used... later XXX
   (void)is_moving;
-  adxrs_calibration_mode(false);//!is_moving);
 
   //--------------------------------------------------
   // Integrate speed in robot coordinates to position

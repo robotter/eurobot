@@ -387,12 +387,12 @@ int main(void)
   // setup ADXRS update task
   timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0, ADXRS_PERIOD_US), ADXRS_INTLVL, _adxrs_update);
 
-  // remove break
-  hrobot_break(0);
-
   adxrs_calibration_mode(true);
   _delay_ms(2000);
   adxrs_calibration_mode(false);
+
+  // remove break
+  hrobot_break(0);
 
   printf("-- reboot --\n");
   //----------------------------------------------------------------------
