@@ -81,7 +81,7 @@ void r3d2_init(void)
   portpin_dirset(&R3D2_SENSOR_CTRL_PP);
 
   // init motor interrupt (on falling edge)
-  PORTPIN_CTRL(&R3D2_MOTOR_INT_PP) |= PORT_ISC_FALLING_gc;
+  PORTPIN_CTRL(&R3D2_MOTOR_INT_PP) |= PORT_ISC_RISING_gc;
   portpin_enable_int(&R3D2_MOTOR_INT_PP, R3D2_MOTOR_INT_NUM, R3D2_INTLVL);
 
   // init sensor interrupt (on both edges)
@@ -305,11 +305,11 @@ ISR(R3D2_SENSOR_INT_VECT)
   r3d2_capture_t *capture = capture_state.captures + capture_state.index;
   uint16_t motor_pos = R3D2_MOTOR_POS_TC.CNT;
   if(!capture_state.capturing) {
-    // rising edge, detection starts
+    // falling edge, detection starts
     capture->start = motor_pos;
     capture_state.capturing = 1;
   } else {
-    // falling edge, detection ends
+    // raising edge, detection ends
     if(capture_state.capture_end) {
       // note: ok on overflow
       capture->len = motor_pos+capture_state.motor_period - capture->start;
