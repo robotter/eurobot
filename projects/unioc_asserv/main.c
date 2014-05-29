@@ -83,7 +83,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       // start match
       match_timer_counting = true;
       // XXX turn avoidance on at the same time XXX
-      avoidance_inhibit(&avoidance,false);
+      //avoidance_inhibit(&avoidance,false);
       ROME_SEND_ACK(intf,fid);
       break;
     }
