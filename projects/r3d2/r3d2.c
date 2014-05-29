@@ -233,10 +233,10 @@ void r3d2_telemetry(rome_intf_t *intf, const r3d2_data_t *data)
     }
   }
 
-  if(leds[0]) portpin_outset(&LED_WEST_PP); else portpin_outclr(&LED_WEST_PP);
-  if(leds[1]) portpin_outset(&LED_SOUTH_PP); else portpin_outclr(&LED_SOUTH_PP);
-  if(leds[2]) portpin_outset(&LED_NORTH_PP); else portpin_outclr(&LED_NORTH_PP);
-  if(leds[3]) portpin_outset(&LED_EAST_PP); else portpin_outclr(&LED_EAST_PP);
+  if(leds[0]) portpin_outset(&LED_SOUTH_PP); else portpin_outclr(&LED_SOUTH_PP);
+  if(leds[1]) portpin_outset(&LED_NORTH_PP); else portpin_outclr(&LED_NORTH_PP);
+  if(leds[2]) portpin_outset(&LED_EAST_PP); else portpin_outclr(&LED_EAST_PP);
+  if(leds[3]) portpin_outset(&LED_WEST_PP); else portpin_outclr(&LED_WEST_PP);
 }
 
 
