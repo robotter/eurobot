@@ -78,6 +78,9 @@ register_messages(
     # turn on/off gyro calibration (warning : asserv must be deactivated)
     _acked('asserv_calibrate', [('b','uint8')]),
 
+    # turn on/off avoidance
+    _acked('asserv_avoidance', [('b','bool')]),
+
     ]),
 
   (0x50, [

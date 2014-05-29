@@ -116,12 +116,24 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       ROME_SEND_ACK(intf, fid);
       break;
     }
+    case ROME_MID_ASSERV_AVOIDANCE: {
+      uint8_t fid = frame->asserv_avoidance.fid;
+      uint8_t b = frame->asserv_avoidance.b;
+      avoidance_inhibit(&avoidance,!b);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
     case ROME_MID_START_TIMER: {
       uint8_t fid = frame->start_timer.fid;
       // start match
       match_timer_counting = true;
+
+#if defined(BUILD_GALIPEUR)
       // XXX turn avoidance on at the same time XXX
       //avoidance_inhibit(&avoidance,false);
+#elif defined(BUILD_GALIPETTE)
+      avoidance_inhibit(&avoidance,false);
+#endif
       ROME_SEND_ACK(intf,fid);
       break;
     }
