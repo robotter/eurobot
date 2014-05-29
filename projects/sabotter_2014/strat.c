@@ -100,7 +100,7 @@ void goto_xya(int16_t x, int16_t y, float a)
         while(opponent_detected()) {
           update_rome_interfaces();
         }
-        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
         break; // to resend goto order
       }
       update_rome_interfaces();
@@ -126,7 +126,7 @@ void goto_xya_rel(int16_t x, int16_t y, float a)
         while(opponent_detected()) {
           update_rome_interfaces();
         }
-        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
         break; // to resend goto order
       }
       update_rome_interfaces();
