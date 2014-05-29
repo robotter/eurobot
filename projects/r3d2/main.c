@@ -97,7 +97,7 @@ int main(void)
     }
     if(t > t_tm) {
       r3d2_telemetry(&rome_intf, &r3d2_data);
-      t_capture = t + TELEMETRY_PERIOD_US;
+      t_tm = t + TELEMETRY_PERIOD_US;
     }
   }
 }
