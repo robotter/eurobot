@@ -59,6 +59,15 @@ static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_ASSERV_TM_HTRAJ_AUTOSET_DONE:
       robot_state.asserv.autoset = frame->asserv_tm_htraj_autoset_done.b;
       break;
+    case ROME_MID_R3D2_TM_DETECTION: {
+      uint8_t i = frame->r3d2_tm_detection.i;
+      if(i < R3D2_OBJECTS_MAX) {
+        r3d2_object_t *object = robot_state.r3d2.objects+i;
+        object->detected = frame->r3d2_tm_detection.detected;
+        object->a = frame->r3d2_tm_detection.a/1000.;
+        object->r = frame->r3d2_tm_detection.r;
+      }
+    } break;
     default:
       break;
   }
@@ -85,15 +94,6 @@ static void rome_meca_handler(rome_intf_t *intf, const rome_frame_t *frame)
       robot_state.suckers.a = frame->meca_tm_suckers.a;
       robot_state.suckers.b = frame->meca_tm_suckers.b;
       break;
-    case ROME_MID_R3D2_TM_DETECTION: {
-      uint8_t i = frame->r3d2_tm_detection.i;
-      if(i < R3D2_OBJECTS_MAX) {
-        r3d2_object_t *object = robot_state.r3d2.objects+i;
-        object->detected = frame->r3d2_tm_detection.detected;
-        object->a = frame->r3d2_tm_detection.a/1000.;
-        object->r = frame->r3d2_tm_detection.r;
-      }
-    } break;
     default:
       break;
   }
