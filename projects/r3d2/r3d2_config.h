@@ -9,9 +9,9 @@
 /// Default motor stuck timeout (in capture counts)
 #define R3D2_MOTOR_TIMEOUT_DEFAULT  50
 /// Default capture angle offset, in radians
-#define R3D2_ANGLE_OFFSET_DEFAULT  0.0
+#define R3D2_ANGLE_OFFSET_DEFAULT  1.773009
 /// Default distance coefficient
-#define R3D2_DIST_COEF_DEFAULT  100.0
+#define R3D2_DIST_COEF_DEFAULT  40.855019
 
 
 /// Motor frequency, in hertz
