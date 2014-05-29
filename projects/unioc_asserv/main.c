@@ -78,6 +78,13 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       ROME_SEND_ACK(intf, fid);
       break;
     }
+    case ROME_MID_ASSERV_CALIBRATE: { 
+      uint8_t fid = frame->asserv_calibrate.fid;
+      uint8_t b = frame->asserv_calibrate.b;
+      adxrs_calibration_mode(b);
+      ROME_SEND_ACK(intf, fid);
+      break;
+    }
     case ROME_MID_START_TIMER: {
       uint8_t fid = frame->start_timer.fid;
       // start match

@@ -74,6 +74,9 @@ register_messages(
     # __ DEBUG __
     # all purposes debug message
     ('asserv_debug', [('v','uint16')]),
+
+    # turn on/off gyro calibration (warning : asserv must be deactivated)
+    _acked('asserv_calibrate', [('b','uint8')]),
     ]),
 
   (0x50, [
