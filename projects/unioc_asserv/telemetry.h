@@ -33,7 +33,7 @@ extern rome_intf_t rome;
 static int _prescaler = 0;\
 if(_prescaler++>(N)) {\
   _prescaler = 0;\
-  f\
+  f;\
 })
 
 #define TM_DL_XYA(x,y,a) _PRESCALE(TM_PRESCALER, ROME_SEND_ASSERV_TM_XYA(&rome,x,y,a))
