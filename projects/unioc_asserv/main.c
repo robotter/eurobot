@@ -38,6 +38,8 @@
 #include "settings.h"
 
 #include "adxrs/adxrs.h"
+#include "katioucha.h"
+
 
 #include "telemetry.h"
 
@@ -290,7 +292,7 @@ void vcs_update(void)
 #if defined(BUILD_GALIPEUR)
 #define ZGYRO_SCALE 2*1.1214e-6
 #elif defined(BUILD_GALIPETTE)
-#define ZGYRO_SCALE 2.1964e-6//1.335e-6//1.0*BASE_ZGYRO_SCALE
+#define ZGYRO_SCALE -2.1964e-6//1.335e-6//1.0*BASE_ZGYRO_SCALE
 #else
 # error "Please define either BUILD_GALIPEUR or BUILD_GALIPETTE"
 #endif
