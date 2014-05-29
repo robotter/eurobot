@@ -215,6 +215,16 @@ void arm_set_nowait(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
   ROME_SEND_AND_WAIT(MECA_SET_ARM, &rome_meca, shoulder, elbow, wrist);
 }
 
+/// delay for some ms
+void strat_delay_ms(uint32_t ms) {
+  uint32_t tend = get_uptime_us() + 1000*ms;
+  for(;;) {
+    if(get_uptime_us() >= tend) {
+      return;
+    }
+    update_rome_interfaces();
+  }
+}
 
 bool starting_cord_plugged(void)
 {
@@ -371,6 +381,7 @@ void strat_run_galipeur(team_t team)
   // autoset before starting, to avoid gyro's drift
   //XXX values copy-pasted from above
   // Y value must be the same
+  goto_xya_rel(0, 50, 0);
   autoset_side_t side = team == TEAM_RED ? AUTOSET_RIGHT : AUTOSET_LEFT;
   autoset(side, kx*(1500-100), 380);
   goto_xya_rel(kx*(-100), 0, 0);
@@ -384,23 +395,28 @@ void strat_run_galipeur(team_t team)
   goto_xya(kx*(1500-650), 1400, angle_offset - (2.0*M_PI/3.0));
   ext_arm_raise(arm);
 
+#if 0
   // go for second fire
   ext_arm_lower(EXTARM_RIGHT);
   goto_xya(kx*(1500-700), 800, -M_PI/6.0);
   goto_xya(kx*(1500-1300), 800, -M_PI/6.0);
   ext_arm_raise(EXTARM_RIGHT);
+#endif
 
-  goto_xya(kx*(1500-700), 800, -M_PI/6.0);
-  goto_xya(kx*(1500-300), 500, -M_PI/6.0);
+  strat_delay_ms(5000);
+
+  goto_xya(kx*(1500-700), 800, angle_offset - (2.0*M_PI/3.0));
+  goto_xya(kx*(1500-300), 500, angle_offset - (2.0*M_PI/3.0));
   autoset(side, kx*(1500-100), 500);
 
   // push fire from border
   arm = (team == TEAM_RED) ? EXTARM_RIGHT : EXTARM_RIGHT;
   if(team == TEAM_RED) {
-    goto_xya_rel(kx*(-150),50,0);
     ext_arm_over_border(arm);
-    goto_xya_rel(0,0,-M_PI/3.0);
-    goto_xya_rel(0,0,M_PI);
+    strat_delay_ms(1000);
+    goto_xya_rel(kx*(-150),150,0);
+ //   goto_xya_rel(0,0,-M_PI/3.0);
+   // goto_xya_rel(0,0,M_PI);
   }
   else {
     ext_arm_over_border(arm);
@@ -460,6 +476,8 @@ void strat_prepare_galipette(team_t team)
 
 void strat_run_galipette(team_t team)
 {
+  strat_delay_ms(5000);
+
   int8_t kx = team == TEAM_RED ? 1 : -1;
 
   int lof = 450;
