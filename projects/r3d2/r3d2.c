@@ -231,7 +231,7 @@ void r3d2_telemetry(rome_intf_t *intf, const r3d2_data_t *data)
   for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
     if(i < data->count) {
       const r3d2_object_t *object = &data->objects[i];
-      ROME_SEND_R3D2_TM_DETECTION(intf, i, 1, object->angle*1000, object->dist*1000);
+      ROME_SEND_R3D2_TM_DETECTION(intf, i, 1, object->angle*1000, object->dist);
       int8_t iangle = object->angle/M_PI_4;
       leds[((iangle+1)/2) % 4] = true;
     } else {
