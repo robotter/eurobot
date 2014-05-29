@@ -29,11 +29,11 @@ typedef struct {
 
   pwm_motor_t pwm;  ///< PWM for R3D2 motor
   /// Captured object positions, buffered
-  volatile r3d2_capture_t captures[R3D2_OBJECTS_MAX];
+  r3d2_capture_t captures[R3D2_OBJECTS_MAX];
   /// Number of capture objects
-  volatile uint8_t capture_count;
+  uint8_t capture_count;
   /// Motor rotation period (in timer ticks)
-  volatile uint16_t motor_period;
+  uint16_t motor_period;
   /// Motor enabled
   bool motor_enabled;
 
@@ -141,10 +141,6 @@ void r3d2_set_conf(const r3d2_conf_t *conf)
 
 void r3d2_update(r3d2_data_t *data)
 {
-  INTLVL_DISABLE_ALL_BLOCK() {
-    data->count = r3d2.capture_count;
-  }
-  return;
   // get a local copy of capture state
   uint8_t count;
   r3d2_capture_t captures[R3D2_OBJECTS_MAX];
@@ -162,11 +158,8 @@ void r3d2_update(r3d2_data_t *data)
     // use opposite value because motor rotation direction is inverted
     double angle = -(double)(captures[i].start + captures[i].len/2)*2*M_PI/motor_period;
     angle += r3d2.conf.angle_offset;
-    if(angle > 2*M_PI) {
-      angle -= 2*M_PI;
-    } else if(angle < 0) {
-      angle += 2*M_PI;
-    }
+    while(angle > 2*M_PI) angle -= 2*M_PI;
+    while(angle < 0) angle += 2*M_PI;
 
     double semi_angle = (captures[i].len * M_PI) / motor_period;
     double dist = r3d2.conf.dist_coef / tan(semi_angle);
@@ -195,11 +188,8 @@ void r3d2_calibrate_angle(double angle)
   }
 
   double offset = (angle - data.objects[0].angle) + r3d2.conf.angle_offset;
-  if(offset > 2*M_PI) {
-    offset -= 2*M_PI;
-  } else if(offset < 0) {
-    offset += 2*M_PI;
-  }
+  while(offset > 2*M_PI) offset -= 2*M_PI;
+  while(offset < 0) offset += 2*M_PI;
   r3d2.conf.angle_offset = offset;
 }
 
@@ -229,15 +219,6 @@ void r3d2_conf_save(void)
 
 void r3d2_telemetry(rome_intf_t *intf, const r3d2_data_t *data)
 {
-  if(data->count) {
-    ROME_SEND_R3D2_TM_DETECTION(intf, 0, 1, 0, 20);
-    portpin_outset(&LED_RUN_PP);
-  } else {
-    ROME_SEND_R3D2_TM_DETECTION(intf, 0, 0, 0, 0);
-    portpin_outclr(&LED_RUN_PP);
-  }
-  return;
-
   // north east south west
   bool leds[4] = {false, false, false, false};
 
@@ -269,9 +250,9 @@ static struct {
   /// Motor rotation period (in timer ticks)
   volatile uint16_t motor_period;
   /// 1 if an object is being captured
-  uint8_t capturing:1;
+  bool capturing:1;
   /// Flag to end capture on detection end
-  uint8_t capture_end:1;
+  bool capture_end:1;
 
 } capture_state;
 
@@ -288,10 +269,10 @@ static void r3d2_capture_swap(void)
       r3d2.captures[i] = capture_state.captures[i];
     }
     r3d2.motor_period = capture_state.motor_period;
-  }
 
-  // start a new capture
-  capture_state.index = 0;
+    // start a new capture
+    capture_state.index = 0;
+  }
 }
 
 
@@ -314,33 +295,33 @@ ISR(R3D2_MOTOR_INT_VECT)
 /// Sensor interrupt routine
 ISR(R3D2_SENSOR_INT_VECT)
 {
-  //XXX hack: if we see something, simulate an object
-  capture_state.index = 1;
-  return;
-
+  bool edge = portpin_in(&R3D2_SENSOR_INT_PP);
+  if(capture_state.index >= R3D2_OBJECTS_MAX) {
+    return; // ignoring any additional object
+  }
   r3d2_capture_t *capture = capture_state.captures + capture_state.index;
   uint16_t motor_pos = R3D2_MOTOR_POS_TC.CNT;
-  if(!capture_state.capturing) {
+  if(!edge) {
     // falling edge, detection starts
     capture->start = motor_pos;
-    capture_state.capturing = 1;
   } else {
     // raising edge, detection ends
     if(capture_state.capture_end) {
       // note: ok on overflow
       capture->len = motor_pos+capture_state.motor_period - capture->start;
+      capture_state.index++;
       capture_state.capture_end = 0;
       r3d2_capture_swap();
-    } else if(capture_state.index < R3D2_OBJECTS_MAX) {
+    } else {
       capture->len = motor_pos - capture->start;
       capture_state.index++;
     }
-    capture_state.capturing = 0;
   }
-  if(capture_state.capturing) {
-    portpin_outclr(&LED_RUN_PP);
-  } else {
+  capture_state.capturing = !edge;
+  if(!edge) {
     portpin_outset(&LED_RUN_PP);
+  } else {
+    portpin_outclr(&LED_RUN_PP);
   }
 }
 

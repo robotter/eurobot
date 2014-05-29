@@ -20,7 +20,7 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       r3d2_calibrate_angle(1000*frame->r3d2_calibrate_angle.a);
       break;
     case ROME_MID_R3D2_CALIBRATE_DIST:
-      r3d2_calibrate_angle(frame->r3d2_calibrate_dist.d);
+      r3d2_calibrate_dist(frame->r3d2_calibrate_dist.d);
       break;
     case ROME_MID_R3D2_CONF_LOAD:
       r3d2_conf_load();
