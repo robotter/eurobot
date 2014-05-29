@@ -27,7 +27,7 @@
 
 static volatile bool rome_acks_vector[ROME_FRAME_ID_MAX+1] = {false};
 
-uint8_t rome_acks_new_frame_id() {
+uint8_t rome_acks_new_frame_id(void) {
   static uint8_t fid = 0; 
   // wrap the wall loop with disable block
   // an available fid should be found quickly
