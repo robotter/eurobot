@@ -24,6 +24,7 @@
 
 /// Enable UARTxn
 #define UARTD0_ENABLED
+#define UARTE0_ENABLED
 
 /** @brief Interrupt level (an \ref intlvl_t value)
  * @note Global configuration only.

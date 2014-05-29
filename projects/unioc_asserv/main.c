@@ -61,8 +61,12 @@ extern avoidance_t avoidance;
 bool match_timer_counting = false;
 int32_t match_timer_ms = -1;
 
-// ROME interface
+// ROME interfaces
 rome_intf_t rome;
+#if defined(BUILD_GALIPEUR)
+rome_intf_t rome_r3d2;
+#endif
+
 // ROME messages handler
 void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
   switch((uint8_t)frame->mid) {
@@ -227,10 +231,28 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       ROME_SEND_ACK(intf, fid);
       break;
     }
+
+#if defined(BUILD_GALIPEUR)
+    // forward orders to R3D2 board
+    case ROME_MID_R3D2_CALIBRATE_ANGLE:
+    case ROME_MID_R3D2_CALIBRATE_DIST:
+    case ROME_MID_R3D2_CONF_LOAD:
+    case ROME_MID_R3D2_CONF_SAVE:
+    case ROME_MID_R3D2_SET_MOTOR_SPEED:
+      rome_send(&rome_r3d2, frame);
+      break;
+#endif
     default:
       break;
   }
 }
+
+// ROME message handler for R3D2
+void rome_r3d2_handler(rome_intf_t *intf, const rome_frame_t *frame) {
+  // forward to strat
+  rome_send(&rome, frame);
+}
+
 
 // CSs cpu usage in percent (0-100)
 extern uint8_t cs_cpuUsage;
@@ -297,6 +319,12 @@ int main(void)
   rome_intf_init(&rome);
   rome.uart = uartD0;
   rome.handler = rome_handler;
+
+#if defined(BUILD_GALIPEUR)
+  rome_intf_init(&rome_r3d2);
+  rome_r3d2.uart = uartE0;
+  rome_r3d2.handler = rome_r3d2_handler;
+#endif
   
   //--------------------------------------------------------
   // CS
