@@ -356,7 +356,6 @@ void strat_prepare_galipeur(team_t team)
   // raise both arms
   ext_arm_raise(EXTARM_LEFT);
   ext_arm_raise(EXTARM_RIGHT);
-  arm_set(0,400,200);
 
   // autoset robot
   int8_t kx = team == TEAM_RED ? 1 : -1;
@@ -377,6 +376,8 @@ void strat_prepare_galipeur(team_t team)
 void strat_run_galipeur(team_t team)
 {
   int8_t kx = team == TEAM_RED ? 1 : -1;
+
+  arm_set(0,400,200);
 
   // autoset before starting, to avoid gyro's drift
   //XXX values copy-pasted from above
@@ -465,6 +466,7 @@ void strat_init_galipette(void)
   //
   // disable asserv
   ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+
 }
 
 void strat_prepare_galipette(team_t team)
