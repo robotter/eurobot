@@ -123,20 +123,37 @@ void goto_xya(int16_t x, int16_t y, float a)
   }
 }
 
+bool starting_cord_plugged_fast(void)
+{
+  for(;;) {
+    bool b = !portpin_in(&STARTING_CORD_PP);
+    bool ok = true;
+    for(uint16_t i=0; i<100; i++) {
+      if(b != !portpin_in(&STARTING_CORD_PP)) {
+        ok = false;
+        break;
+      }
+    }
+    if(ok) {
+      return b;
+    }
+  }
+}
+
 /// Go to given position, avoid opponents
-void goto_xya_limited(int16_t x, int16_t y, float a, uint32_t tout)
+void goto_xya_painting(int16_t x, int16_t y, float a)
 {
   for(;;) {
     ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
     robot_state.asserv.a = 0;
 
-    uint32_t tend = get_uptime_us() + tout;
     for(;;) {
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return;
       }
-      if(get_uptime_us() >= tend) {
+      if(starting_cord_plugged_fast()) {
+        // XXX starting cord is connected to painting click
         return;
       }
       if(opponent_detected()) {
@@ -242,7 +259,6 @@ bool starting_cord_plugged(void)
     }
   }
 }
-
 
 team_t strat_select_team(void)
 {
@@ -492,10 +508,19 @@ void strat_run_galipette(team_t team)
   katioucha_fire(6);
 
   goto_xya(kx*1000,-lof,0);
-  goto_xya(kx*1000,-lof,M_PI);
-  goto_xya(kx*1000,-200,M_PI);
-  goto_xya_limited(kx*1000,60,M_PI,3e6);
-  goto_xya_rel(0,-500,0);
+  // turn paitings to wall in 2 steps (allow avoidance to detect something)
+  goto_xya(kx*1000,-lof,.5*M_PI);
+  goto_xya(kx*1000,-lof+30,.5*M_PI);
+  goto_xya(kx*1000,-lof+30,M_PI);
+  goto_xya(kx*1000,-400,M_PI);
+
+  // go out of table for at least 1m and pray 
+  // XXX tirette is connected to painting click XXX
+  goto_xya_painting(kx*1000,1000,M_PI);
+  goto_xya_rel(0,0,0);
+  strat_delay_ms(500);
+
+  goto_xya_rel(0,-200,0);
 }
 
 void strat_test_galipette(team_t team)
