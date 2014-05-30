@@ -420,7 +420,7 @@ void strat_run_galipeur(team_t team)
   ext_arm_raise(EXTARM_RIGHT);
 #endif
 
-  strat_delay_ms(5000);
+  strat_delay_ms(9000);
 
   goto_xya(kx*(1500-700), 800, angle_offset - (2.0*M_PI/3.0));
   goto_xya(kx*(1500-300), 500, angle_offset - (2.0*M_PI/3.0));
@@ -494,7 +494,7 @@ void strat_prepare_galipette(team_t team)
 
 void strat_run_galipette(team_t team)
 {
-  strat_delay_ms(5000);
+  strat_delay_ms(9000);
 
   int8_t kx = team == TEAM_RED ? 1 : -1;
 
