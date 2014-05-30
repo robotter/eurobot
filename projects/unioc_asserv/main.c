@@ -417,6 +417,11 @@ int main(void)
     rome_handle_input(&rome_r3d2);
 #endif
   }
+
+#if defined(BUILD_GALIPEUR)
+  (void)_katioucha_fire;
+#endif
+
 }
 
 

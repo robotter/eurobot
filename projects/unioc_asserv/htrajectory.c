@@ -200,6 +200,11 @@ void htrajectory_run( htrajectory_t *htj, vect_xy_t *path, uint8_t n )
 
   preparePoint(htj);
 
+  // reset carrot speed
+  htj->carrotSpeed = 0;
+  // set htj->carrot to first position
+  setCarrotXYPosition( htj, htj->path[0] );
+
   return;
 }
 
