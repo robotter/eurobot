@@ -26,7 +26,6 @@
 #include <avarix.h>
 #include <avarix/intlvl.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <math.h>
 #include "quadramp.h"
 #include "pid.h"

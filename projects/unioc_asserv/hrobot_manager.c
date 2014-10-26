@@ -25,7 +25,6 @@
 #include <avarix.h>
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <avarix/portpin.h>
 
 #include "cli.h"

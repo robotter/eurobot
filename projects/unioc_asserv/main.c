@@ -21,7 +21,6 @@
 #include <util/delay.h>
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <uart/uart.h>
 #include <rome/rome.h>
 #include <math.h>

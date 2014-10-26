@@ -24,7 +24,6 @@
 
 #include <avarix.h>
 #include <stdint.h>
-#include <stdlib.h>
 
 #include "pid_config.h"
 

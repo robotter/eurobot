@@ -26,7 +26,6 @@
 #include <avarix.h>
 #include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "cs.h"
 #include "robot_cs.h"
