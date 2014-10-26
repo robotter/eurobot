@@ -1,0 +1,13 @@
+# Configuration is expected to set at least AVARIX_DIR and PYTHON_PATH (for
+# ROME module and message definitions).
+
+# This sample configuration assumes that all Rob'Otter repositories are put in
+# the same directory. Message definitions will be searched in project directory
+# before eurobot repository root.
+
+eurobot_dir := $(dir $(lastword $(MAKEFILE_LIST)))
+robotter_root = $(eurobot_dir)..
+AVARIX_DIR := $(robotter_root)/avarix.git
+PYTHONPATH := $(CURDIR):$(eurobot_dir):$(robotter_root)/robotter.git
+export PYTHONPATH
+

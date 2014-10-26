@@ -1,3 +1,4 @@
+include ../../config.mk
 
 ## Project configuration
 
@@ -21,8 +22,5 @@ PRINTF_LEVEL = advanced
 CFLAGS += -g -Wextra -Werror
 LDFLAGS += -g
 
-ROOM_TRANSACTIONS = ../../room_transactions.py
-export ROOM_TRANSACTIONS
-
-include ../../avarix/mk/project.mk
+include $(AVARIX_DIR)/mk/project.mk
 

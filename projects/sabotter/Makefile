@@ -1,3 +1,4 @@
+include ../../config.mk
 
 ## Project configuration
 
@@ -30,7 +31,5 @@ else
 $(error invalid robot (R variable))
 endif
 
-export ROME_MESSAGES=../../rome_messages.py
-
-include ../../avarix/mk/project.mk
+include $(AVARIX_DIR)/mk/project.mk
 
