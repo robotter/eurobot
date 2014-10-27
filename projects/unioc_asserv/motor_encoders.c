@@ -32,14 +32,14 @@ motor_encoders_t encoders;
 void motor_encoders_init() {
   
   // setup port pins for channels A & B for each encoder
-  #ifdef BUILD_GALIPEUR
+  #ifdef GALIPEUR
   encoders.ppAs[0] = PORTPIN(C,0);
   encoders.ppBs[0] = PORTPIN(C,1);
   encoders.ppAs[1] = PORTPIN(C,2);
   encoders.ppBs[1] = PORTPIN(C,3);
   encoders.ppAs[2] = PORTPIN(C,4);
   encoders.ppBs[2] = PORTPIN(C,5);
-  #elif defined(BUILD_GALIPETTE)
+  #elif defined(GALIPETTE)
   encoders.ppAs[2] = PORTPIN(C,0);
   encoders.ppBs[2] = PORTPIN(C,1);
   encoders.ppAs[0] = PORTPIN(C,2);
@@ -57,12 +57,12 @@ void motor_encoders_init() {
 
 int16_t* motor_encoders_get_value()
 {
-#if defined(BUILD_GALIPEUR)
+#if defined(GALIPEUR)
   const int16_t sign = 1;
-#elif defined(BUILD_GALIPETTE)
+#elif defined(GALIPETTE)
   const int16_t sign = -1;
 #else
-# error "Please define either BUILD_GALIPEUR or BUILD_GALIPETTE"
+# error "Please define either GALIPEUR or GALIPETTE"
 #endif
 
   uint8_t it;

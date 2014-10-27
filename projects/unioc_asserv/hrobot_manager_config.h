@@ -7,7 +7,7 @@
 #define HROBOT_MANAGER_CONFIG_H
 
 
-#ifdef BUILD_GALIPEUR
+#ifdef GALIPEUR
 
 double hrobot_motors_matrix[9] = {
 0.137193775559,-0.227742535811,32.7587578324,
@@ -15,7 +15,7 @@ double hrobot_motors_matrix[9] = {
 0.138273262887,0.235015679279,32.2670974911,
 };
 
-#elif defined(BUILD_GALIPETTE)
+#elif defined(GALIPETTE)
 
 double hrobot_motors_matrix[9] = {
 0.137437213978,-0.227742741327,32.7293729332,

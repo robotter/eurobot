@@ -6,6 +6,7 @@ SRCS = $(wildcard *.c)
 ASRCS =
 TARGET = main
 MODULES = uart clock pwm encoder/quadra timer rome adxrs
+R = galipeur
 
 ## Target configuration
 MCU = atxmega128a1
@@ -21,6 +22,14 @@ PRINTF_LEVEL = advanced
 
 CFLAGS += -g -Wextra -Werror
 LDFLAGS += -g
+
+ifeq ($(R),$(filter $(R),galipeur))
+CFLAGS += -DGALIPEUR
+else ifeq ($(R),$(filter $(R),galipette pmi))
+CFLAGS += -DGALIPETTE
+else
+$(error invalid robot (R variable))
+endif
 
 include $(AVARIX_DIR)/mk/project.mk
 

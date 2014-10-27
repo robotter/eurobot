@@ -66,16 +66,16 @@ static void _set_motorC_sign(bool sign) {
 void hrobot_init()
 {
   // configure PWMs
-#if defined(BUILD_GALIPEUR)
+#if defined(GALIPEUR)
   pwm_motor_init(system.pwms+0, &TCF0, 'A',  _set_motorA_sign); 
   pwm_motor_init(system.pwms+1, &TCF0, 'B',  _set_motorB_sign); 
   pwm_motor_init(system.pwms+2, &TCF0, 'C',  _set_motorC_sign); 
-#elif defined(BUILD_GALIPETTE)
+#elif defined(GALIPETTE)
   pwm_motor_init(system.pwms+0, &TCF0, 'B',  _set_motorA_sign); 
   pwm_motor_init(system.pwms+1, &TCF0, 'C',  _set_motorB_sign); 
   pwm_motor_init(system.pwms+2, &TCF0, 'A',  _set_motorC_sign); 
 #else
-# error "Please define either BUILD_GALIPEUR or BUILD_GALIPETTE"
+# error "Please define either GALIPEUR or GALIPETTE"
 #endif
   // configure frequency
   uint8_t it;
@@ -87,7 +87,7 @@ void hrobot_init()
   PORTA.DIRSET = _BV(6);
 
   // configure break pps
-#if defined(BUILD_GALIPEUR)
+#if defined(GALIPEUR)
   system.breaks[0] = PORTPIN(H,4);
   system.breaks[1] = PORTPIN(H,5);
   system.breaks[2] = PORTPIN(A,6);
@@ -98,7 +98,7 @@ void hrobot_init()
   system.signs[0] = PORTPIN(H,1);
   system.signs[1] = PORTPIN(H,0);
   system.signs[2] = PORTPIN(H,3);
-#elif defined(BUILD_GALIPETTE)
+#elif defined(GALIPETTE)
   system.breaks[0] = PORTPIN(H,5);
   system.breaks[1] = PORTPIN(A,6);
   system.breaks[2] = PORTPIN(H,4);
@@ -107,7 +107,7 @@ void hrobot_init()
   system.signs[1] = PORTPIN(H,3);
   system.signs[2] = PORTPIN(H,1);
 #else
-# error "Please define either BUILD_GALIPEUR or BUILD_GALIPETTE"
+# error "Please define either GALIPEUR or GALIPETTE"
 #endif
 
   for(it=0; it<3; it++)

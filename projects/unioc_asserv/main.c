@@ -64,7 +64,7 @@ int32_t match_timer_ms = -1;
 
 // ROME interfaces
 rome_intf_t rome;
-#if defined(BUILD_GALIPEUR)
+#if defined(GALIPEUR)
 rome_intf_t rome_r3d2;
 #endif
 
@@ -127,10 +127,10 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       // start match
       match_timer_counting = true;
 
-#if defined(BUILD_GALIPEUR)
+#if defined(GALIPEUR)
       // XXX turn avoidance on at the same time XXX
       //avoidance_inhibit(&avoidance,false);
-#elif defined(BUILD_GALIPETTE)
+#elif defined(GALIPETTE)
       avoidance_inhibit(&avoidance,false);
 #endif
       ROME_SEND_ACK(intf,fid);
@@ -281,7 +281,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       break;
     }
 
-#if defined(BUILD_GALIPEUR)
+#if defined(GALIPEUR)
     // forward orders to R3D2 board
     case ROME_MID_R3D2_CALIBRATE_ANGLE:
     case ROME_MID_R3D2_CALIBRATE_DIST:
@@ -292,7 +292,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       break;
 #endif
 
-#if defined(BUILD_GALIPETTE)
+#if defined(GALIPETTE)
     // fire some katioucha tubes
     case ROME_MID_KATIOUCHA_FIRE: {
       uint8_t fid = frame->katioucha_fire.fid;
@@ -341,12 +341,12 @@ void vcs_update(void)
 }
 
 
-#if defined(BUILD_GALIPEUR)
+#if defined(GALIPEUR)
 #define ZGYRO_SCALE 2*1.1214e-6
-#elif defined(BUILD_GALIPETTE)
+#elif defined(GALIPETTE)
 #define ZGYRO_SCALE -2.1964e-6//1.335e-6//1.0*BASE_ZGYRO_SCALE
 #else
-# error "Please define either BUILD_GALIPEUR or BUILD_GALIPETTE"
+# error "Please define either GALIPEUR or GALIPETTE"
 #endif
 
 void _adxrs_update(void) {
@@ -381,7 +381,7 @@ int main(void)
   rome.uart = uartD0;
   rome.handler = rome_handler;
 
-#if defined(BUILD_GALIPEUR)
+#if defined(GALIPEUR)
   rome_intf_init(&rome_r3d2);
   rome_r3d2.uart = uartE0;
   rome_r3d2.handler = rome_r3d2_handler;
@@ -412,12 +412,12 @@ int main(void)
     PORTQ.OUT++;
     _delay_ms(10);
     rome_handle_input(&rome);
-#if defined(BUILD_GALIPEUR)
+#if defined(GALIPEUR)
     rome_handle_input(&rome_r3d2);
 #endif
   }
 
-#if defined(BUILD_GALIPEUR)
+#if defined(GALIPEUR)
   (void)_katioucha_fire;
 #endif
 
