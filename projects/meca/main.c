@@ -7,6 +7,7 @@
 #include <uart/uart.h>
 #include <ax12/ax12.h>
 #include <timer/timer.h>
+#include <timer/uptime.h>
 #include <math.h>
 #include <rome/rome.h>
 #include "config.h"
@@ -21,101 +22,63 @@ int32_t match_timer_ms = -1;
 
 // ROME interface
 rome_intf_t rome;
+
 // ROME messages handler
-void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
+void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
+{
   switch(frame->mid) {
     case ROME_MID_START_TIMER: {
-      uint8_t fid = frame->start_timer.fid;
       match_timer_counting = true;
-      ROME_SEND_ACK(intf,fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
 
     case ROME_MID_MECA_SET_ARM: {
-      uint8_t fid = frame->meca_set_arm.fid;
-      int16_t upper = frame->meca_set_arm.upper;
-      int16_t elbow = frame->meca_set_arm.elbow;
-      int16_t wrist = frame->meca_set_arm.wrist;
-
-      arm_set_position(A_ELBOW, elbow);
-      arm_set_position(A_WRIST, wrist);
-      arm_set_position(A_UPPER, upper);
-
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      arm_set_position(A_ELBOW, frame->meca_set_arm.elbow);
+      arm_set_position(A_WRIST, frame->meca_set_arm.wrist);
+      arm_set_position(A_UPPER, frame->meca_set_arm.upper);
+      rome_reply_ack(intf, frame);
+    } break;
 
     case ROME_MID_MECA_SET_PUMP: {
-      uint8_t fid = frame->meca_set_pump.fid;
-      uint8_t n = frame->meca_set_pump.n;
       uint8_t active = frame->meca_set_pump.active;
-      
-      switch(n) {
+      switch(frame->meca_set_pump.n) {
         case 0: pump_valves_activate_pump_A(active); break;
         case 1: pump_valves_activate_pump_B(active); break;
         default: break;
       }
- 
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
 
     case ROME_MID_MECA_SET_SUCKER: {
-      uint8_t fid = frame->meca_set_sucker.fid;
-      uint8_t n = frame->meca_set_sucker.n;
       uint8_t active = frame->meca_set_sucker.active;
-
-      switch(n) {
+      switch(frame->meca_set_sucker.n) {
         case 0: pump_valves_activate_valve_A(active); break;
         case 1: pump_valves_activate_valve_B(active); break;
         default: break;
       }
-         
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
 
     case ROME_MID_MECA_SET_POWER: {
-      uint8_t fid = frame->meca_set_power.fid;
       uint8_t active = frame->meca_set_power.active;
-
-      if(active)
+      if(active) {
         portpin_outset(&LED_ERROR_PP);
-      else
+      } else {
         portpin_outclr(&LED_ERROR_PP);
+      }
       arm_activate_power(active);
-
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
 
     case ROME_MID_MECA_SET_SERVO: {
-      uint8_t fid = frame->meca_set_servo.fid;
-      uint8_t n = frame->meca_set_servo.n;
-      int16_t position = frame->meca_set_servo.position;
-
-      arm_set_external_servo(n,position);
-
-      ROME_SEND_ACK(intf, fid);
-    }
+      arm_set_external_servo(frame->meca_set_servo.n, frame->meca_set_servo.position);
+      rome_reply_ack(intf, frame);
+    } break;
 
     default:
       break;
   }
 } 
-
-/// current time in microseconds
-static volatile uint32_t uptime;
-
-/// Get uptime value
-uint32_t get_uptime_us(void)
-{
-  uint32_t tmp;
-  INTLVL_DISABLE_ALL_BLOCK() {
-    tmp = uptime;
-  }
-  return tmp;
-}
 
 //NOTE: ax12 methods MUST NOT be called with UART interrupts blocked, and from
 // a single "thread". Just call them from the main thread and you'll be safe.
@@ -160,13 +123,13 @@ static int8_t ax12_send_char(uint8_t c)
 /// Receive a character from AX-12
 static int ax12_recv_char(void)
 {
-  uint32_t tend = get_uptime_us() + AX12_TIMEOUT_US;
+  uint32_t tend = uptime_us() + AX12_TIMEOUT_US;
   for(;;) {
     int c = uart_recv_nowait(UART_AX12);
     if(c != -1) {
       return c;
     }
-    if(tend <= get_uptime_us()) {
+    if(tend <= uptime_us()) {
       return -1; // timeout
     }
   }
@@ -177,14 +140,6 @@ ax12_t ax12 = {
   .recv = ax12_recv_char,
   .set_state = ax12_set_state,
 };
-
-/// Called on uptime timer tick
-void update(void)
-{
-  INTLVL_DISABLE_ALL_BLOCK() {
-    uptime += UPDATE_TICK_US;
-  }
-}
 
 void update_match_timer(void)
 {
@@ -252,8 +207,8 @@ int main(void)
 
   // timer
   timer_init();
-  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US), UPTIME_INTLVL, update);
-  timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0,UPDATE_MATCH_TIMER_TICK_US), UPTIME_INTLVL, update_match_timer);
+  uptime_init();
+  TIMER_SET_CALLBACK_US(E0, 'B', UPDATE_MATCH_TIMER_TICK_US, INTLVL_HI, update_match_timer);
 
   // Initialize ROME
   rome_intf_init(&rome);
@@ -278,7 +233,7 @@ int main(void)
     PORTA.OUT = (t++)/1000;
 
     // update arm every 100 ms
-    uptime = get_uptime_us();
+    uint32_t uptime = uptime_us();
     if(uptime - luptime > UPDATE_ARM_US) {
       luptime = uptime;
       // update arm
@@ -298,7 +253,7 @@ int main(void)
     }
 
     // update rome every 100 ms
-    uptime = get_uptime_us();
+    uptime = uptime_us();
     if(uptime - lluptime > 100000) {
       lluptime = uptime;
       portpin_outset(&LED_COM_PP);
