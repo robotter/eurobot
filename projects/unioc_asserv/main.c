@@ -98,103 +98,79 @@ static void _katioucha_fire(uint8_t n) {
 }
 
 // ROME messages handler
-void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
-  switch((uint8_t)frame->mid) {
+void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
+{
+  switch(frame->mid) {
 
     case ROME_MID_ASSERV_ACTIVATE: {
-      uint8_t fid = frame->asserv_autoset.fid;
-      uint8_t b = frame->asserv_activate.activate;
-      robot_cs_activate(&robot_cs, b);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      robot_cs_activate(&robot_cs, frame->asserv_activate.activate);
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_CALIBRATE: { 
-      uint8_t fid = frame->asserv_calibrate.fid;
-      uint8_t b = frame->asserv_calibrate.b;
-      adxrs_calibration_mode(b);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      adxrs_calibration_mode(frame->asserv_calibrate.b);
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_AVOIDANCE: {
-      uint8_t fid = frame->asserv_avoidance.fid;
-      uint8_t b = frame->asserv_avoidance.b;
-      avoidance_inhibit(&avoidance,!b);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      avoidance_inhibit(&avoidance, !frame->asserv_avoidance.b);
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_START_TIMER: {
-      uint8_t fid = frame->start_timer.fid;
       // start match
       match_timer_counting = true;
-
 #if defined(GALIPEUR)
       // XXX turn avoidance on at the same time XXX
       //avoidance_inhibit(&avoidance,false);
 #elif defined(GALIPETTE)
       avoidance_inhibit(&avoidance,false);
 #endif
-      ROME_SEND_ACK(intf,fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_AUTOSET: {
-      uint8_t fid = frame->asserv_autoset.fid;
       uint8_t side = frame->asserv_autoset.side;
       float x = frame->asserv_autoset.x;
       float y = frame->asserv_autoset.y;
       htrajectory_autoset(&trajectory, side, x, y);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_GOTO_XY: {
-      uint8_t fid = frame->asserv_goto_xy.fid;
       float x = frame->asserv_goto_xy.x;
       float y = frame->asserv_goto_xy.y;
       float a = (frame->asserv_goto_xy.a)/1000.0;
       htrajectory_gotoXY(&trajectory, x, y);
       htrajectory_gotoA(&trajectory, a);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_GOTO_XY_REL: {
-      uint8_t fid = frame->asserv_goto_xy_rel.fid;
       float x = frame->asserv_goto_xy_rel.x;
       float y = frame->asserv_goto_xy_rel.y;
       float a = (frame->asserv_goto_xy_rel.a)/1000.0;
       htrajectory_gotoXY_R(&trajectory, x, y);
       htrajectory_gotoA_R(&trajectory, a);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_XYA: {
-      uint8_t fid = frame->asserv_set_xya.fid;
       int16_t x = frame->asserv_set_xya.x;
       int16_t y = frame->asserv_set_xya.y;
       int16_t a = (frame->asserv_set_xya.a)/1000.0;
       hposition_set(&position,x,y,a);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_XY: {
-      uint8_t fid = frame->asserv_set_xy.fid;
       double a;
       hposition_get_a(&position, &a);
       int16_t x = frame->asserv_set_xya.x;
       int16_t y = frame->asserv_set_xya.y;
       hposition_set(&position,x,y,a);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_A: {
-      uint8_t fid = frame->asserv_set_a.fid;
       vect_xy_t xy;
       hposition_get_xy(&position,&xy);
       int16_t a = (frame->asserv_set_xya.a)/1000.0;
       hposition_set(&position, xy.x, xy.y, a);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_X_PID: {
-      uint8_t fid = frame->asserv_set_x_pid.fid;
       uint16_t p = frame->asserv_set_x_pid.p;
       uint16_t i = frame->asserv_set_x_pid.i;
       uint16_t d = frame->asserv_set_x_pid.d;
@@ -203,11 +179,9 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       int32_t max_out = frame->asserv_set_x_pid.max_out;
       pid_set_gains(&pid_x, p, i, d);
       pid_set_maximums(&pid_x, max_in, max_I, max_out);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_Y_PID: {
-      uint8_t fid = frame->asserv_set_y_pid.fid;
       uint16_t p = frame->asserv_set_y_pid.p;
       uint16_t i = frame->asserv_set_y_pid.i;
       uint16_t d = frame->asserv_set_y_pid.d;
@@ -216,11 +190,9 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       int32_t max_out = frame->asserv_set_y_pid.max_out;
       pid_set_gains(&pid_y, p, i, d);
       pid_set_maximums(&pid_y, max_in, max_I, max_out);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_A_PID: {
-      uint8_t fid = frame->asserv_set_a_pid.fid;
       uint16_t p = frame->asserv_set_a_pid.p;
       uint16_t i = frame->asserv_set_a_pid.i;
       uint16_t d = frame->asserv_set_a_pid.d;
@@ -229,57 +201,44 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
       int32_t max_out = frame->asserv_set_a_pid.max_out;
       pid_set_gains(&pid_angle, p, i, d);
       pid_set_maximums(&pid_angle, max_in, max_I, max_out);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_A_QRAMP: {
-      uint8_t fid = frame->asserv_set_a_qramp.fid;
       uint16_t dot = frame->asserv_set_a_qramp.dot;
       uint16_t dotdot = frame->asserv_set_a_qramp.dotdot;
       quadramp_set_1st_order_vars(&qramp_angle, dot, dot);
       quadramp_set_2nd_order_vars(&qramp_angle, dotdot, dotdot);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_HTRAJ_XY_CRUISE: {
-      uint8_t fid = frame->asserv_set_htraj_xy_cruise.fid;
       float speed = frame->asserv_set_htraj_xy_cruise.speed;
       float acc   = frame->asserv_set_htraj_xy_cruise.acc;
       htrajectory_setXYCruiseSpeed(&trajectory, speed, acc);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_HTRAJ_XY_STEERING: {
-      uint8_t fid = frame->asserv_set_htraj_xy_steering.fid;
       float speed = frame->asserv_set_htraj_xy_steering.speed;
       float acc   = frame->asserv_set_htraj_xy_steering.acc;
       htrajectory_setXYSteeringSpeed(&trajectory, speed, acc);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_HTRAJ_XY_STOP: {
-      uint8_t fid = frame->asserv_set_htraj_xy_stop.fid;
       float speed = frame->asserv_set_htraj_xy_stop.speed;
       float acc   = frame->asserv_set_htraj_xy_stop.acc;
       htrajectory_setXYStopSpeed(&trajectory, speed, acc);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_HTRAJ_XYSTEERING_WINDOW: {
-      uint8_t fid = frame->asserv_set_htraj_xysteering_window.fid;
       float r = frame->asserv_set_htraj_xysteering_window.r;
       htrajectory_setSteeringWindow(&trajectory, r);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_HTRAJ_STOP_WINDOWS: {
-      uint8_t fid = frame->asserv_set_htraj_stop_windows.fid;
       float xy = frame->asserv_set_htraj_stop_windows.xy;
       float angle = frame->asserv_set_htraj_stop_windows.angle;
       htrajectory_setStopWindows(&trajectory, xy, angle);
-      ROME_SEND_ACK(intf, fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
 
 #if defined(GALIPEUR)
     // forward orders to R3D2 board
@@ -295,12 +254,10 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame) {
 #if defined(GALIPETTE)
     // fire some katioucha tubes
     case ROME_MID_KATIOUCHA_FIRE: {
-      uint8_t fid = frame->katioucha_fire.fid;
       uint8_t n = frame->katioucha_fire.n;
       _katioucha_fire(n);
-      ROME_SEND_ACK(intf,fid);
-      break;
-    }
+      rome_reply_ack(intf, frame);
+    } break;
 #endif
 
     default:
@@ -371,7 +328,7 @@ int main(void)
 
   // Initialize Timer
   timer_init();
-  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0, CONTROL_SYSTEM_PERIOD_US), CONTROL_SYSTEM_INTLVL, vcs_update);
+  TIMER_SET_CALLBACK_US(E0, 'A', CONTROL_SYSTEM_PERIOD_US, CONTROL_SYSTEM_INTLVL, vcs_update);
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
@@ -396,7 +353,7 @@ int main(void)
   cs_initialize();
 
   // setup ADXRS update task
-  timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0, ADXRS_PERIOD_US), ADXRS_INTLVL, _adxrs_update);
+  TIMER_SET_CALLBACK_US(E0, 'B', ADXRS_PERIOD_US, ADXRS_INTLVL, _adxrs_update);
 
   adxrs_calibration_mode(true);
   _delay_ms(2000);
