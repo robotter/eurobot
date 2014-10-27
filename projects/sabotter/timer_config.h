@@ -27,5 +27,14 @@
 #define TIMERF0_ENABLED
 #define TIMERF0_PRESCALER_DIV 1024
 
+
+/// Timer used for uptime as xn
+#define UPTIME_TIMER  E0
+/// Timer channel used for uptime
+#define UPTIME_TIMER_CHANNEL  'A'
+
+/// Uptime tick period in microseconds
+#define UPTIME_TICK_US  10000
+
 //@}
 //@}

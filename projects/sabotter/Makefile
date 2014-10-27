@@ -5,7 +5,7 @@ include ../../config.mk
 SRCS = $(wildcard *.c)
 ASRCS =
 TARGET = main
-MODULES = uart clock timer rome
+MODULES = uart clock timer idle rome
 R = galipeur
 
 ## Target configuration

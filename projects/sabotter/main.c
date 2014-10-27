@@ -25,8 +25,9 @@
 #include <stdlib.h>
 #include <uart/uart.h>
 #include <timer/timer.h>
+#include <timer/uptime.h>
+#include <idle/idle.h>
 #include <rome/rome.h>
-#include "rome_acks.h"
 #include "strat.h"
 #include "common.h"
 #include "config.h"
@@ -46,12 +47,13 @@ rome_intf_t rome_paddock;
 static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
   switch(frame->mid) {
-    case ROME_MID_ACK:
-      if(frame->ack.fid <= ROME_FRAME_ID_MAX) {
-        rome_acks_free_frame_id(frame->ack.fid);
+    case ROME_MID_ACK: {
+      uint8_t ack = frame->ack.ack;
+      if(rome_ack_in_range(ack)) {
+        rome_free_ack(ack);
         return; // don't forward
       }
-      break;
+    } break;
     case ROME_MID_ASSERV_TM_HTRAJ_DONE:
       robot_state.asserv.xy = frame->asserv_tm_htraj_done.xy;
       robot_state.asserv.a = frame->asserv_tm_htraj_done.a;
@@ -79,12 +81,13 @@ static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
 static void rome_meca_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
   switch(frame->mid) {
-    case ROME_MID_ACK:
-      if(frame->ack.fid <= ROME_FRAME_ID_MAX) {
-        rome_acks_free_frame_id(frame->ack.fid);
+    case ROME_MID_ACK: {
+      uint8_t ack = frame->ack.ack;
+      if(rome_ack_in_range(ack)) {
+        rome_free_ack(ack);
         return; // don't forward
       }
-      break;
+    } break;
     case ROME_MID_MECA_TM_ARM:
       robot_state.arm.shoulder = frame->meca_tm_arm.upper;
       robot_state.arm.elbow = frame->meca_tm_arm.elbow;
@@ -107,7 +110,7 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
   switch(frame->mid) {
     case ROME_MID_ACK:
       // should not happen
-      rome_acks_free_frame_id(frame->ack.fid);
+      rome_free_ack(frame->ack.ack);
       return;
     default:
       break;
@@ -126,25 +129,6 @@ void update_rome_interfaces(void)
   rome_handle_input(&rome_paddock);
 }
 
-
-/// current time in microseconds
-static volatile uint32_t uptime;
-
-/// Get uptime value
-uint32_t get_uptime_us(void)
-{
-  uint32_t tmp;
-  INTLVL_DISABLE_ALL_BLOCK() {
-    tmp = uptime;
-  }
-  return tmp;
-}
-
-/// Called on uptime timer tick
-static void update_uptime(void)
-{
-  uptime += UPDATE_TICK_US;
-}
 
 static void update_battery(void)
 {
@@ -169,8 +153,8 @@ static void match_end(void)
   static unsigned int match_time = 0;
   if(++match_time >= 89) {
     // end of match
-    ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
-    ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 0);
+    ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+    ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 0);
     portpin_outset(&LED_R_PP);
     portpin_outset(&LED_G_PP);
     portpin_outset(&LED_B_PP);
@@ -230,15 +214,14 @@ int main(void)
 
   // Initialize timers
   timer_init();
-  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US),
-                     UPTIME_INTLVL, update_uptime);
-  timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0,50e3),
-                     UPTIME_INTLVL, update_battery);
+  uptime_init();
+  TIMER_SET_CALLBACK_US(E0, 'B', 50e3, INTLVL_HI, update_battery);
+  idle_set_callback(rome_update, update_rome_interfaces);
 
   // if voltage is low, blink purple led and don't start anything
   if(voltage < BATTERY_ALERT_LIMIT) {
     for(;;) {
-      if((get_uptime_us() / 500000) % 2 == 0) {
+      if((uptime_us() / 500000) % 2 == 0) {
         portpin_outset(&LED_R_PP);
       } else {
         portpin_outclr(&LED_R_PP);
@@ -253,14 +236,13 @@ int main(void)
   strat_prepare(team);
   strat_wait_start(team);
 
-  timer_set_callback(timerF0, 'A', TIMER_US_TO_TICKS(F0,1e6),
-                     ROME_SEND_INTLVL, match_end);
+  TIMER_SET_CALLBACK_US(F0, 'A', 1e6, ROME_SEND_INTLVL, match_end);
 
   //strat_test(team);
   strat_run(team);
 
   for(;;) {
-    update_rome_interfaces();
+    idle();
   }
 }
 

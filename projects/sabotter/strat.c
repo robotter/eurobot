@@ -4,7 +4,7 @@
 #include <util/delay.h>
 #include <avarix/portpin.h>
 #include <rome/rome.h>
-#include "rome_acks.h"
+#include <timer/uptime.h>
 #include "strat.h"
 #include "common.h"
 #include "config.h"
@@ -50,22 +50,22 @@ bool opponent_detected_arc(float a1, float a2)
 
 void calibrate_gyro(bool b)
 {
-  ROME_SEND_AND_WAIT(ASSERV_CALIBRATE, &rome_asserv, b);
+  ROME_SENDWAIT_ASSERV_CALIBRATE(&rome_asserv, b);
 }
 
 void activate_asserv(bool b)
 {
-  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, b);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, b);
 }
 
 void ext_arm_set(external_arm_t n, int16_t pos)
 {
-  ROME_SEND_AND_WAIT(MECA_SET_SERVO, &rome_meca, n, pos);
+  ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca, n, pos);
 }
 
 void katioucha_fire(uint8_t n)
 {
-  ROME_SEND_AND_WAIT(KATIOUCHA_FIRE, &rome_asserv, n);
+  ROME_SENDWAIT_KATIOUCHA_FIRE(&rome_asserv, n);
 }
 
 /// Set side arm position
@@ -101,7 +101,7 @@ void ext_arm_over_border(external_arm_t n)
 void goto_xya(int16_t x, int16_t y, float a)
 {
   for(;;) {
-    ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, x, y, 1000*a);
+    ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
     robot_state.asserv.a = 0;
     for(;;) {
@@ -109,13 +109,13 @@ void goto_xya(int16_t x, int16_t y, float a)
         return;
       }
       if(opponent_detected()) {
-        ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, 0, 0, 0);
-        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+        ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
+        ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         //TODO use opponent_detected_arc()
         while(opponent_detected()) {
           update_rome_interfaces();
         }
-        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
+        ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
       }
       update_rome_interfaces();
@@ -144,7 +144,7 @@ bool starting_cord_plugged_fast(void)
 void goto_xya_painting(int16_t x, int16_t y, float a)
 {
   for(;;) {
-    ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, x, y, 1000*a);
+    ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
     robot_state.asserv.a = 0;
 
@@ -157,13 +157,13 @@ void goto_xya_painting(int16_t x, int16_t y, float a)
         return;
       }
       if(opponent_detected()) {
-        ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, 0, 0, 0);
-        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+        ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
+        ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         //TODO use opponent_detected_arc()
         while(opponent_detected()) {
           update_rome_interfaces();
         }
-        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
+        ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
       }
       update_rome_interfaces();
@@ -176,7 +176,7 @@ void goto_xya_painting(int16_t x, int16_t y, float a)
 void goto_xya_rel(int16_t x, int16_t y, float a)
 {
   for(;;) {
-    ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, x, y, 1000*a);
+    ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
     robot_state.asserv.a = 0;
     for(;;) {
@@ -184,13 +184,13 @@ void goto_xya_rel(int16_t x, int16_t y, float a)
         return;
       }
       if(opponent_detected()) {
-        ROME_SEND_AND_WAIT(ASSERV_GOTO_XY_REL, &rome_asserv, 0, 0, 0);
-        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+        ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
+        ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         //TODO use opponent_detected_arc()
         while(opponent_detected()) {
           update_rome_interfaces();
         }
-        ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
+        ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
       }
       update_rome_interfaces();
@@ -201,7 +201,7 @@ void goto_xya_rel(int16_t x, int16_t y, float a)
 /// Do an autoset
 void autoset(autoset_side_t side, float x, float y)
 {
-  ROME_SEND_AND_WAIT(ASSERV_AUTOSET, &rome_asserv, side, x, y);
+  ROME_SENDWAIT_ASSERV_AUTOSET(&rome_asserv, side, x, y);
   robot_state.asserv.autoset = 0;
   while(!robot_state.asserv.autoset) {
     //TODO avoid opponent
@@ -213,8 +213,8 @@ void autoset(autoset_side_t side, float x, float y)
 void arm_set(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
 {
   for(;;) {
-    uint32_t tend = get_uptime_us() + STRAT_TIMEOUT_US;
-    ROME_SEND_AND_WAIT(MECA_SET_ARM, &rome_meca, shoulder, elbow, wrist);
+    uint32_t tend = uptime_us() + STRAT_TIMEOUT_US;
+    ROME_SENDWAIT_MECA_SET_ARM(&rome_meca, shoulder, elbow, wrist);
     do {
       update_rome_interfaces();
       if(abs(shoulder-robot_state.arm.shoulder) < ARM_UPPER_MARGIN &&
@@ -222,21 +222,21 @@ void arm_set(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
          abs(wrist-robot_state.arm.wrist) < ARM_LOWER_MARGIN) {
         return;
       }
-    } while(get_uptime_us() < tend);
+    } while(uptime_us() < tend);
   }
 }
 
 /// Move arm but don't wait
 void arm_set_nowait(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
 {
-  ROME_SEND_AND_WAIT(MECA_SET_ARM, &rome_meca, shoulder, elbow, wrist);
+  ROME_SENDWAIT_MECA_SET_ARM(&rome_meca, shoulder, elbow, wrist);
 }
 
 /// delay for some ms
 void strat_delay_ms(uint32_t ms) {
-  uint32_t tend = get_uptime_us() + 1000*ms;
+  uint32_t tend = uptime_us() + 1000*ms;
   for(;;) {
-    if(get_uptime_us() >= tend) {
+    if(uptime_us() >= tend) {
       return;
     }
     update_rome_interfaces();
@@ -264,7 +264,7 @@ team_t strat_select_team(void)
 {
   // wait for starting cord to be unplugged
   while(starting_cord_plugged()) {
-    if((get_uptime_us() / 500000) % 2 == 0) {
+    if((uptime_us() / 500000) % 2 == 0) {
       portpin_outset(&LED_B_PP);
     } else {
       portpin_outclr(&LED_B_PP);
@@ -294,8 +294,8 @@ team_t strat_select_team(void)
   }
 
   // wait 2s before next step
-  uint32_t tend = get_uptime_us() + 2e6;
-  while(get_uptime_us() < tend) {
+  uint32_t tend = uptime_us() + 2e6;
+  while(uptime_us() < tend) {
     update_rome_interfaces();
   }
 
@@ -310,7 +310,7 @@ void strat_wait_start(team_t team)
   calibrate_gyro(true);
 */
   while(starting_cord_plugged()) {
-    if((get_uptime_us() / 500000) % 2 == 0) {
+    if((uptime_us() / 500000) % 2 == 0) {
       if(team == TEAM_RED) {
         portpin_outset(&LED_R_PP);
         portpin_outclr(&LED_G_PP);
@@ -336,9 +336,9 @@ void strat_wait_start(team_t team)
   portpin_outclr(&LED_R_PP);
   portpin_outclr(&LED_G_PP);
   portpin_outclr(&LED_B_PP);
-  ROME_SEND_AND_WAIT(START_TIMER, &rome_asserv);
+  ROME_SENDWAIT_START_TIMER(&rome_asserv);
 #if (defined GALIPEUR)
-  ROME_SEND_AND_WAIT(START_TIMER, &rome_meca);
+  ROME_SENDWAIT_START_TIMER(&rome_meca);
 #endif
 }
 
@@ -346,28 +346,28 @@ void strat_wait_start(team_t team)
 void strat_init_galipeur(void)
 {
   // initialize asserv variables
-  //ROME_SEND_AND_WAIT(ASSERV_SET_X_PID, &rome_asserv, 3000, 0, 0, 50000, 100000, 0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_Y_PID, &rome_asserv, 3000, 0, 0, 50000, 100000, 0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_A_PID, &rome_asserv, 2500, 0, 0, 50000, 1000, 0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_A_QRAMP, &rome_asserv, 200.0, 100.0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_CRUISE, &rome_asserv, 20.0, 100.0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_STEERING, &rome_asserv, 5.0, 0.1);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_STOP, &rome_asserv, 1.0, 0.1);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XYSTEERING_WINDOW, &rome_asserv, 50.0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_STOP_WINDOWS, &rome_asserv, 5.0, 0.03);
+  //ROME_SENDWAIT_ASSERV_SET_X_PID(&rome_asserv, 3000, 0, 0, 50000, 100000, 0);
+  //ROME_SENDWAIT_ASSERV_SET_Y_PID(&rome_asserv, 3000, 0, 0, 50000, 100000, 0);
+  //ROME_SENDWAIT_ASSERV_SET_A_PID(&rome_asserv, 2500, 0, 0, 50000, 1000, 0);
+  //ROME_SENDWAIT_ASSERV_SET_A_QRAMP(&rome_asserv, 200.0, 100.0);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20.0, 100.0);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 5.0, 0.1);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(&rome_asserv, 1.0, 0.1);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XYSTEERING_WINDOW(&rome_asserv, 50.0);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_STOP_WINDOWS(&rome_asserv, 5.0, 0.03);
 
   // disable asserv
-  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
 
   // initialize meca
-  ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 1);
+  ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
 }
 
 void strat_prepare_galipeur(team_t team)
 {
   // initialize asserv
-  ROME_SEND_AND_WAIT(ASSERV_GOTO_XY, &rome_asserv, 0, 0, 0);
-  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, 0);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
   // raise both arms
   ext_arm_raise(EXTARM_LEFT);
@@ -383,10 +383,10 @@ void strat_prepare_galipeur(team_t team)
   goto_xya_rel(kx*50, 280, 0);
 
   // prepare meca
-  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 0, 1);
-  ROME_SEND_AND_WAIT(MECA_SET_PUMP, &rome_meca, 1, 1);
-  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 0, 1);
-  ROME_SEND_AND_WAIT(MECA_SET_SUCKER, &rome_meca, 1, 1);
+  ROME_SENDWAIT_MECA_SET_PUMP(&rome_meca, 0, 1);
+  ROME_SENDWAIT_MECA_SET_PUMP(&rome_meca, 1, 1);
+  ROME_SENDWAIT_MECA_SET_SUCKER(&rome_meca, 0, 1);
+  ROME_SENDWAIT_MECA_SET_SUCKER(&rome_meca, 1, 1);
 }
 
 void strat_run_galipeur(team_t team)
@@ -442,8 +442,8 @@ void strat_run_galipeur(team_t team)
   }
 
   _delay_ms(3000);
-  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
-  ROME_SEND_AND_WAIT(MECA_SET_POWER, &rome_meca, 0);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+  ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 0);
 }
 
 void strat_test_galipeur(team_t team)
@@ -470,18 +470,18 @@ void strat_homologation_galipeur(team_t team)
 void strat_init_galipette(void)
 {
   // initialize asserv variables
-  //ROME_SEND_AND_WAIT(ASSERV_SET_X_PID, &rome_asserv, 3000, 0, 0, 50000, 100000, 0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_Y_PID, &rome_asserv, 3000, 0, 0, 50000, 100000, 0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_A_PID, &rome_asserv, 2500, 0, 0, 50000, 1000, 0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_A_QRAMP, &rome_asserv, 200.0, 100.0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_CRUISE, &rome_asserv, 20.0, 100.0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_STEERING, &rome_asserv, 5.0, 0.1);
-  ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XY_STOP, &rome_asserv, 1.0, 0.05);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_XYSTEERING_WINDOW, &rome_asserv, 50.0);
-  //ROME_SEND_AND_WAIT(ASSERV_SET_HTRAJ_STOP_WINDOWS, &rome_asserv, 5.0, 0.03);
+  //ROME_SENDWAIT_ASSERV_SET_X_PID(&rome_asserv, 3000, 0, 0, 50000, 100000, 0);
+  //ROME_SENDWAIT_ASSERV_SET_Y_PID(&rome_asserv, 3000, 0, 0, 50000, 100000, 0);
+  //ROME_SENDWAIT_ASSERV_SET_A_PID(&rome_asserv, 2500, 0, 0, 50000, 1000, 0);
+  //ROME_SENDWAIT_ASSERV_SET_A_QRAMP(&rome_asserv, 200.0, 100.0);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20.0, 100.0);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 5.0, 0.1);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(&rome_asserv, 1.0, 0.05);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XYSTEERING_WINDOW(&rome_asserv, 50.0);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_STOP_WINDOWS(&rome_asserv, 5.0, 0.03);
   //
   // disable asserv
-  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 0);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
 
 }
 
@@ -489,7 +489,7 @@ void strat_prepare_galipette(team_t team)
 {
   // initialize asserv
   portpin_outset(&LED_R_PP);
-  ROME_SEND_AND_WAIT(ASSERV_ACTIVATE, &rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 }
 
 void strat_run_galipette(team_t team)

@@ -12,8 +12,6 @@ extern rome_intf_t rome_paddock;
 
 // Handle input from all ROME interfaces
 void update_rome_interfaces(void);
-// Get uptime value
-uint32_t get_uptime_us(void);
 
 // R3D2 object detection state
 typedef struct {
