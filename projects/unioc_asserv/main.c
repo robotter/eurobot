@@ -42,8 +42,6 @@
 
 #include "telemetry.h"
 
-volatile uint8_t init0, init1;
-
 portpin_t leds[4];
 
 // accessed through ROME handler
@@ -312,7 +310,6 @@ void _adxrs_update(void) {
 
 int main(void)
 {
-  init0 = init1;
   // Booting
   for(int k=0;k<4;k++) {
     leds[k] = PORTPIN(Q,k);
