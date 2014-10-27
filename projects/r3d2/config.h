@@ -4,11 +4,6 @@
 /// Perlimpinpin node address
 #define UART_ROME  uartF1
 
-// Tick period of uptime counter, in microseconds
-#define UPDATE_TICK_US  10000
-// Interrupt level of tick interrupt
-#define UPTIME_INTLVL  INTLVL_HI
-
 // Capture period, in microseconds
 #define CAPTURE_PERIOD_US  20000
 // Telemetry period, in microseconds

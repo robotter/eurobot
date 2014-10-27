@@ -4,6 +4,7 @@
 #include <clock/clock.h>
 #include <uart/uart.h>
 #include <timer/timer.h>
+#include <timer/uptime.h>
 #include <rome/rome.h>
 #include "r3d2.h"
 #include "config.h"
@@ -18,41 +19,27 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
   switch(frame->mid) {
     case ROME_MID_R3D2_CALIBRATE_ANGLE:
       r3d2_calibrate_angle(1000*frame->r3d2_calibrate_angle.a);
+      rome_reply_ack(intf, frame);
       break;
     case ROME_MID_R3D2_CALIBRATE_DIST:
       r3d2_calibrate_dist(frame->r3d2_calibrate_dist.d);
+      rome_reply_ack(intf, frame);
       break;
     case ROME_MID_R3D2_CONF_LOAD:
       r3d2_conf_load();
+      rome_reply_ack(intf, frame);
       break;
     case ROME_MID_R3D2_CONF_SAVE:
       r3d2_conf_save();
+      rome_reply_ack(intf, frame);
       break;
     case ROME_MID_R3D2_SET_MOTOR_SPEED:
       r3d2_set_motor_speed(frame->r3d2_set_motor_speed.speed);
+      rome_reply_ack(intf, frame);
       break;
     default:
       break;
   }
-}
-
-/// current time in microseconds
-static volatile uint32_t uptime;
-
-/// Get uptime value
-uint32_t get_uptime_us(void)
-{
-  uint32_t tmp;
-  INTLVL_DISABLE_ALL_BLOCK() {
-    tmp = uptime;
-  }
-  return tmp;
-}
-
-/// Called on uptime timer tick
-static void update_uptime(void)
-{
-  uptime += UPDATE_TICK_US;
 }
 
 
@@ -82,15 +69,14 @@ int main(void)
   r3d2_start();
 
   timer_init();
-  timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,UPDATE_TICK_US),
-                     UPTIME_INTLVL, update_uptime);
+  uptime_init();
 
   // main loop
   uint32_t t_capture = 0;
   uint32_t t_tm = 0;
   for(;;) {
     rome_handle_input(&rome_intf);
-    uint32_t t = get_uptime_us();
+    uint32_t t = uptime_us();
     if(t > t_capture) {
       r3d2_update(&r3d2_data);
       t_capture = t + CAPTURE_PERIOD_US;
