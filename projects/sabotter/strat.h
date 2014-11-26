@@ -7,7 +7,7 @@
 /// Team color (or side)
 typedef enum {
   TEAM_NONE,
-  TEAM_RED,
+  TEAM_GREEN,
   TEAM_YELLOW,
 } team_t;
 

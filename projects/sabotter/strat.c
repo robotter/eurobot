@@ -81,8 +81,8 @@ void ext_arm_raise(external_arm_t n)
 void ext_arm_lower(external_arm_t n)
 {
   switch(n) {
-    case EXTARM_LEFT:  ext_arm_set(n, -290); break;
-    case EXTARM_RIGHT: ext_arm_set(n, 350); break;
+    case EXTARM_LEFT:  ext_arm_set(n, -100); break;
+    case EXTARM_RIGHT: ext_arm_set(n, 150); break;
     default: return;
   }
 }
@@ -278,12 +278,14 @@ team_t strat_select_team(void)
   portpin_outclr(&LED_B_PP);
   for(;;) {
     if(portpin_in(&COLOR_SELECTOR_PP)) {
-      portpin_outset(&LED_R_PP);
-      portpin_outclr(&LED_G_PP);
-      team = TEAM_RED;
+      portpin_outclr(&LED_R_PP);
+      portpin_outset(&LED_G_PP);
+      portpin_outclr(&LED_B_PP);
+      team = TEAM_GREEN;
     } else {
       portpin_outset(&LED_R_PP);
       portpin_outset(&LED_G_PP);
+      portpin_outclr(&LED_B_PP);
       team = TEAM_YELLOW;
     }
     if(starting_cord_plugged()) {
@@ -311,11 +313,10 @@ void strat_wait_start(team_t team)
 */
   while(starting_cord_plugged()) {
     if((uptime_us() / 500000) % 2 == 0) {
-      if(team == TEAM_RED) {
+      if(team == TEAM_YELLOW) {
         portpin_outset(&LED_R_PP);
-        portpin_outclr(&LED_G_PP);
+        portpin_outset(&LED_G_PP);
       } else {
-        portpin_outset(&LED_R_PP);
         portpin_outset(&LED_G_PP);
       }
       portpin_outclr(&LED_B_PP);
@@ -356,6 +357,7 @@ void strat_init_galipeur(void)
   //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XYSTEERING_WINDOW(&rome_asserv, 50.0);
   //ROME_SENDWAIT_ASSERV_SET_HTRAJ_STOP_WINDOWS(&rome_asserv, 5.0, 0.03);
 
+
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
 
@@ -366,7 +368,8 @@ void strat_init_galipeur(void)
 void strat_prepare_galipeur(team_t team)
 {
   // initialize asserv
-  ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, 0);
+  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 0, 0, -M_PI/2);
+  ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, -M_PI/2);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
   // raise both arms
@@ -374,13 +377,17 @@ void strat_prepare_galipeur(team_t team)
   ext_arm_raise(EXTARM_RIGHT);
 
   // autoset robot
-  int8_t kx = team == TEAM_RED ? 1 : -1;
-  int16_t xoffset = TEAM_RED ? 120 : 100;
-  autoset_side_t side = team == TEAM_RED ? AUTOSET_RIGHT : AUTOSET_LEFT;
-  autoset(side, kx*(1500-100), 0);
-  goto_xya_rel(kx*-xoffset, 0, 0);
-  autoset(AUTOSET_DOWN, kx*(1500-100-xoffset), 100);
-  goto_xya_rel(kx*50, 280, 0);
+  int8_t kx = team == TEAM_YELLOW ? -1 : 1;
+  autoset(AUTOSET_DOWN, 0, 100);
+  goto_xya_rel(0, 100, 0);
+  goto_xya(0, 550, -M_PI/2);
+  goto_xya(-350, 550, -M_PI/2);
+  autoset_side_t side = team == TEAM_YELLOW ? AUTOSET_LEFT : AUTOSET_RIGHT;
+  autoset(side, kx*(1500-100), 450);
+
+  goto_xya_rel(500, 0, 0);
+  goto_xya_rel(0, 420, 0);
+  goto_xya(kx*(1500-230), 1000, -M_PI/2);
 
   // prepare meca
   ROME_SENDWAIT_MECA_SET_PUMP(&rome_meca, 0, 1);
@@ -391,55 +398,49 @@ void strat_prepare_galipeur(team_t team)
 
 void strat_run_galipeur(team_t team)
 {
-  int8_t kx = team == TEAM_RED ? 1 : -1;
-
-  arm_set(0,400,200);
+  int8_t kx = team == TEAM_YELLOW ? -1 : +1;
 
   // autoset before starting, to avoid gyro's drift
-  //XXX values copy-pasted from above
-  // Y value must be the same
-  goto_xya_rel(0, 50, 0);
-  autoset_side_t side = team == TEAM_RED ? AUTOSET_RIGHT : AUTOSET_LEFT;
-  autoset(side, kx*(1500-100), 380);
-  goto_xya_rel(kx*(-100), 0, 0);
+  autoset_side_t side = team == TEAM_YELLOW ? AUTOSET_LEFT : AUTOSET_RIGHT;
+  autoset(side, kx*(1500-100-70), 1000);
 
-  // go for first fire
-  external_arm_t arm = (team == TEAM_RED) ? EXTARM_RIGHT : EXTARM_RIGHT;
-  double angle_offset = (team == TEAM_RED) ? +M_PI : 0.0;
+  goto_xya_rel(400,0,0);
+  goto_xya_rel(0,-400,0);
 
-  goto_xya(kx*(1500-650), 600, angle_offset - (2.0*M_PI/3.0));
-  ext_arm_lower(arm);
-  goto_xya(kx*(1500-650), 1400, angle_offset - (2.0*M_PI/3.0));
-  ext_arm_raise(arm);
+  goto_xya(kx*(1500-450),200,-M_PI/2);
+  goto_xya_rel(-200,0,0);
 
-#if 0
-  // go for second fire
   ext_arm_lower(EXTARM_RIGHT);
-  goto_xya(kx*(1500-700), 800, -M_PI/6.0);
-  goto_xya(kx*(1500-1300), 800, -M_PI/6.0);
+  strat_delay_ms(500);
+
+  goto_xya(kx*(1500-300),200,-M_PI/2 + M_PI/3);
+
   ext_arm_raise(EXTARM_RIGHT);
-#endif
+  strat_delay_ms(500);
 
-  strat_delay_ms(9000);
+  goto_xya(kx*(1500-600),200,-M_PI/2 + M_PI/3);
+  ext_arm_lower(EXTARM_RIGHT);
+  strat_delay_ms(500);
 
-  goto_xya(kx*(1500-700), 800, angle_offset - (2.0*M_PI/3.0));
-  goto_xya(kx*(1500-300), 500, angle_offset - (2.0*M_PI/3.0));
-  autoset(side, kx*(1500-100), 500);
+  goto_xya(kx*(1500-900),200,-M_PI/2 + M_PI/3);
+  ext_arm_raise(EXTARM_RIGHT);
+  goto_xya(kx*(1500-980),370,-M_PI/2 - M_PI/4 + M_PI/3);
+  goto_xya_rel(150*0.7,-150*0.7,0);
+  goto_xya(kx*(1500-1000),500,-M_PI/2);
+  goto_xya(kx*(1500-1000),500,M_PI/2 - M_PI/4 + M_PI/3);
+  goto_xya(kx*(1500-550),900,M_PI/2 - M_PI/4 + M_PI/3);
 
-  // push fire from border
-  arm = (team == TEAM_RED) ? EXTARM_RIGHT : EXTARM_RIGHT;
-  if(team == TEAM_RED) {
-    ext_arm_over_border(arm);
-    strat_delay_ms(1000);
-    goto_xya_rel(kx*(-150),150,0);
- //   goto_xya_rel(0,0,-M_PI/3.0);
-   // goto_xya_rel(0,0,M_PI);
-  }
-  else {
-    ext_arm_over_border(arm);
-    goto_xya_rel(kx*(-150),150,0);
-    goto_xya_rel(0,0,-2*M_PI/3.0);
-  }
+  //go push oponent side clap !
+  //goto_xya(kx*(-1500+1100),900,-M_PI/2 + M_PI/3);
+  //goto_xya(kx*(-1500+300),200,-M_PI/2  + M_PI/3);
+  //ext_arm_lower(EXTARM_RIGHT);
+  //strat_delay_ms(500);
+  //goto_xya(kx*(-1500+500),200,-M_PI/2  + M_PI/3);
+  //ext_arm_raise(EXTARM_RIGHT);
+  //strat_delay_ms(500);
+  //ext_arm_lower(EXTARM_RIGHT);
+  //strat_delay_ms(500);
+  //ext_arm_raise(EXTARM_RIGHT);
 
   _delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
@@ -448,13 +449,13 @@ void strat_run_galipeur(team_t team)
 
 void strat_test_galipeur(team_t team)
 {
-  int8_t kx = team == TEAM_RED ? 1 : -1;
+  int8_t kx = team == TEAM_YELLOW ? 1 : -1;
   (void)kx;
 }
 
 void strat_homologation_galipeur(team_t team)
 {
-  int8_t kx = team == TEAM_RED ? 1 : -1;
+  int8_t kx = team == TEAM_YELLOW ? 1 : -1;
 
   // exit starting area
   goto_xya(kx*1160, 534, 0);
@@ -496,7 +497,7 @@ void strat_run_galipette(team_t team)
 {
   strat_delay_ms(9000);
 
-  int8_t kx = team == TEAM_RED ? 1 : -1;
+  int8_t kx = team == TEAM_YELLOW ? 1 : -1;
 
   int lof = 450;
 
