@@ -467,6 +467,7 @@ void strat_homologation_galipeur(team_t team)
   //end
 }
 
+/****************************************************************************/
 
 void strat_init_galipette(void)
 {
@@ -475,46 +476,62 @@ void strat_init_galipette(void)
   //ROME_SENDWAIT_ASSERV_SET_Y_PID(&rome_asserv, 3000, 0, 0, 50000, 100000, 0);
   //ROME_SENDWAIT_ASSERV_SET_A_PID(&rome_asserv, 2500, 0, 0, 50000, 1000, 0);
   //ROME_SENDWAIT_ASSERV_SET_A_QRAMP(&rome_asserv, 200.0, 100.0);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20.0, 100.0);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 10.0, 0.05);
   //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 5.0, 0.1);
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(&rome_asserv, 1.0, 0.05);
+  
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(&rome_asserv, 1.0, 0.05);
   //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XYSTEERING_WINDOW(&rome_asserv, 50.0);
   //ROME_SENDWAIT_ASSERV_SET_HTRAJ_STOP_WINDOWS(&rome_asserv, 5.0, 0.03);
-  //
+  // set position
+  //ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 820,-1300,-M_PI_4);
+
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-
 }
 
 void strat_prepare_galipette(team_t team)
 {
   // initialize asserv
-  portpin_outset(&LED_R_PP);
+  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, -1300,1100,0);
+  ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, -1300,1100,0);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, -1300,1100,0);
+  ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, -1300,1100,0);
 }
 
 void strat_run_galipette(team_t team)
 {
-  strat_delay_ms(9000);
+  //strat_delay_ms(9000);
 
   int8_t kx = team == TEAM_YELLOW ? 1 : -1;
 
-  int lof = 450;
+  kx = 1;
+  // inhibit avoidance
+  ROME_SENDWAIT_ASSERV_AVOIDANCE(&rome_asserv, 0);
+  goto_xya(-1300,1100, 0);
+  strat_delay_ms(2000);
+  goto_xya(-1200,1000, 0);
+  while(1);
 
-  portpin_outset(&LED_B_PP);
-  goto_xya(-kx*50,-200,0);
-  goto_xya(-kx*50,-lof,0);
-  goto_xya(kx*400,-lof,0);
+  strat_delay_ms(5000);
+  // go around pop corn glass
+  goto_xya(-400,1000,0);
+  strat_delay_ms(5000);
+  goto_xya(-300, 900,0);
+  strat_delay_ms(5000);
+  goto_xya(-400,980,0);
+  strat_delay_ms(2000);
 
-  katioucha_fire(6);
+  //push it to cinema
+  goto_xya(-1300,820,0);
+  strat_delay_ms(1000);
 
-  goto_xya(kx*1000,-lof,0);
-  // turn paitings to wall in 2 steps (allow avoidance to detect something)
-  goto_xya(kx*1000,-lof,.5*M_PI);
-  goto_xya(kx*1000,-lof+30,.5*M_PI);
-  goto_xya(kx*1000,-lof+30,M_PI);
-  goto_xya(kx*1000,-400,M_PI);
+  // then go to stares
+  goto_xya(-500,1100,0);
+  goto_xya(-50,1100,0);
 
+  strat_delay_ms(5000);
+  while(1);
   // go out of table for at least 1m and pray 
   // XXX tirette is connected to painting click XXX
   goto_xya_painting(kx*1000,1000,M_PI);

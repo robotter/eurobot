@@ -3,11 +3,21 @@
 #include <avr/interrupt.h>
 #include <avarix/intlvl.h>
 #include <string.h>
+#include <stdio.h>
 #include <pwm/motor.h>
 #include <util/delay.h>
 #include "beacom.h"
 #include "sensor.h"
 #include "sensor_config.h"
+#include "pid.h"
+#include "fan_regulation_config.h"
+
+
+//#define DEBUG_FAN_SPEED_REGUL
+
+uint8_t sensor_new_pid_available(void);
+void sensor_set_top_fan_speed(uint16_t speed);
+
 
 volatile uint16_t dma_top_data[2 * MAX_OBJECT];
 volatile uint16_t top_data[2 * MAX_OBJECT];
@@ -16,6 +26,15 @@ volatile uint8_t top_shift;
 volatile uint16_t top_data_latched[2 * MAX_OBJECT];
 volatile uint16_t top_period_latched;
 volatile uint8_t new_data;
+volatile uint8_t new_pid_data;
+
+static struct pid_filter top_fan_pid;
+static pwm_motor_t fan_top;
+static volatile int32_t top_fan_speed;
+
+#define MIRROR_SPEED_IN_TIMER_TICK  (1000000UL/(MIRROR_SPEED_IN_TURN_PER_SECOND * TICK_TIMER1D_US))
+
+
 
 static void sensor_enable_top_dma(uint8_t enable) {
   if(enable) {
@@ -52,6 +71,7 @@ ISR(PORTD_INT0_vect) {
 
   sensor_enable_top_dma(1);
   new_data = 1;
+  new_pid_data = 1;
 }
 
 
@@ -99,29 +119,59 @@ void sensor_init(void) {
   DMA.CH0.SRCADDR2 = 0;
   sensor_enable_top_dma(1);
 
-  pwm_motor_t fan_top;
   pwm_servo_init(&fan_top, &TCD0, 'A');
   pwm_motor_set_frequency(&fan_top, SENSOR_FAN_PWM_FREQUENCY);
 
+  pid_init(&top_fan_pid);
+
+  switch(beacom_get_id()) {
+    case 0: // master beacon
+      pid_set_gains(&top_fan_pid, 
+                    MB_TOP_FAN_SPEED_PID_GAIN_P, 
+                    MB_TOP_FAN_SPEED_PID_GAIN_I, 
+                    MB_TOP_FAN_SPEED_PID_GAIN_D) ;
+
+      pid_set_maximums(&top_fan_pid, 
+                       MB_TOP_FAN_SPEED_PID_MAX_IN, 
+                       MB_TOP_FAN_SPEED_PID_MAX_I, 
+                       MB_TOP_FAN_SPEED_PID_MAX_OUT);
+
+      pid_set_out_shift(&top_fan_pid, MB_TOP_FAN_SPEED_PID_SHIFT);
+      break;
+     
+
+    default: // slave beacon
+      pid_set_gains(&top_fan_pid, 
+                    SB_TOP_FAN_SPEED_PID_GAIN_P, 
+                    SB_TOP_FAN_SPEED_PID_GAIN_I, 
+                    SB_TOP_FAN_SPEED_PID_GAIN_D) ;
+
+      pid_set_maximums(&top_fan_pid, 
+                       SB_TOP_FAN_SPEED_PID_MAX_IN, 
+                       SB_TOP_FAN_SPEED_PID_MAX_I, 
+                       SB_TOP_FAN_SPEED_PID_MAX_OUT);
+
+      pid_set_out_shift(&top_fan_pid, SB_TOP_FAN_SPEED_PID_SHIFT);
+  }
 
   //fan speed burst
   switch(beacom_get_id()) {
     case 0:
       pwm_motor_set(&fan_top, SENSOR_B0_FAN_PWM_BURST);
       _delay_ms(SENSOR_B0_FAN_BURST_DELAY);
-      pwm_motor_set(&fan_top, SENSOR_B0_FAN_PWM_RUN);
+      sensor_set_top_fan_speed(SENSOR_B0_FAN_PWM_RUN);
       break;
 
     case 1:
       pwm_motor_set(&fan_top, SENSOR_B1_FAN_PWM_BURST);
       _delay_ms(SENSOR_B1_FAN_BURST_DELAY);
-      pwm_motor_set(&fan_top, SENSOR_B1_FAN_PWM_RUN);
+      sensor_set_top_fan_speed(SENSOR_B1_FAN_PWM_RUN);
       break;
 
     case 2:
       pwm_motor_set(&fan_top, SENSOR_B2_FAN_PWM_BURST);
       _delay_ms(SENSOR_B2_FAN_BURST_DELAY);
-      pwm_motor_set(&fan_top, SENSOR_B2_FAN_PWM_RUN);
+      sensor_set_top_fan_speed(SENSOR_B2_FAN_PWM_RUN);
       break;
   }
 }
@@ -151,6 +201,7 @@ double sensor_get_period(sensor_position_t sid) {
   return 0;
 }
 
+// return the number of elements detected (number of transitions divided by 2)
 uint8_t sensor_get_object_number(sensor_position_t sid) {
   uint8_t count = 0;
 
@@ -186,11 +237,14 @@ double sensor_get_object_angle(sensor_position_t sid, uint8_t id) {
   return -1;
 }
 
+
+// return distance in angular way (in degree)
 double sensor_get_object_distance(sensor_position_t sid, uint8_t id) {
   switch(sid) {
     case SENSOR_TOP:
       if(id < MAX_OBJECT) {
         double d;
+        // case when object detected is around the end of the period
         if(top_data_latched[id] > top_data_latched[id + 1]) {
           d = top_data_latched[id + 1] + top_period_latched;
           d -= top_data_latched[id];
@@ -198,7 +252,7 @@ double sensor_get_object_distance(sensor_position_t sid, uint8_t id) {
         else {
           d = (top_data_latched[id + 1] - top_data_latched[id]);
         }
-
+        
         return d * 360.0 / ((double)top_period_latched);
       }
       break;
@@ -217,4 +271,39 @@ uint8_t sensor_new_data_available(void)
   }
 
   return 0;
+}
+
+uint8_t sensor_new_data_available_for_pid(void)
+{
+  INTLVL_DISABLE_ALL_BLOCK() {
+    if(new_pid_data) {
+      new_pid_data = 0;
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+void mirror_speed_correct(void)
+{
+  if (sensor_new_data_available_for_pid()) {
+    // compute error
+    int32_t error = (int32_t)MIRROR_SPEED_IN_TIMER_TICK - (int32_t)top_period_latched;
+    
+    // apply pid filter
+    top_fan_speed -= pid_do_filter(&top_fan_pid, error);
+    sensor_set_top_fan_speed((uint16_t)top_fan_speed);
+    #ifdef DEBUG_FAN_SPEED_REGUL
+    printf("in %5u -- sp %5lu -- out %5li\r\n", top_period_latched, MIRROR_SPEED_IN_TIMER_TICK, fan_speed);
+    #endif
+  }
+}
+
+
+
+void sensor_set_top_fan_speed(uint16_t speed)
+{
+  top_fan_speed = (int32_t)speed;
+  pwm_motor_set(&fan_top, speed);
 }

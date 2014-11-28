@@ -99,6 +99,7 @@ static void beacom_run_slave(void) {
         uart_send(uartF1, *ptr);
       }
     }
+    mirror_speed_correct();
   }
 }
 
@@ -174,6 +175,7 @@ static void beacom_run_master(void) {
       double per = sensor_get_period(SENSOR_TOP);
       int count = sensor_get_object_number(SENSOR_TOP);
 
+      printf("\033[2J");
       printf("----------------\r\n");
       printf("Bat:\r\n");
       printf("\t - %s\r\n", BATTMON_IsBatteryDischarged() == BATTERY_DISCHARGED ? "KO" : "OK");
@@ -197,6 +199,8 @@ static void beacom_run_master(void) {
       }
 #endif
     }
+    
+    mirror_speed_correct();
   }
 }
 

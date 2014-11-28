@@ -42,6 +42,8 @@ register_messages(
       (Order, 'asserv_set_htraj_stop_windows', [('xy','float'), ('angle','float')]),
 
       # __ TELEMETRY __
+      # Encoder raw data
+      ('asserv_tm_encoder_raw', [('enc0','int16'), ('enc1','int16'), ('enc2','int16')]),
       # XYA position
       ('asserv_tm_xya', [('x','dist'), ('y','dist'), ('a','angle')]),
       # XYA PIDs telemetry

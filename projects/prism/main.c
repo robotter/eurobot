@@ -10,6 +10,8 @@
 #include "battery_monitor.h"
 #include "battery_monitor_config.h"
 
+#define LED_UPDATE_PERIOD_US    100000UL
+
 void battmon_update(void)  {
   PORTH.OUTTGL = 0xE0;
   BATTMON_monitor();
@@ -38,5 +40,7 @@ int main(void) {
   beacom_run();
 
   //never reached
-  while(1);
+  while(1) {
+    mirror_speed_correct();
+  }
 }

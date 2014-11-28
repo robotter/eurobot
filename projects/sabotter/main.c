@@ -143,7 +143,10 @@ static void update_battery(void)
     uint16_t voltage = battery.FilterMemory;
     // send telemetry message
     ROME_SEND_STRAT_TM_BATTERY(&rome_paddock, voltage);
+    PORTA.DIRSET = 0x0E;
+    PORTA.OUTTGL = 0x0E;
   }
+
 }
 
 /// Scheduler function called at match end
@@ -178,6 +181,7 @@ int main(void)
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
+
 
   //----------------------------------------------------------------------
   // Initialize ROME
@@ -231,7 +235,9 @@ int main(void)
   }
 
   // initialize asserv and meca, fold arms, ...
+  portpin_outset(&LED_R_PP);
   strat_init();
+  portpin_outclr(&LED_R_PP);
   team_t team = strat_select_team();
   strat_prepare(team);
   strat_wait_start(team);

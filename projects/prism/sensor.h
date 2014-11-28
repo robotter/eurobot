@@ -15,5 +15,6 @@ double sensor_get_object_angle(sensor_position_t sid, uint8_t id);
 double sensor_get_object_distance(sensor_position_t sid, uint8_t id);
 double sensor_get_period(sensor_position_t sid);
 uint8_t sensor_new_data_available(void);
+void mirror_speed_correct(void);
 
 #endif// SENSOR_H

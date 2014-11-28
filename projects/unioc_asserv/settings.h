@@ -49,7 +49,11 @@
 
 // -- pid (x,y,a) --
 
+#if defined(GALIPEUR)
 #define SETTING_PID_X_GAIN_P (3000)
+#elif defined(GALIPETTE)
+#define SETTING_PID_X_GAIN_P (1400)
+#endif
 #define SETTING_PID_X_GAIN_I (0)
 #define SETTING_PID_X_GAIN_D (0)
 
@@ -60,8 +64,12 @@
 #define SETTING_PID_X_SHIFT (1)
 
 // --
-
+#if defined(GALIPEUR)
 #define SETTING_PID_Y_GAIN_P (3000)
+#elif defined(GALIPETTE)
+#define SETTING_PID_Y_GAIN_P (1400)
+#endif
+
 #define SETTING_PID_Y_GAIN_I (0)
 #define SETTING_PID_Y_GAIN_D (0)
 
@@ -104,7 +112,7 @@
 
 #define SETTING_TRAJECTORY_STEERING_XYWIN (50.0)
 
-#define SETTING_TRAJECTORY_STOP_XYWIN (5.0)
+#define SETTING_TRAJECTORY_STOP_XYWIN (20.0)
 #define SETTING_TRAJECTORY_STOP_AWIN  (0.03)
 
 // Control system update period, in microseconds

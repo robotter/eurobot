@@ -37,6 +37,7 @@ if(_prescaler++>(N)) {\
 })
 
 #define TM_DL_XYA(x,y,a) _PRESCALE(TM_PRESCALER, ROME_SEND_ASSERV_TM_XYA(&rome,x,y,a))
+#define TM_DL_ENCODER_RAW(enc0,enc1,enc2) _PRESCALE(TM_PRESCALER, ROME_SEND_ASSERV_TM_ENCODER_RAW(&rome,enc0,enc1,enc2))
 
 #define TM_DL_X_PID(i,e,o) _PRESCALE(TM_PRESCALER, ROME_SEND_ASSERV_TM_X_PID(&rome,i,e,o))
 #define TM_DL_Y_PID(i,e,o) _PRESCALE(TM_PRESCALER, ROME_SEND_ASSERV_TM_Y_PID(&rome,i,e,o))

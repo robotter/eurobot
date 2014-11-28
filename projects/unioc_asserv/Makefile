@@ -6,7 +6,7 @@ SRCS = $(wildcard *.c)
 ASRCS =
 TARGET = main
 MODULES = uart clock pwm encoder/quadra timer rome adxrs
-R = galipeur
+R = galipette
 
 ## Target configuration
 MCU = atxmega128a1

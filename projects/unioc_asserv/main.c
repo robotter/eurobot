@@ -316,6 +316,7 @@ int main(void)
     portpin_dirset(leds+k);
     portpin_outclr(leds+k);
   }
+  PORTQ.OUT = 1;
   // Initialize clocks
   clock_init();
 
@@ -325,11 +326,13 @@ int main(void)
 
   // Initialize Timer
   timer_init();
+  PORTQ.OUT = 2;
   TIMER_SET_CALLBACK_US(E0, 'A', CONTROL_SYSTEM_PERIOD_US, CONTROL_SYSTEM_INTLVL, vcs_update);
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
+  PORTQ.OUT = 3;
   // Initialize ROME
   rome_intf_init(&rome);
   rome.uart = uartD0;
@@ -341,6 +344,7 @@ int main(void)
   rome_r3d2.handler = rome_r3d2_handler;
 #endif
   
+  PORTQ.OUT = 4;
   // initialize katioucha
   katioucha_init();
 
@@ -352,6 +356,7 @@ int main(void)
   // setup ADXRS update task
   TIMER_SET_CALLBACK_US(E0, 'B', ADXRS_PERIOD_US, ADXRS_INTLVL, _adxrs_update);
 
+  PORTQ.OUT = 5;
   adxrs_calibration_mode(true);
   _delay_ms(2000);
   adxrs_calibration_mode(false);
@@ -361,7 +366,7 @@ int main(void)
 
   printf("-- reboot --\n");
   //----------------------------------------------------------------------
-  PORTQ.OUT = 0;
+  PORTQ.OUT = 6;
   for(;;) {
     PORTQ.OUT++;
     _delay_ms(10);

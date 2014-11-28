@@ -76,16 +76,16 @@ int main(void)
   int c;
   for(;;) {
     if((c = uart_recv_nowait(uartC0)) >= 0) {
-      uart_send(uartE1,c);
+      uart_send(uartD0,c);
     }
     if( (c = uart_recv_nowait(uartE1)) >= 0 ) {
-      uart_send(uartC0,c);
-    }
-    if( (c = uart_recv_nowait(uartD0)) >= 0 ) {
       uart_send(uartF0,c);
     }
+    if( (c = uart_recv_nowait(uartD0)) >= 0 ) {
+      uart_send(uartC0,c);
+    }
     if( (c = uart_recv_nowait(uartF0)) >= 0 ) {
-      uart_send(uartD0,c);
+      uart_send(uartE1,c);
     }
   }
 }
