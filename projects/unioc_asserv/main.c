@@ -66,34 +66,6 @@ rome_intf_t rome;
 rome_intf_t rome_r3d2;
 #endif
 
-// katioucha wrapper for ROME
-static void _katioucha_fire(uint8_t n) {
-  static uint8_t rounds_fired = 0;
-
-  const uint8_t low = KATIOUCHA_LINE_LOW;
-  const uint8_t high = KATIOUCHA_LINE_HIGH;
-  const uint8_t tube1 = KATIOUCHA_FIRE_TUBE_1;
-  const uint8_t tube2 = KATIOUCHA_FIRE_TUBE_2;
-  const uint8_t tube3 = KATIOUCHA_FIRE_ALL;
-
-  uint8_t i;
-  for(i=rounds_fired; i<rounds_fired+n; i++) {
-    switch(i) {
-      case 0: katioucha_set_position(low,tube1); break;
-      case 1: katioucha_set_position(high,tube1); break;
-      case 2: katioucha_set_position(low,tube2); break;
-      case 3: katioucha_set_position(high,tube2); break;
-      case 4: katioucha_set_position(low,tube3); break;
-      case 5: katioucha_set_position(high,tube3); break;
-      default:
-        // *click*, "ton flingue est vide john"
-        break;
-    }
-  }
-  rounds_fired += n;
-  // downlink ammo qty
-  ROME_SEND_KATIOUCHA_TM_ROUNDS_FIRED(&rome, rounds_fired);
-}
 
 // ROME messages handler
 void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
@@ -151,6 +123,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       int16_t y = frame->asserv_set_xya.y;
       int16_t a = (frame->asserv_set_xya.a)/1000.0;
       hposition_set(&position,x,y,a);
+      htrajectory_reset_carrot(&trajectory);
       rome_reply_ack(intf, frame);
     } break;
     case ROME_MID_ASSERV_SET_XY: {
@@ -159,6 +132,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       int16_t x = frame->asserv_set_xya.x;
       int16_t y = frame->asserv_set_xya.y;
       hposition_set(&position,x,y,a);
+      htrajectory_reset_carrot(&trajectory);
       rome_reply_ack(intf, frame);
     } break;
     case ROME_MID_ASSERV_SET_A: {
@@ -166,6 +140,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       hposition_get_xy(&position,&xy);
       int16_t a = (frame->asserv_set_xya.a)/1000.0;
       hposition_set(&position, xy.x, xy.y, a);
+      htrajectory_reset_carrot(&trajectory);
       rome_reply_ack(intf, frame);
     } break;
     case ROME_MID_ASSERV_SET_X_PID: {
@@ -247,15 +222,6 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_R3D2_SET_MOTOR_SPEED:
       rome_send(&rome_r3d2, frame);
       break;
-#endif
-
-#if defined(GALIPETTE)
-    // fire some katioucha tubes
-    case ROME_MID_KATIOUCHA_FIRE: {
-      uint8_t n = frame->katioucha_fire.n;
-      _katioucha_fire(n);
-      rome_reply_ack(intf, frame);
-    } break;
 #endif
 
     default:
