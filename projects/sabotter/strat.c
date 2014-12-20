@@ -479,7 +479,7 @@ void strat_init_galipette(void)
   //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 10.0, 0.05);
   //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 5.0, 0.1);
   
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(&rome_asserv, 1.0, 0.05);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(&rome_asserv, 1.0, 0.05);
   //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XYSTEERING_WINDOW(&rome_asserv, 50.0);
   //ROME_SENDWAIT_ASSERV_SET_HTRAJ_STOP_WINDOWS(&rome_asserv, 5.0, 0.03);
   // set position
@@ -495,8 +495,8 @@ void strat_prepare_galipette(team_t team)
   ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, -1300,1100,0);
   ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, -1300,1100,0);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, -1300,1100,0);
-  ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, -1300,1100,0);
+  // inhibit avoidance
+  ROME_SENDWAIT_ASSERV_AVOIDANCE(&rome_asserv, 0);
 }
 
 void strat_run_galipette(team_t team)
@@ -506,16 +506,18 @@ void strat_run_galipette(team_t team)
   int8_t kx = team == TEAM_YELLOW ? 1 : -1;
 
   kx = 1;
-  // inhibit avoidance
-  ROME_SENDWAIT_ASSERV_AVOIDANCE(&rome_asserv, 0);
+  
   goto_xya(-1300,1100, 0);
-  strat_delay_ms(2000);
   goto_xya(-1200,1000, 0);
-  while(1);
 
-  strat_delay_ms(5000);
   // go around pop corn glass
   goto_xya(-400,1000,0);
+  goto_xya(-400,1300,M_PI/3);
+  goto_xya(-460,1300,M_PI/3);
+  strat_delay_ms(500);
+  goto_xya(-1000,1000,M_PI/3);
+  while(1) 
+          update_rome_interfaces();
   strat_delay_ms(5000);
   goto_xya(-300, 900,0);
   strat_delay_ms(5000);
