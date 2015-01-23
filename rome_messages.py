@@ -130,11 +130,10 @@ register_messages(
     (0x70, [
       # Detection of object i (i is 0 or 1)
       ('r3d2_tm_detection', [('i','int8'), ('detected','bool'), ('a','angle'), ('r','dist')]),
-      (Order, 'r3d2_calibrate_angle', [('a','angle')]),
-      (Order, 'r3d2_calibrate_dist', [('d','dist')]),
-      (Order, 'r3d2_conf_load', []),
-      (Order, 'r3d2_conf_save', []),
-      (Order, 'r3d2_set_motor_speed', [('speed','uint16')]),
+      ('r3d2_tm_arcs', [('i','int8'), ('a1','angle'), ('a2','angle')]),
+
+      ('r3d2_set_rotation', [('speed_rpm','uint16'),('threshold_percent','uint8')]),
+      ('r3d2_set_blind_spot', [('begin','angle'),('end','angle')])
       ]),
 
     # color_sensor
