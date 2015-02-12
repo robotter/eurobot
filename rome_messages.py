@@ -15,6 +15,9 @@ register_messages(
       (Order, 'asserv_goto_xy', [('x','dist'), ('y','dist'), ('a','angle')]),
       # same as asserv_goto_xy, but relative to previous coordinates
       (Order, 'asserv_goto_xy_rel', [('x','dist'), ('y','dist'), ('a','angle')]),
+      
+      # order robot to go directly to point (x,y) then turn to heading a
+      (Order, 'asserv_goto_xya_panning', [('x','dist'), ('y','dist'), ('pan_angle', 'angle')]),
 
       # autoset robot, sides are (from 0 to 4): none, left, right, up, down
       (Order, 'asserv_autoset', [('side','uint8'), ('x','float'), ('y','float')]),

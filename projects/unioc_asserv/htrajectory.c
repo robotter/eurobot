@@ -33,10 +33,64 @@
 
 #include "avoidance.h"
 
+typedef enum
+{
+  TRAJ_WITHOUT_MANAGER = 0,
+  TRAJ_PANNING
+}htrajectory_traj_type_t;
+
+typedef enum
+{
+  PANNING_FSM_INIT = 0,
+  PANNING_FSM_SET_ANGLE_SP,
+  PANNING_FSM_ACQ,
+  PANNING_FSM_CHECK_FOR_NEW_ANGLE_SP,
+  PANNING_FSM_FINAL_ROTATION,
+  PANNING_FSM_WAIT_FINAL_ROTATION_END,
+  PANNING_FSM_FINISHED
+}htrajectory_PANNING_t;
+
+typedef struct
+{
+  struct
+  {
+    double x;
+    double y;
+    double a;
+  }origin;
+
+  struct
+  {
+    double x;
+    double y;
+    double a;
+  }destination;
+  htrajectory_traj_type_t traj_type;
+
+  bool trajectory_finished;
+  htrajectory_t *htj ;
+
+  union
+  {
+    struct
+    {
+      void (*acq_fn)(double);
+      int8_t rotation_direction;
+      htrajectory_PANNING_t fsm_step;
+      double panning_angle;
+    }panning_data;
+  }fsm_data;
+}htrajectory_manager_t;
+
+static htrajectory_manager_t htraj_man_data;
 // avoidance system
 extern avoidance_t avoidance;
 
 /* -- private functions -- */
+
+void htrajectory_panning_fsm( htrajectory_manager_t *man_data);
+void htrajectory_manager(void);
+
 
 /** \brief Compute normalized error vector to current point */
 static inline vect_xy_t computeNormalizedError( vect_xy_t point, vect_xy_t carrot )
@@ -84,7 +138,7 @@ static inline void setCarrotAPosition( htrajectory_t *htj, double a )
 static inline void setCarrotXYPosition( htrajectory_t *htj, vect_xy_t pos )
 {
   robot_cs_set_xy_consigns( htj->rcs, RCS_MM_TO_CSUNIT*pos.x,
-                                      RCS_MM_TO_CSUNIT*pos.y );
+                            RCS_MM_TO_CSUNIT*pos.y );
 }
 
 /** \brief Copy given path into internal structure */
@@ -106,8 +160,8 @@ static inline void copyPath( htrajectory_t *htj, vect_xy_t *path, uint8_t n)
 }
 
 /** \brief Check if robot is in window of current point
-  * \return 1- if target reached 0- otherwise
-  */
+ * \return 1- if target reached 0- otherwise
+ */
 uint8_t inWindowXY( htrajectory_t *htj )
 {
   vect_xy_t robot,point;
@@ -119,7 +173,7 @@ uint8_t inWindowXY( htrajectory_t *htj )
 
   // get next point position
   point = htj->path[htj->pathIndex];
-  
+
   // XXX stop window is default window ?
   if( htj->state == STATE_PATH_MID )
     dl = htj->xySteeringWindow;
@@ -146,9 +200,9 @@ uint8_t inWindowXY( htrajectory_t *htj )
 /* -- public functions -- */
 
 void htrajectory_init( htrajectory_t *htj,
-                        hrobot_position_t *hrp,
-                        robot_cs_t *rcs,
-                        struct quadramp_filter *qramp_angle)
+                       hrobot_position_t *hrp,
+                       robot_cs_t *rcs,
+                       struct quadramp_filter *qramp_angle)
 {
   htj->hrp = hrp;
   htj->rcs = rcs;
@@ -167,7 +221,7 @@ void htrajectory_init( htrajectory_t *htj,
   htj->xySteeringWindow = 1.0;
   htj->xyStopWindow = 1.0;
   htj->aStopWindow = 1.0;
- 
+
   htj->carrot = (vect_xy_t){0.0,0.0};
   htj->carrotA = 0.0;
   htj->carrotSpeed = 0.0;
@@ -218,13 +272,14 @@ void htrajectory_gotoA( htrajectory_t *htj, double a )
 
   // compute distance between consign and position modulo 2pi
   da = fmod( a - robot_a, 2*M_PI );
-  
+
   // update consign
   htj->carrotA = robot_a + da;
   htj->carrotA_reached = 0;
 
   // set robot carrot
   setCarrotAPosition(htj, htj->carrotA );
+  htraj_man_data.htj = htj;
 }
 
 void htrajectory_gotoXY( htrajectory_t *htj, double x, double y)
@@ -233,9 +288,10 @@ void htrajectory_gotoXY( htrajectory_t *htj, double x, double y)
 
   // create a one point path
   path = (vect_xy_t){x,y};
-  
+
   // load and run path
   htrajectory_run(htj, &path,  1);
+  htraj_man_data.htj = htj;
 }
 
 void htrajectory_gotoA_R( htrajectory_t *htj, double da)
@@ -251,6 +307,33 @@ void htrajectory_gotoXY_R( htrajectory_t *htj, double dx, double dy)
   hposition_get_xy( htj->hrp, &rp);
   htrajectory_gotoXY( htj, rp.x + dx, rp.y + dy);
 }
+
+void htrajectory_gotoXY_panning( htrajectory_t *htj, double dx, double dy, double panning_angle, void(*acq_callback)(double a))
+{
+  // get origin position
+  vect_xy_t rp;
+  hposition_get_xy( htj->hrp, &rp);
+  htraj_man_data.htj = htj;
+  htraj_man_data.origin.x = rp.x;
+  htraj_man_data.origin.y = rp.y;
+  hposition_get_a( htj->hrp, &htraj_man_data.origin.a);
+
+  // compute destination position
+  htraj_man_data.destination.x = htraj_man_data.origin.x + dx;
+  htraj_man_data.destination.y = htraj_man_data.origin.y + dy;
+  htraj_man_data.destination.x = dx;
+  htraj_man_data.destination.y = dy;
+  htraj_man_data.destination.a = htraj_man_data.origin.a;
+  //htraj_man_data.destination.a = htraj_man_data.origin.a + da;
+  // TODO : do modulo or not => RTFM or ask JD !!!
+  htraj_man_data.trajectory_finished = false;
+  // set 
+  htraj_man_data.fsm_data.panning_data.acq_fn = acq_callback;
+  htraj_man_data.fsm_data.panning_data.panning_angle = panning_angle;
+  htraj_man_data.fsm_data.panning_data.fsm_step = PANNING_FSM_INIT;
+  htraj_man_data.traj_type = TRAJ_PANNING;
+}
+
 
 /* -- speed management -- */
 
@@ -324,7 +407,7 @@ uint8_t htrajectory_blocked( htrajectory_t *htj )
 uint8_t htrajectory_doneAutoset( htrajectory_t *htj )
 {
   if( (htj->state == STATE_AUTOSET_HEADING)
-    || (htj->state == STATE_AUTOSET_MOVE) )
+      || (htj->state == STATE_AUTOSET_MOVE) )
     return 0;
   else
     return 1;
@@ -361,10 +444,10 @@ static void _htrajectory_update( htrajectory_t *htj )
 
       // shutdown robot CSs
       robot_cs_activate(htj->rcs, 0);
-    
+
       dx = SETTING_AUTOSET_SPEED*cos(-.5*M_PI);
       dy = SETTING_AUTOSET_SPEED*sin(-.5*M_PI);
-      
+
       // store current robot position
       hposition_get(htj->hrp, &(htj->autosetInitPos));
 
@@ -415,8 +498,8 @@ static void _htrajectory_update( htrajectory_t *htj )
         }
 
         hposition_set(htj->hrp, htj->autosetInitPos.x,
-                                htj->autosetInitPos.y,
-                                htj->autosetInitPos.alpha);
+                      htj->autosetInitPos.y,
+                      htj->autosetInitPos.alpha);
         // reset htrajectory carrot
         htrajectory_reset_carrot(htj);
         setCarrotXYPosition( htj, htj->carrot );
@@ -444,7 +527,7 @@ static void _htrajectory_update( htrajectory_t *htj )
 
       // get robot position
       hposition_get_xy( htj->hrp, &robot);
-      
+
       // set carrot to current position
       setCarrotXYPosition(htj, robot);
 
@@ -452,7 +535,7 @@ static void _htrajectory_update( htrajectory_t *htj )
       htj->carrotSpeed = 0;
       htj->blocked = 1;
     }
-    
+
     // if robot blocked do not update anything more
     return;
   }
@@ -482,7 +565,7 @@ static void _htrajectory_update( htrajectory_t *htj )
       // put trajectory management to full stop
       htj->pathIndex = 0;
       htj->state = STATE_STOP;
-      
+
       // set htj->carrot to last position
       setCarrotXYPosition( htj, htj->path[htj->pathSize - 1] );
 
@@ -492,24 +575,24 @@ static void _htrajectory_update( htrajectory_t *htj )
 
     // switch to next point 
     htj->pathIndex++;
-    
+
     // if next point is last point
     if( htj->pathIndex >= htj->pathSize - 1 )
       htj->state = STATE_PATH_LAST;
 
     preparePoint(htj);    
   }
-  
+
   point = htj->path + htj->pathIndex;
 
   // --- compute speed consign & ramp ---
-  
+
   // compute distance at which constant deceleration will bring robot
   // to desired speed
   double nextSpeed = 0.0;
   double currAcc = 0.0;
   double decDistance;
-  
+
   if( htj->state == STATE_PATH_MID )
   {
     nextSpeed = htj->steeringSpeed;
@@ -525,14 +608,14 @@ static void _htrajectory_update( htrajectory_t *htj )
     {
       return;
     }
-       
+
   // compute squared distance between carrot and target
   dx = point->x - htj->carrot.x;
   dy = point->y - htj->carrot.y;
   sqErrorLength = dx*dx + dy*dy;
 
   decDistance = 0.5*((htj->carrotSpeed)*(htj->carrotSpeed)
-                        - nextSpeed*nextSpeed)/currAcc;
+                     - nextSpeed*nextSpeed)/currAcc;
   // * deceleration phase
   if( sqErrorLength < decDistance*decDistance )
   {
@@ -556,7 +639,7 @@ static void _htrajectory_update( htrajectory_t *htj )
   {
     /* nothing to do */
   }
-  
+
   // --- compute carrot position ---
 
   if( (htj->carrotSpeed)*(htj->carrotSpeed) > sqErrorLength )
@@ -576,6 +659,8 @@ static void _htrajectory_update( htrajectory_t *htj )
 }
 
 void htrajectory_update( htrajectory_t *htj ) {
+  //update trajectory manager
+  htrajectory_manager();
   // update trajectory
   _htrajectory_update(htj);
   // update telemetries
@@ -590,7 +675,7 @@ void htrajectory_update( htrajectory_t *htj ) {
 // --- AUTOSET ---
 
 void htrajectory_autoset( htrajectory_t *htj, tableSide_t side,
-                            double x, double y)
+                          double x, double y)
 {
   vect_xy_t robot;
 
@@ -639,5 +724,114 @@ void htrajectory_reset_carrot( htrajectory_t *htj )
   vect_xy_t robot;
   hposition_get_xy(htj->hrp, &robot);
   htj->carrot = robot;
+}
+
+void htrajectory_manager(void)
+{
+  switch(htraj_man_data.traj_type)
+  {
+    case TRAJ_WITHOUT_MANAGER:
+      if ((htrajectory_doneA(htraj_man_data.htj)) && 
+          (htrajectory_doneXY(htraj_man_data.htj)) )
+      {
+        htraj_man_data.trajectory_finished = true;
+      }
+      else
+      {
+        htraj_man_data.trajectory_finished = false;
+      }
+
+      break;
+
+    case TRAJ_PANNING :
+      htrajectory_panning_fsm(&htraj_man_data);
+      break;
+    default : 
+      break; 
+  }
+}
+
+void htrajectory_panning_fsm( htrajectory_manager_t *man_data)
+{
+  /* if robot arrived to destination after panning, engage final rotation */
+  if (htrajectory_doneXY(man_data->htj) && 
+      (man_data->fsm_data.panning_data.fsm_step != PANNING_FSM_INIT) &&
+      (man_data->fsm_data.panning_data.fsm_step != PANNING_FSM_WAIT_FINAL_ROTATION_END) &&
+      (man_data->fsm_data.panning_data.fsm_step != PANNING_FSM_FINISHED))
+  {
+    man_data->fsm_data.panning_data.fsm_step = PANNING_FSM_FINAL_ROTATION;
+  }
+  
+  switch( man_data->fsm_data.panning_data.fsm_step)
+  {
+    case PANNING_FSM_INIT : 
+      // lauch robot xy move
+      htrajectory_gotoXY(man_data->htj, man_data->destination.x, man_data->destination.y); 
+      // first angle pan
+      htrajectory_gotoA_R(man_data->htj, man_data->fsm_data.panning_data.panning_angle);
+      man_data->fsm_data.panning_data.rotation_direction = 1;
+
+      man_data->fsm_data.panning_data.fsm_step = PANNING_FSM_ACQ;
+      break;
+
+    case PANNING_FSM_SET_ANGLE_SP : 
+      // inverse rotation direction
+      man_data->fsm_data.panning_data.rotation_direction *= -1;
+      // add or remove panning angle to robot angle (depending on the rotation direction)
+      if ( man_data->fsm_data.panning_data.rotation_direction < 0)
+      {
+        htrajectory_gotoA_R(man_data->htj, -2.0 * man_data->fsm_data.panning_data.panning_angle);
+      }
+      else
+      {
+        htrajectory_gotoA_R(man_data->htj, 2.0 * man_data->fsm_data.panning_data.panning_angle);
+      }
+      man_data->fsm_data.panning_data.fsm_step = PANNING_FSM_ACQ;
+      break;
+
+    case PANNING_FSM_ACQ : 
+      // execute acquisition callback 
+      if (man_data->fsm_data.panning_data.acq_fn != NULL)
+      {
+        double a;
+        hposition_get_a( man_data->htj->hrp, &a);
+        (*(man_data->fsm_data.panning_data.acq_fn))(a);
+      }
+      man_data->fsm_data.panning_data.fsm_step = PANNING_FSM_CHECK_FOR_NEW_ANGLE_SP;
+      // no break to continue with PANNING_FSM_CHECK_FOR_NEW_ANGLE_SP
+
+    case PANNING_FSM_CHECK_FOR_NEW_ANGLE_SP :
+      if (htrajectory_doneA(man_data->htj))
+      {
+        man_data->fsm_data.panning_data.fsm_step = PANNING_FSM_SET_ANGLE_SP;
+      }
+      else
+      {
+        man_data->fsm_data.panning_data.fsm_step = PANNING_FSM_ACQ;
+      }
+      break;
+
+    case PANNING_FSM_FINAL_ROTATION:
+      //initiate last rotation to reach final angle position
+      htrajectory_gotoA(man_data->htj, man_data->destination.a);
+      man_data->fsm_data.panning_data.fsm_step = PANNING_FSM_FINAL_ROTATION;
+      break;
+  
+    case PANNING_FSM_WAIT_FINAL_ROTATION_END:
+      if (htrajectory_doneA(man_data->htj))
+      {
+        man_data->fsm_data.panning_data.fsm_step = PANNING_FSM_FINISHED;
+      }
+      break;
+
+    case PANNING_FSM_FINISHED :
+      // indicate that the move is finished
+      man_data->trajectory_finished = true;
+      /* last call of this fsm function */
+      man_data->traj_type = TRAJ_WITHOUT_MANAGER;
+      break;
+
+    default : break;
+  }
 }
 

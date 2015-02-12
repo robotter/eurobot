@@ -153,6 +153,8 @@ void htrajectory_gotoA_R( htrajectory_t *htj, double a);
 /**\brief Goto current point + (x,y) */
 void htrajectory_gotoXY_R( htrajectory_t *htj, double x, double y);
 
+void htrajectory_gotoXY_panning( htrajectory_t *htj, double dx, double dy, double panning_angle, void(*acq_callback)(double a));
+
 /**\brief Perform robot autoset */
 void htrajectory_autoset( htrajectory_t *htj, tableSide_t side,
                             double x, double y);

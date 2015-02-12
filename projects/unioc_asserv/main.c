@@ -118,6 +118,13 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       htrajectory_gotoA_R(&trajectory, a);
       rome_reply_ack(intf, frame);
     } break;
+    case ROME_MID_ASSERV_GOTO_XYA_PANNING: {
+      float x = frame->asserv_goto_xya_panning.x;
+      float y = frame->asserv_goto_xya_panning.y;
+      float pan_angle = (frame->asserv_goto_xya_panning.pan_angle)/1000.0;
+      htrajectory_gotoXY_panning( &trajectory, x,y,pan_angle, NULL);
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_XYA: {
       int16_t x = frame->asserv_set_xya.x;
       int16_t y = frame->asserv_set_xya.y;
