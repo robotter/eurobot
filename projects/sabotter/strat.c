@@ -123,6 +123,33 @@ void goto_xya(int16_t x, int16_t y, float a)
   }
 }
 
+/// Go to given position, with robot panning and scanning, avoid opponents
+void goto_xya_panning(int16_t x, int16_t y, float pan_angle)
+{
+  for(;;) {
+    ROME_SENDWAIT_ASSERV_GOTO_XYA_PANNING(&rome_asserv, x, y, 1000*pan_angle);
+    robot_state.asserv.xy = 0;
+    robot_state.asserv.a = 0;
+    for(;;) {
+      if(robot_state.asserv.xy && robot_state.asserv.a) {
+        return;
+      }
+      if(opponent_detected()) {
+        ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
+        ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+        //TODO use opponent_detected_arc()
+        while(opponent_detected()) {
+          update_rome_interfaces();
+        }
+        ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+        break; // to resend goto order
+      }
+      update_rome_interfaces();
+    }
+  }
+}
+
+
 bool starting_cord_plugged_fast(void)
 {
   for(;;) {
@@ -515,6 +542,18 @@ void strat_run_galipette(team_t team)
   goto_xya(-400,1300,M_PI/3);
   goto_xya(-460,1300,M_PI/3);
   strat_delay_ms(500);
+  goto_xya(-1000,1000,M_PI/3);
+
+  strat_delay_ms(2000);
+  ROME_SENDWAIT_ASSERV_SET_A_QRAMP(&rome_asserv, 300.0, 300.0);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 10.0, 50.0);
+  goto_xya_panning(-400, 1000, M_PI/3);
+  goto_xya(-400,1000,M_PI/3);
+  goto_xya_panning(-400,1300,M_PI/3);
+  goto_xya(-400,1300,M_PI/3);
+  ROME_SENDWAIT_ASSERV_SET_A_QRAMP(&rome_asserv, 200.0, 100.0);
+  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20.0, 100.0);
+  goto_xya(-460,1300,M_PI/3);
   goto_xya(-1000,1000,M_PI/3);
   while(1) 
           update_rome_interfaces();
