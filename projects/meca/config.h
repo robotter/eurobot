@@ -81,5 +81,21 @@
 #define SERVO13_PP  SERVO_DIG6_PP
 #define SERVO14_PP  SERVO_DIG7_PP
 
+#define SE_LEFT_AX12_CLAW_ID        2
+#define SE_LEFT_AX12_ELEVATOR_ID    1
+
+#define SE_RIGHT_AX12_CLAW_ID       3
+#define SE_RIGHT_AX12_ELEVATOR_ID   4
+
+#define SE_LEFT_SPIPE_CLOSED            150
+#define SE_LEFT_SPIPE_OPENED            150
+
+#define SE_LEFT_CLAW_OPENED              500
+#define SE_LEFT_CLAW_CLOSED_FOR_SPOT     150
+#define SE_LEFT_CLAW_CLOSED_FOR_BULB     150
+
+#define SE_LEFT_ELEVATOR_UP                 200
+#define SE_LEFT_ELEVATOR_DOWN_WAIT_SPOT     750
+#define SE_LEFT_ELEVATOR_DOWN_WAIT_BULB     750
 
 #endif

@@ -14,7 +14,7 @@
 #include "arm.h"
 #include "barometer.h"
 #include "telemetry.h"
-#include "pumps_valves.h"
+#include "spot_elevator.h"
 
 // match timer   
 bool match_timer_counting = false;
@@ -22,6 +22,20 @@ int32_t match_timer_ms = -1;
 
 // ROME interface
 rome_intf_t rome;
+
+// robot color
+robot_color_t robot_color = COLOR_GREEN; // TODO
+
+// spot_elevator structure
+spot_elevator_t l_spot_elevator = 
+{
+  .claw_ax12_addr = SE_LEFT_AX12_CLAW_ID,
+  .elevator_ax12_addr = SE_LEFT_AX12_ELEVATOR_ID,
+  .claw_ax12_positions = {SE_LEFT_CLAW_OPENED, SE_LEFT_CLAW_CLOSED_FOR_SPOT, SE_LEFT_CLAW_CLOSED_FOR_BULB},
+  .elevator_ax12_positions = {SE_LEFT_ELEVATOR_UP, SE_LEFT_ELEVATOR_DOWN_WAIT_SPOT, SE_LEFT_ELEVATOR_DOWN_WAIT_BULB},
+};
+
+spot_elevator_t r_spot_elevator; // right spot elevator
 
 // ROME messages handler
 void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
@@ -32,33 +46,6 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
 
-    case ROME_MID_MECA_SET_ARM: {
-      arm_set_position(A_ELBOW, frame->meca_set_arm.elbow);
-      arm_set_position(A_WRIST, frame->meca_set_arm.wrist);
-      arm_set_position(A_UPPER, frame->meca_set_arm.upper);
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_SET_PUMP: {
-      uint8_t active = frame->meca_set_pump.active;
-      switch(frame->meca_set_pump.n) {
-        case 0: pump_valves_activate_pump_A(active); break;
-        case 1: pump_valves_activate_pump_B(active); break;
-        default: break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_SET_SUCKER: {
-      uint8_t active = frame->meca_set_sucker.active;
-      switch(frame->meca_set_sucker.n) {
-        case 0: pump_valves_activate_valve_A(active); break;
-        case 1: pump_valves_activate_valve_B(active); break;
-        default: break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
     case ROME_MID_MECA_SET_POWER: {
       uint8_t active = frame->meca_set_power.active;
       if(active) {
@@ -66,12 +53,72 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       } else {
         portpin_outclr(&LED_ERROR_PP);
       }
-      arm_activate_power(active);
       rome_reply_ack(intf, frame);
     } break;
 
     case ROME_MID_MECA_SET_SERVO: {
       arm_set_external_servo(frame->meca_set_servo.n, frame->meca_set_servo.position);
+      rome_reply_ack(intf, frame);
+    } break;
+
+    case ROME_MID_MECA_PICK_ONE_SPOT: {
+      switch(frame->meca_pick_one_spot.n)
+      {
+        case 0:
+          spot_elevator_automatic_spot_stacking(&l_spot_elevator);
+          break;
+        case 1:
+          spot_elevator_automatic_spot_stacking(&r_spot_elevator);
+          break;
+        default :
+          break;
+      }
+      rome_reply_ack(intf, frame);
+      ROME_LOGF(&rome, DEBUG, "PICK ON ELEVATOR %u", frame->meca_pick_one_spot.n);
+    } break;
+
+    case ROME_MID_MECA_RELEASE_SPOT_STACK: {
+      switch(frame->meca_release_spot_stack.n)
+      {
+        case 0:
+          spot_elevator_discharge_spot_stack(&l_spot_elevator);
+          break;
+        case 1:
+          spot_elevator_discharge_spot_stack(&r_spot_elevator);
+          break;
+        default :
+          break;
+      }
+      rome_reply_ack(intf, frame);
+    } break;
+
+    case ROME_MID_MECA_PICK_BULB: {
+      switch(frame->meca_pick_bulb.n)
+      {
+        case 0:
+          spot_elevator_pick_bulb(&l_spot_elevator);
+          break;
+        case 1:
+          spot_elevator_pick_bulb(&r_spot_elevator);
+          break;
+        default :
+          break;
+      }
+      rome_reply_ack(intf, frame);
+    } break;
+
+    case ROME_MID_MECA_PREPARE_FOR_ONBOARD_BULB: {
+      switch(frame->meca_prepare_for_onboard_bulb.n)
+      {
+        case 0:
+          spot_elevator_prepare_for_onboard_bulb(&l_spot_elevator);
+          break;
+        case 1:
+          spot_elevator_prepare_for_onboard_bulb(&r_spot_elevator);
+          break;
+        default :
+          break;
+      }
       rome_reply_ack(intf, frame);
     } break;
 
@@ -147,12 +194,6 @@ void update_match_timer(void)
   // check match timer
   if(match_timer_ms > 1000*(int32_t)MATCH_DURATION_SECS) {
     // out of time
-    arm_activate_power(false);
-    // turn off all pumps, open valves
-    pump_valves_activate_pump_A(false);
-    pump_valves_activate_pump_B(false);
-    pump_valves_activate_valve_A(true);
-    pump_valves_activate_valve_B(true);
   }
   else {
     // update match timer
@@ -163,6 +204,44 @@ void update_match_timer(void)
   // downlink match timer telemetry
   TM_DL_MATCH_TIMER(match_timer_ms/1000);
 }
+
+bool l_is_spot_present(void)
+{
+  static uint8_t cnt = 0;
+
+  if (cnt >= 10u)
+  {
+    cnt = 0;
+    return true;
+  }
+  else
+  {
+    cnt ++;
+    return false;
+  }
+}
+
+bool r_is_spot_present(void)
+{
+  static uint8_t cnt = 0;
+
+  if (cnt >= 20u)
+  {
+    cnt = 0;
+    return true;
+  }
+  else
+  {
+    cnt ++;
+    return false;
+  }
+}
+
+robot_color_t se_get_robot_color(void)
+{
+  return robot_color;
+}
+
 
 int main(void)
 {
@@ -188,6 +267,7 @@ int main(void)
   // initialize uarts
   uart_init();
   uart_fopen(UART_PPP);
+  portpin_dirset(&AX12_DIR_PP);
 
   // intialize barometers
   barometer_t baro0, baro1;
@@ -196,12 +276,17 @@ int main(void)
   // ADCA5
   barometer_init(&baro1, &ADCA, ADC_CH_MUXPOS_PIN5_gc);
 
-  // initialize pumps
-  pump_valves_init();
+  // initialize spot elevator
+  spot_elevator_init(&l_spot_elevator);
+  spot_elevator_set_claw_ax12_addr(&l_spot_elevator, SE_LEFT_AX12_CLAW_ID);
+  spot_elevator_set_elevator_ax12_addr(&l_spot_elevator, SE_LEFT_AX12_ELEVATOR_ID);
+  spot_elevator_set_is_spot_present_fn(&l_spot_elevator, l_is_spot_present);
+  spot_elevator_set_get_spot_color_fn(&l_spot_elevator, se_get_robot_color);
 
-  // initialize arm
-  arm_init();
-
+  spot_elevator_init(&r_spot_elevator);
+  spot_elevator_set_claw_ax12_addr(&r_spot_elevator, SE_RIGHT_AX12_CLAW_ID);
+  spot_elevator_set_elevator_ax12_addr(&r_spot_elevator, SE_RIGHT_AX12_ELEVATOR_ID);
+  
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
@@ -215,29 +300,28 @@ int main(void)
   rome.uart = UART_PPP;
   rome.handler = rome_handler;
  
-  // start arm calibration procedure
-  arm_start_calibration();
-
   uint32_t luptime = UINT32_MAX;
   uint32_t lluptime = UINT32_MAX;
+  uint32_t spot_elevator_uptime = UINT32_MAX;
 
   arm_set_external_servo(S_LEFT, 120);
   arm_set_external_servo(S_RIGHT, -120);
 
   uint32_t t = 0;
-  bool setted_up = false;
+
+  spot_elevator_set_enable(&l_spot_elevator, true);
+  
+      spot_elevator_automatic_spot_stacking(&l_spot_elevator);
   // main loop
   for(;;) {
     
     // debug info
     PORTA.OUT = (t++)/1000;
-
-    // update arm every 100 ms
     uint32_t uptime = uptime_us();
+#if 0
+    // update arm every 100 ms
     if(uptime - luptime > UPDATE_ARM_US) {
       luptime = uptime;
-      // update arm
-      arm_update();
 
       // update barometers
       uint16_t a = barometer_get_pressure(&baro0);
@@ -245,12 +329,10 @@ int main(void)
       TM_DL_SUCKERS(a < 250, b < 250);
     }
 
-    if(!setted_up && arm_is_running()) {
-      setted_up = true;
-      arm_set_position(A_UPPER, -10000);
-      arm_set_position(A_ELBOW, 400);
-      arm_set_position(A_WRIST, -200);
-    }
+#else 
+    (void)lluptime;
+    (void)luptime;
+#endif
 
     // update rome every 100 ms
     uptime = uptime_us();
@@ -259,6 +341,41 @@ int main(void)
       portpin_outset(&LED_COM_PP);
       rome_handle_input(&rome);
       portpin_outclr(&LED_COM_PP);
+    }
+    
+    // update spot elevator every 10 ms
+    uptime = uptime_us();
+    if(uptime - spot_elevator_uptime > 100000) {
+      spot_elevator_uptime = uptime;
+      spot_elevator_manage(&l_spot_elevator);
+      //spot_elevator_manage(&r_spot_elevator);
+      #if 0
+      ax12_write_word(&ax12,
+                  l_spot_elevator.elevator_ax12_addr, 
+                  AX12_ADDR_MOVING_SPEED_L, 
+                  0x0080);
+
+      static uint8_t id = 0;
+      if (id != 0)
+      {
+        ax12_write_word(&ax12,
+                  l_spot_elevator.elevator_ax12_addr, 
+                  AX12_ADDR_GOAL_POSITION_L, 
+                  750);
+        ROME_LOG(&rome, DEBUG, "pos open");
+        id = 0;
+      }
+      else
+      {
+        ax12_write_word(&ax12,
+                  l_spot_elevator.elevator_ax12_addr, 
+                  AX12_ADDR_GOAL_POSITION_L, 
+                  400);
+        ROME_LOG(&rome, DEBUG, "pos close");
+    id ++;
+
+      }
+      #endif
     }
   }
 }
