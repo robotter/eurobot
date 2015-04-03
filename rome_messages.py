@@ -94,6 +94,14 @@ register_messages(
       (Order, 'meca_set_power', [('active','bool')]),
       # set servo #n
       (Order, 'meca_set_servo', [('n','uint8'), ('position','int16')]),
+      # enable picking of one spot of elevator #n
+      (Order, 'meca_pick_one_spot', [('n','uint8')]),
+      # release spot stack of elevator #n
+      (Order, 'meca_release_spot_stack', [('n','uint8')]),
+      # pick one bulb for elevator #n
+      (Order, 'meca_pick_bulb', [('n','uint8')]),
+      # prepare elevator #n for boarding bulb
+      (Order, 'meca_prepare_for_onboard_bulb', [('n','uint8')]),
 
       # __ TELEMETRY __
       # return arm position
