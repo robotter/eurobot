@@ -6,7 +6,7 @@ SRCS = $(wildcard *.c)
 ASRCS =
 TARGET = main
 MODULES = uart clock timer idle rome
-R = galipette
+R = galipeur
 
 ## Target configuration
 MCU = atxmega256a3

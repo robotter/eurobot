@@ -9,6 +9,8 @@
 #include "common.h"
 #include "config.h"
 
+#define SPOT_ELEVATOR_LENGTH 83
+
 extern rome_intf_t rome_asserv;
 extern rome_intf_t rome_meca;
 extern rome_intf_t rome_paddock;
@@ -405,50 +407,76 @@ void strat_prepare_galipeur(team_t team)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
   // raise both arms
-  ext_arm_lower(EXTARM_LEFT);
+  ext_arm_raise(EXTARM_LEFT);
   ext_arm_raise(EXTARM_RIGHT);
 
-#if 0
   // autoset robot
   int8_t kx = team == TEAM_YELLOW ? -1 : 1;
-  autoset(AUTOSET_DOWN, 0, 100);
+  autoset(AUTOSET_DOWN, 0, 100+SPOT_ELEVATOR_LENGTH);
   goto_xya_rel(0, 100, 0);
   goto_xya(0, 550, -M_PI/2);
   goto_xya(-350, 550, -M_PI/2);
   autoset_side_t side = team == TEAM_YELLOW ? AUTOSET_LEFT : AUTOSET_RIGHT;
-  autoset(side, kx*(1500-100), 450);
+  autoset(side, kx*(1500-100-SPOT_ELEVATOR_LENGTH), 450);
 
   goto_xya_rel(500, 0, 0);
   goto_xya_rel(0, 420, 0);
-  goto_xya(kx*(1500-230), 1000, -M_PI/2);
-#endif
+  goto_xya(kx*(1500-230-SPOT_ELEVATOR_LENGTH), 1000, -M_PI/2);
 
   // prepare meca
-  //ROME_SENDWAIT_MECA_PREPARE_FOR_ONBOARD_BULB(&rome_meca, SPOT_ELV_LEFT);
+  ROME_SENDWAIT_MECA_PREPARE_FOR_ONBOARD_BULB(&rome_meca, SPOT_ELV_LEFT);
+  //ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+}
+
+static void _pick_spot_corner_0_0(team_t team)
+{
+
+  goto_xya(kx*(1500-450),310,-M_PI/2);
+  strat_delay_ms(1000);
+
+//  approach spot
+  //goto_xya_rel(-200,0,0);
+  goto_xya(kx*(1500-280),310,-M_PI/2);
+  strat_delay_ms(1000);
+
+  //ext_arm_lower(EXTARM_RIGHT);
   ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+  strat_delay_ms(5000);
 
+  goto_xya(kx*(1500-370),310,-M_PI/2);
+  strat_delay_ms(1000);
 
+  goto_xya(kx*(1500-370),220,-M_PI/2);
+  strat_delay_ms(1000);
+
+  goto_xya(kx*(1500-280),220,-M_PI/2);
+  strat_delay_ms(1000);
+
+  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+  strat_delay_ms(5000);
+ 
 }
 
 void strat_run_galipeur(team_t team)
 {
   int8_t kx = team == TEAM_YELLOW ? -1 : +1;
 
+  #if 0
   // autoset before starting, to avoid gyro's drift
   autoset_side_t side = team == TEAM_YELLOW ? AUTOSET_LEFT : AUTOSET_RIGHT;
   ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
   strat_delay_ms(500);
   autoset(side, kx*(1500-100-70), 1000);
+#endif
 
   goto_xya_rel(400,0,0);
+  strat_delay_ms(1000);
   goto_xya_rel(0,-400,0);
+  strat_delay_ms(1000);
+  
+  _pick_spot_corner_0_0(team);
 
-  goto_xya(kx*(1500-450),200,-M_PI/2);
-  goto_xya_rel(-200,0,0);
-
-  ext_arm_lower(EXTARM_RIGHT);
-  strat_delay_ms(500);
-
+while(1);
   goto_xya(kx*(1500-300),200,-M_PI/2 + M_PI/3);
 
   ext_arm_raise(EXTARM_RIGHT);

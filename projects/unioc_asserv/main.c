@@ -350,7 +350,6 @@ int main(void)
   }
 
 #if defined(GALIPEUR)
-  (void)_katioucha_fire;
 #endif
 
 }
