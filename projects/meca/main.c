@@ -74,7 +74,6 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
           break;
       }
       rome_reply_ack(intf, frame);
-      ROME_LOGF(&rome, DEBUG, "PICK ON ELEVATOR %u", frame->meca_pick_one_spot.n);
     } break;
 
     case ROME_MID_MECA_RELEASE_SPOT_STACK: {
