@@ -3,8 +3,9 @@
 
 
 typedef enum{
-  COLOR_GREEN,
-  COLOR_YELLOW
+  COLOR_UNDEFINED = 'U',
+  COLOR_GREEN = 'G',
+  COLOR_YELLOW = 'Y',
 }robot_color_t;
 
 #endif // COLOR_DEFS_H

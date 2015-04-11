@@ -141,7 +141,6 @@ register_messages(
     # color_sensor
     (0x80, [
       # Detection of object i (i is 0 or 1)
-      #(Order, 'color_sensor_set_color', [('i','int8'), ('detected','bool'), ('a','angle'), ('r','dist')]),
       ('color_sensor_tm_detection', [('detected','bool'), ('color', 'uint8')]),
       ('color_sensor_tm_dist_debug', [('distance','uint16'), ('detected','bool'), ('color', 'uint8')]),
       (Order, 'color_sensor_set_color_filter', [('i', 'uint8'), ('red_threshold','uint16'), ('green_threshold','uint16'), ('blue_threshold','uint16')]),

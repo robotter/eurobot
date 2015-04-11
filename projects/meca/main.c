@@ -16,12 +16,15 @@
 #include "telemetry.h"
 #include "spot_elevator.h"
 
-// match timer   
+// match timer
 bool match_timer_counting = false;
 int32_t match_timer_ms = -1;
 
 // ROME interface
-rome_intf_t rome;
+rome_intf_t rome_strat;
+struct {
+  rome_intf_t left,right;
+}rome_color_sensor;
 
 // robot color
 robot_color_t robot_color = COLOR_GREEN; // TODO
@@ -34,11 +37,54 @@ spot_elevator_t l_spot_elevator =
   .claw_ax12_positions = {SE_LEFT_CLAW_OPENED, SE_LEFT_CLAW_CLOSED_FOR_SPOT, SE_LEFT_CLAW_CLOSED_FOR_BULB},
   .elevator_ax12_positions = {SE_LEFT_ELEVATOR_UP, SE_LEFT_ELEVATOR_DOWN_WAIT_SPOT, SE_LEFT_ELEVATOR_DOWN_WAIT_BULB},
 };
-
 spot_elevator_t r_spot_elevator; // right spot elevator
 
+// color sensor structure
+struct {
+  struct {
+    robot_color_t color;
+    bool detected;
+  } left,right;
+} color_sensor = {
+  .left =  {.color = COLOR_UNDEFINED, .detected = false},
+  .right = {.color = COLOR_UNDEFINED, .detected = false},
+};
+
 // ROME messages handler
-void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
+void rome_color_sensor_handler(rome_intf_t *intf, const rome_frame_t *frame)
+{
+  (void)intf;
+  switch(frame->mid) {
+    case ROME_MID_COLOR_SENSOR_TM_DETECTION: {
+      bool detected = frame->color_sensor_tm_detection.detected;
+      uint8_t color = frame->color_sensor_tm_detection.color;
+
+      if(intf == &rome_color_sensor.left) {
+        // left sensor
+        color_sensor.left.color = color;
+        color_sensor.left.detected = detected;
+      }
+      else if(intf == &rome_color_sensor.right) {
+        // right sensor
+        color_sensor.left.color = color;
+        color_sensor.left.detected = detected;
+      }
+      else {
+        // XXX
+        ROME_LOGF(&rome_strat, DEBUG, "Invalid interface %p", intf);
+      }
+
+    } break;
+
+    default:
+      break;
+  }
+
+  // forward
+  rome_send(&rome_strat, frame);
+}
+
+void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
   switch(frame->mid) {
     case ROME_MID_START_TIMER: {
@@ -210,43 +256,25 @@ void update_match_timer(void)
   TM_DL_MATCH_TIMER(match_timer_ms/1000);
 }
 
-bool l_is_spot_present(void)
+bool is_spot_present_l(void)
 {
-  static uint8_t cnt = 0;
-
-  if (cnt >= 10u)
-  {
-    cnt = 0;
-    return true;
-  }
-  else
-  {
-    cnt ++;
-    return false;
-  }
+  return color_sensor.left.detected;
 }
 
-bool r_is_spot_present(void)
+bool is_spot_present_r(void)
 {
-  static uint8_t cnt = 0;
-
-  if (cnt >= 20u)
-  {
-    cnt = 0;
-    return true;
-  }
-  else
-  {
-    cnt ++;
-    return false;
-  }
+  return color_sensor.right.detected;
 }
 
-robot_color_t se_get_robot_color(void)
+robot_color_t get_spot_color_l(void)
 {
-  return robot_color;
+  return color_sensor.left.color; 
 }
 
+robot_color_t get_spot_color_r(void)
+{
+  return color_sensor.right.color; 
+}
 
 int main(void)
 {
@@ -285,8 +313,8 @@ int main(void)
   spot_elevator_init(&l_spot_elevator);
   spot_elevator_set_claw_ax12_addr(&l_spot_elevator, SE_LEFT_AX12_CLAW_ID);
   spot_elevator_set_elevator_ax12_addr(&l_spot_elevator, SE_LEFT_AX12_ELEVATOR_ID);
-  spot_elevator_set_is_spot_present_fn(&l_spot_elevator, l_is_spot_present);
-  spot_elevator_set_get_spot_color_fn(&l_spot_elevator, se_get_robot_color);
+  spot_elevator_set_is_spot_present_fn(&l_spot_elevator, is_spot_present_l);
+  spot_elevator_set_get_spot_color_fn(&l_spot_elevator, get_spot_color_l);
 
   spot_elevator_init(&r_spot_elevator);
   spot_elevator_set_claw_ax12_addr(&r_spot_elevator, SE_RIGHT_AX12_CLAW_ID);
@@ -301,10 +329,20 @@ int main(void)
   TIMER_SET_CALLBACK_US(E0, 'B', UPDATE_MATCH_TIMER_TICK_US, INTLVL_HI, update_match_timer);
 
   // Initialize ROME
-  rome_intf_init(&rome);
-  rome.uart = UART_PPP;
-  rome.handler = rome_handler;
+  rome_intf_init(&rome_strat);
+  rome_strat.uart = UART_PPP;
+  rome_strat.handler = rome_strat_handler;
  
+  rome_intf_init(&rome_color_sensor.right);
+  #warning "DEFINE ME !"
+  rome_color_sensor.left.uart = UART_PPP;
+  rome_color_sensor.left.handler = rome_color_sensor_handler;
+
+  rome_intf_init(&rome_color_sensor.left);
+  #warning "DEFINE ME !"
+  rome_color_sensor.right.uart = UART_PPP;
+  rome_color_sensor.right.handler = rome_color_sensor_handler;
+
   uint32_t luptime = UINT32_MAX;
   uint32_t lluptime = UINT32_MAX;
   uint32_t spot_elevator_uptime = UINT32_MAX;
@@ -315,36 +353,24 @@ int main(void)
   uint32_t t = 0;
 
   spot_elevator_set_enable(&l_spot_elevator, true);
-  
-      spot_elevator_automatic_spot_stacking(&l_spot_elevator);
+  spot_elevator_automatic_spot_stacking(&l_spot_elevator);
   // main loop
   for(;;) {
     
     // debug info
     PORTA.OUT = (t++)/1000;
     uint32_t uptime = uptime_us();
-#if 0
-    // update arm every 100 ms
-    if(uptime - luptime > UPDATE_ARM_US) {
-      luptime = uptime;
-
-      // update barometers
-      uint16_t a = barometer_get_pressure(&baro0);
-      uint16_t b = barometer_get_pressure(&baro1);
-      TM_DL_SUCKERS(a < 250, b < 250);
-    }
-
-#else 
     (void)lluptime;
     (void)luptime;
-#endif
 
     // update rome every 100 ms
     uptime = uptime_us();
     if(uptime - lluptime > 100000) {
       lluptime = uptime;
       portpin_outset(&LED_COM_PP);
-      rome_handle_input(&rome);
+      rome_handle_input(&rome_strat);
+      rome_handle_input(&rome_color_sensor.left);
+      rome_handle_input(&rome_color_sensor.right);
       portpin_outclr(&LED_COM_PP);
     }
     
@@ -354,33 +380,6 @@ int main(void)
       spot_elevator_uptime = uptime;
       spot_elevator_manage(&l_spot_elevator);
       //spot_elevator_manage(&r_spot_elevator);
-      #if 0
-      ax12_write_word(&ax12,
-                  l_spot_elevator.elevator_ax12_addr, 
-                  AX12_ADDR_MOVING_SPEED_L, 
-                  0x0080);
-
-      static uint8_t id = 0;
-      if (id != 0)
-      {
-        ax12_write_word(&ax12,
-                  l_spot_elevator.elevator_ax12_addr, 
-                  AX12_ADDR_GOAL_POSITION_L, 
-                  750);
-        ROME_LOG(&rome, DEBUG, "pos open");
-        id = 0;
-      }
-      else
-      {
-        ax12_write_word(&ax12,
-                  l_spot_elevator.elevator_ax12_addr, 
-                  AX12_ADDR_GOAL_POSITION_L, 
-                  400);
-        ROME_LOG(&rome, DEBUG, "pos close");
-    id ++;
-
-      }
-      #endif
     }
   }
 }

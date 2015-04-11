@@ -5,17 +5,11 @@
 #include <avarix.h>
 #include <stdlib.h>
 
-#include <rome/rome.h>
-
 extern ax12_t ax12;
 
 extern robot_color_t robot_color;
 
 #define AX12_ELEVATOR_POS_ERROR 10
-
-// local functions
-extern rome_intf_t rome;
-
 
 // set the claw ax12 to one of the _claw_ax12_positions_t enum positions
 void _set_claw_ax12(spot_elevator_t *elevator, _claw_ax12_positions_t pos)
@@ -370,7 +364,6 @@ void spot_elevator_manage(spot_elevator_t *elevator)
   if ((elevator != NULL) && 
       (true == elevator->is_active))
   {
-  ROME_LOGF(&rome, DEBUG, "state %u", (uint16_t)elevator->sm_state);
 
     // each state uses a non blocking function that returns the next state of the state machine
     switch(elevator->sm_state)

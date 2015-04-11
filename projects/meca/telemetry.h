@@ -22,7 +22,7 @@
 #include <rome/rome.h>
 #include "config.h"
 
-extern rome_intf_t rome;
+extern rome_intf_t rome_strat;
 
 #define TM_FREQUENCY (3)
 #define TM_PRESCALER ((int32_t)1e6/((int32_t)TM_FREQUENCY*UPDATE_ARM_US))
@@ -38,9 +38,9 @@ if(_prescaler++>(N)) {\
 })
 
 #define TM_PERIODIC(f) _PRESCALE(TM_PRESCALER, f;)
-#define TM_DL_ARM(a,b,c) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_ARM(&rome,a,b,c))
-#define TM_DL_SUCKERS(a,b) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_SUCKERS(&rome,a,b))
+#define TM_DL_ARM(a,b,c) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_ARM(&rome_strat,a,b,c))
+#define TM_DL_SUCKERS(a,b) _PRESCALE(TM_PRESCALER, ROME_SEND_MECA_TM_SUCKERS(&rome_strat,a,b))
 
-#define TM_DL_MATCH_TIMER(a) _PRESCALE(TM_PRESCALER_MATCH, ROME_SEND_MECA_TM_MATCH_TIMER(&rome,a))
+#define TM_DL_MATCH_TIMER(a) _PRESCALE(TM_PRESCALER_MATCH, ROME_SEND_MECA_TM_MATCH_TIMER(&rome_strat,a))
 
 #endif//TELEMETRY_H
