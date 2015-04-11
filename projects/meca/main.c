@@ -141,17 +141,23 @@ static void ax12_set_state(ax12_state_t state)
   USART_t *const usart = uart_get_usart(UART_AX12);
   if(state == AX12_STATE_WRITE) {
     ax12_nsent = 0;
-    while(uart_recv_nowait(UART_AX12) != -1) ;
+
+    // unlock IRQs
+    INTLVL_ENABLE_BLOCK(UART_INTLVL) {
+      while(uart_recv_nowait(UART_AX12) != -1) ;
+    }
     portpin_dirset(&PORTPIN_TXDN(usart));
     portpin_outset(&AX12_DIR_PP);
   } else {
-    while(ax12_nsent > 0) {
-      int c;
-      for(int wdog=0; wdog<1000; wdog++) {
-        if((c = uart_recv_nowait(UART_AX12)) != -1)
-          break;
+    INTLVL_ENABLE_BLOCK(UART_INTLVL) {
+      while(ax12_nsent > 0) {
+        int c;
+        for(int wdog=0; wdog<1000; wdog++) {
+          if((c = uart_recv_nowait(UART_AX12)) != -1)
+            break;
+        }
+        ax12_nsent--;
       }
-      ax12_nsent--;
     }
     portpin_dirclr(&PORTPIN_TXDN(usart));
     portpin_outclr(&AX12_DIR_PP);
