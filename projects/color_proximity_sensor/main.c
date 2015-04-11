@@ -7,7 +7,9 @@
 #include "led_config.h"
 #include "com_config.h"
 #include "rgb_led.h"
+#include <stdio.h>
 
+#include "proximity_color_sensor_fsm.h"
 
 
 int main(void)
@@ -19,14 +21,22 @@ int main(void)
   CPU_SREG |= CPU_I_bm;
   INTLVL_ENABLE_ALL();
 
-  // initialise leds and RGB led
-  rgb_led_Init();
+  // leds port init
+  PORTC.DIRSET = _BV(6)| _BV(7);
 
- // timer_set_callback(timerE0, 'A', TIMER_US_TO_TICKS(E0,20000), INTLVL_LO, update_data_cb);
- // timer_set_callback(timerE0, 'B', TIMER_US_TO_TICKS(E0,200000), INTLVL_LO, send_ppp_events_cb);
+  
+  printf("INIT TCS37725\r\n");
+  printf("PORT %x %x\r\n", PORTE.IN&_BV(0), PORTE.IN&_BV(1));
+  PCSFSM_Init();
 
+
+ // timer_set_callback(timerE2, 'A', TIMER_US_TO_TICKS(E0,20000), INTLVL_LO, update_data_cb);
+ // timer_set_callback(timerE2, 'B', TIMER_US_TO_TICKS(E0,200000), INTLVL_LO, send_ppp_events_cb);
+
+  printf("INIT DONE !!\r\n");
   // main loop
   for(;;) {
+    PCSFSM_Update();
   }
 }
 

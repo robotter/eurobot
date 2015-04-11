@@ -8,6 +8,7 @@
 #include "apds9800.h"
 #include "tcs3772x.h"
 #include "rgb_led.h"
+#include <stdio.h>
 
 #include "APDS9800_config.h"
 #include "tcs3772x_config.h"
@@ -71,10 +72,11 @@ volatile uint8_t tcs37725_irq_request;
 
 /****************************** Global Function ******************************/
 
-void PCSFSM_init(void)
+void PCSFSM_Init(void)
 {
   fsm.fsm_state = PCSFSM_INACTIVE;
-  eeprom_read_block(&fsm.Filter, &Eep_Color_Filter, sizeof(Eep_Color_Filter)*sizeof(Color_Filter_t));
+  
+  //eeprom_read_block(&fsm.Filter, &Eep_Color_Filter, sizeof(Eep_Color_Filter)*sizeof(Color_Filter_t));
   fsm.object = APDS9800_NO_OBJECT;
   fsm.color = UNDEFINED_COLOR;
 
@@ -89,10 +91,18 @@ void PCSFSM_init(void)
   /* Initialize tcs37725 structure */
   i2c_init();
   tcs3772x_init(&fsm.tcs37725, &TCS37725_I2C.MASTER ,37725);
+  tcs3772x_ProximitySetPulseNb(&fsm.tcs37725, TCS37725_PULSE_NB);
+  tcs3772x_RGBCSetIntegrationTime_ms(&fsm.tcs37725, TCS37725_INTEGRATION_TIME_MS);
+  tcs3772x_SetProximityInterruptThreshold(&fsm.tcs37725, TCS37725_PROX_LOW_THRESHOLD, 
+                                                         TCS37725_PROX_HI_THRESHOLD, 
+                                                         TCS37725_CONSECUTIVE_DETECT_THRESHOLD );
+  tcs3772x_SetIRLedCurrentAndRGBCGain(&fsm.tcs37725, TCS37725_IR_LED_CURRENT, TCS37725_RGBC_GAIN);
 
   /* Initialize tcs3772 irq detection*/
   Pcsfsm_init_tcs37725_irq();
 
+  tcs3772x_ProximityEnableDetection(&fsm.tcs37725);
+  tcs3772x_ProximityEnableInterrupt(&fsm.tcs37725);
   /* Initializa the leds */
   rgb_led_Init(); 
 
@@ -107,6 +117,7 @@ void PCSFSM_init(void)
 void PCSFSM_Update(void)
 {
   OBJECT_t object_detected;
+  //printf("state %u PORTD %x status %x enable %x\r\n", fsm.fsm_state, PORTD.IN, tcs3772x_GetStatus(&fsm.tcs37725), tcs3772x_GetEnable(&fsm.tcs37725));
   switch(fsm.fsm_state)
   {
     case PCSFSM_INACTIVE:
@@ -119,6 +130,8 @@ void PCSFSM_Update(void)
         tcs3772x_ProximityClearInterrupt(&fsm.tcs37725);
         // go to next step
         fsm.fsm_state = PCSFSM_APDS9800_PROXIMITY_DETECTION;
+        fsm.fsm_state = PCSFSM_ENABLE_LEDS;
+        printf("RProx %x\r\n", tcs3772x_GetProxRawData(&fsm.tcs37725));
       }
       break;
 
@@ -172,6 +185,9 @@ void PCSFSM_Update(void)
 
     case PCSFSM_APPLY_FILTER:
       Pcsfsm_ApplyFilters();
+        //tcs3772x_ProximityClearInterrupt(&fsm.tcs37725);
+        //tcs3772x_ProximityEnableDetection(&fsm.tcs37725);
+        tcs3772x_ProximityEnableInterrupt(&fsm.tcs37725);
       fsm.fsm_state = PCSFSM_WAIT_FOR_PRESENCE_DETECTION;
       break;
 

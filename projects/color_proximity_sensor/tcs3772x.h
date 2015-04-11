@@ -120,6 +120,11 @@ int8_t tcs3772x_RGBCGetValue(tcs3772x_t *Sensor, tcs3772x_ColorResult_t *result)
  * @retval 0   function ok
  */
 int8_t tcs3772x_SetProximityInterruptThreshold(tcs3772x_t *Sensor, uint16_t LowThreshold, uint16_t HighThreshold, uint8_t ConsecutiveMeasOutRangeThreshold);
-
+  
+uint8_t tcs3772x_GetID(tcs3772x_t *Sensor);
+uint8_t tcs3772x_GetStatus(tcs3772x_t *Sensor);
+uint8_t tcs3772x_GetEnable(tcs3772x_t *Sensor);
+uint16_t tcs3772x_GetProxRawData(tcs3772x_t *Sensor);
+int8_t tcs3772x_SetIRLedCurrentAndRGBCGain(tcs3772x_t *Sensor,tcs3772x_ControlIRLedCurrent_t IrLedCurrent , tcs3772x_ControlRGBCGain_t RGBCGain);
 
 #endif //TCS3772X__

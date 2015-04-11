@@ -1,12 +1,18 @@
 #include <i2c/i2c.h>
 #include "tcs3772x.h"
 #include "tcs3772x_defs.h"
+#include <stdio.h>
 
 
 #define TCS3772x_FRAME_LENGTH 32u;
 
+/************* Local types ************/
+typedef enum {
+  _SPECIAL_FN,
+  _NORMAL_FN} _tcs37725_is_special_fn;
+
 /************* Local functions declaration ************/
-static void tcs3772x_EncodeFrameHeader(uint8_t *Packet, uint8_t IsSpecialFunction, tcs3772x_CommandAddrSF_t AddrSf);
+static void tcs3772x_EncodeFrameHeader(uint8_t *Packet, _tcs37725_is_special_fn  IsSpecialFunction, tcs3772x_CommandAddrSF_t AddrSf);
 
 static int8_t tcs3772x_UpdateRegister8Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint8_t Value); 
 
@@ -20,9 +26,9 @@ static int8_t tcs3772x_ReadRegister16Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Add
 static int8_t tcs3772x_IsRGBCCyclePerformed(tcs3772x_t *Sensor, uint8_t *CyclePerformed);
 /************* Local functions ************/
 
-static void tcs3772x_EncodeFrameHeader(uint8_t *Packet, uint8_t IsSpecialFunction, tcs3772x_CommandAddrSF_t AddrSf)
+static void tcs3772x_EncodeFrameHeader(uint8_t *Packet, _tcs37725_is_special_fn IsSpecialFunction, tcs3772x_CommandAddrSF_t AddrSf)
 {
-  if (0x00u == IsSpecialFunction)
+  if (_SPECIAL_FN == IsSpecialFunction)
   {
     Packet[0u] = TYPE_SPECIAL_FUNCTION | AddrSf.Value;
   }
@@ -41,7 +47,7 @@ static int8_t tcs3772x_UpdateRegister8Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Ad
   tcs3772x_CommandAddrSF_t AddrSf = {.Addr = Addr};
 
   /* format payload header */
-  tcs3772x_EncodeFrameHeader(Payload, 0x00u,AddrSf );
+  tcs3772x_EncodeFrameHeader(Payload, _NORMAL_FN, AddrSf );
 
   /* set register value */
   Payload[1u] = Value;
@@ -59,7 +65,7 @@ static int8_t tcs3772x_UpdateRegister16Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t A
   tcs3772x_CommandAddrSF_t AddrSf = {.Addr = Addr};
 
   /* format payload header */
-  tcs3772x_EncodeFrameHeader(Payload, 0x00u, AddrSf);
+  tcs3772x_EncodeFrameHeader(Payload, _NORMAL_FN, AddrSf);
 
   /* set register value */
   Payload[1u] = (uint8_t)(Value & 0x00ffu);
@@ -72,13 +78,13 @@ static int8_t tcs3772x_UpdateRegister16Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t A
 static int8_t tcs3772x_ReadRegister8Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint8_t *Value)
 {
   uint8_t Payload[1u];
-  uint8_t PayloadLength = sizeof(Payload) * sizeof(uint8_t);
+  int8_t PayloadLength = sizeof(Payload) * sizeof(uint8_t);
   
   tcs3772x_CommandAddrSF_t AddrSf = {.Addr = Addr};
   
   /* format payload header */
-  tcs3772x_EncodeFrameHeader(Payload, 0x00u, AddrSf);
-  
+  tcs3772x_EncodeFrameHeader(Payload, _NORMAL_FN, AddrSf);
+ 
   /* send next address to be accessed */
   if (PayloadLength == i2cm_send(Sensor->I2c, Sensor->I2cAddress, Payload, PayloadLength)) 
   {
@@ -105,7 +111,7 @@ static int8_t tcs3772x_ReadRegister16Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Add
   tcs3772x_CommandAddrSF_t AddrSf = {.Addr = Addr};
   
   /* format payload header */
-  tcs3772x_EncodeFrameHeader(Payload, 0x00u, AddrSf);
+  tcs3772x_EncodeFrameHeader(Payload, _NORMAL_FN, AddrSf);
   
   /* send next address to be accessed */
   if (PayloadLength == i2cm_send(Sensor->I2c, Sensor->I2cAddress, Payload, PayloadLength)) 
@@ -164,8 +170,38 @@ int8_t tcs3772x_init(tcs3772x_t *Sensor, i2cm_t *i2c, uint16_t tcs3772x_model )
   /* initialise i2c  */
   i2c_init();
 
+
   return tcs3772x_Disable(Sensor);
 }
+
+uint8_t tcs3772x_GetID(tcs3772x_t *Sensor)
+{
+  uint8_t id = 0x00;
+  tcs3772x_ReadRegister8Bits(Sensor, ID, &id);
+  return id;
+}
+
+uint8_t tcs3772x_GetStatus(tcs3772x_t *Sensor)
+{
+  uint8_t status = 0x00;
+  tcs3772x_ReadRegister8Bits(Sensor, STATUS, &status);
+  return status;
+}
+
+uint8_t tcs3772x_GetEnable(tcs3772x_t *Sensor)
+{
+  uint8_t enable = 0x00;
+  tcs3772x_ReadRegister8Bits(Sensor, ENABLE, &enable);
+  return enable;
+}
+
+uint16_t tcs3772x_GetProxRawData(tcs3772x_t *Sensor)
+{
+  uint16_t prox = 0x00;
+  tcs3772x_ReadRegister16Bits(Sensor, PDATA, &prox);
+  return prox;
+}
+
 
 int8_t tcs3772x_RGBCSetIntegrationTime_ms(tcs3772x_t *Sensor, uint16_t IntegrationTime_ms)
 {
@@ -279,10 +315,10 @@ int8_t tcs3772x_ProximityClearInterrupt(tcs3772x_t *Sensor)
 {
   uint8_t Payload = 0x00u;
   tcs3772x_CommandAddrSF_t AddrSf = {
-    .sf = SF_PROXIMITY_INTERRUPT_CLEAR
+    .sf = SF_PROX_AND_CLEAR_INTERRUPT_CLEAR
   };
 
-  tcs3772x_EncodeFrameHeader(&Payload, 0x01,AddrSf);
+  tcs3772x_EncodeFrameHeader(&Payload, _SPECIAL_FN, AddrSf);
   
   return (1u == i2cm_send(Sensor->I2c, Sensor->I2cAddress, &Payload, 1u)); 
 }
@@ -318,7 +354,7 @@ int8_t tcs3772x_RGBCGetValue(tcs3772x_t *Sensor, tcs3772x_ColorResult_t *result)
 
 int8_t tcs3772x_SetProximityInterruptThreshold(tcs3772x_t *Sensor, uint16_t LowThreshold, uint16_t HighThreshold, uint8_t ConsecutiveMeasOutRangeThreshold)
 {
-  if ((ConsecutiveMeasOutRangeThreshold <1) || (ConsecutiveMeasOutRangeThreshold > 15u))
+  if ((ConsecutiveMeasOutRangeThreshold <1u) || (ConsecutiveMeasOutRangeThreshold > 15u))
   {
     return -2;
   }
@@ -343,4 +379,11 @@ int8_t tcs3772x_SetProximityInterruptThreshold(tcs3772x_t *Sensor, uint16_t LowT
       return -1;
     }
   }
+}
+
+int8_t tcs3772x_SetIRLedCurrentAndRGBCGain(tcs3772x_t *Sensor,tcs3772x_ControlIRLedCurrent_t IrLedCurrent , tcs3772x_ControlRGBCGain_t RGBCGain)
+{
+  uint8_t control = 0x00;
+  control = IrLedCurrent | RGBCGain;
+  return (tcs3772x_UpdateRegister8Bits(Sensor, CONTROL, control));
 }
