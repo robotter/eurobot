@@ -66,8 +66,8 @@ void rome_color_sensor_handler(rome_intf_t *intf, const rome_frame_t *frame)
       }
       else if(intf == &rome_color_sensor.right) {
         // right sensor
-        color_sensor.left.color = color;
-        color_sensor.left.detected = detected;
+        color_sensor.right.color = color;
+        color_sensor.right.detected = detected;
       }
       else {
         // XXX
