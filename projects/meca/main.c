@@ -167,6 +167,16 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
 
+    case ROME_MID_COLOR_SENSOR_SET_COLOR_FILTER: {
+      // forward message
+      switch(frame->color_sensor_set_color_filter.i) {
+        case 0: rome_send(&rome_color_sensor.left, frame); break;
+        case 1: rome_send(&rome_color_sensor.right, frame); break;
+        default: break;
+      }
+
+    } break;
+
     default:
       break;
   }
