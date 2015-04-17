@@ -431,6 +431,7 @@ void strat_prepare_galipeur(team_t team)
 static void _pick_spot_corner_0_0(team_t team)
 {
 
+  int8_t kx = team == TEAM_YELLOW ? -1 : +1;
   goto_xya(kx*(1500-450),310,-M_PI/2);
   strat_delay_ms(1000);
 
