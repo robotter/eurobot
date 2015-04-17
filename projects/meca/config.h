@@ -14,7 +14,8 @@
 
 #define UART_AX12  uartC1
 #define UART_PPP  uartF0
-#define UART_CAM  uartF1
+#define UART_COLOR_SENSOR_RIGHT   uartF1
+#define UART_COLOR_SENSOR_LEFT    uartD1
 
 // Tick period of match timer, in microseconds
 #define UPDATE_MATCH_TIMER_TICK_US  10000
@@ -90,9 +91,9 @@
 #define SE_LEFT_SPIPE_CLOSED            150
 #define SE_LEFT_SPIPE_OPENED            150
 
-#define SE_LEFT_CLAW_OPENED              500
-#define SE_LEFT_CLAW_CLOSED_FOR_SPOT     150
-#define SE_LEFT_CLAW_CLOSED_FOR_BULB     150
+#define SE_LEFT_CLAW_OPENED              320
+#define SE_LEFT_CLAW_CLOSED_FOR_SPOT     210
+#define SE_LEFT_CLAW_CLOSED_FOR_BULB     210
 
 #define SE_LEFT_ELEVATOR_UP                 200
 #define SE_LEFT_ELEVATOR_DOWN_WAIT_SPOT     750

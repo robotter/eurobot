@@ -53,7 +53,6 @@ struct {
 // ROME messages handler
 void rome_color_sensor_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
-  (void)intf;
   switch(frame->mid) {
     case ROME_MID_COLOR_SENSOR_TM_DETECTION: {
       bool detected = frame->color_sensor_tm_detection.detected;
@@ -278,6 +277,8 @@ bool is_spot_present_r(void)
 
 robot_color_t get_spot_color_l(void)
 {
+  /// XXX  TODO
+  return robot_color;
   return color_sensor.left.color; 
 }
 
@@ -343,14 +344,12 @@ int main(void)
   rome_strat.uart = UART_PPP;
   rome_strat.handler = rome_strat_handler;
  
-  rome_intf_init(&rome_color_sensor.right);
-  #warning "DEFINE ME !"
-  rome_color_sensor.left.uart = UART_PPP;
+  rome_intf_init(&rome_color_sensor.left);
+  rome_color_sensor.left.uart = UART_COLOR_SENSOR_LEFT;
   rome_color_sensor.left.handler = rome_color_sensor_handler;
 
-  rome_intf_init(&rome_color_sensor.left);
-  #warning "DEFINE ME !"
-  rome_color_sensor.right.uart = UART_PPP;
+  rome_intf_init(&rome_color_sensor.right);
+  rome_color_sensor.right.uart = UART_COLOR_SENSOR_RIGHT;
   rome_color_sensor.right.handler = rome_color_sensor_handler;
 
   uint32_t luptime = UINT32_MAX;
@@ -364,6 +363,7 @@ int main(void)
 
   spot_elevator_set_enable(&l_spot_elevator, true);
   spot_elevator_automatic_spot_stacking(&l_spot_elevator);
+
   // main loop
   for(;;) {
     
@@ -377,19 +377,35 @@ int main(void)
     uptime = uptime_us();
     if(uptime - lluptime > 100000) {
       lluptime = uptime;
-      portpin_outset(&LED_COM_PP);
+      portpin_outtgl(&LED_COM_PP);
       rome_handle_input(&rome_strat);
       rome_handle_input(&rome_color_sensor.left);
       rome_handle_input(&rome_color_sensor.right);
-      portpin_outclr(&LED_COM_PP);
     }
     
     // update spot elevator every 10 ms
     uptime = uptime_us();
-    if(uptime - spot_elevator_uptime > 100000) {
+    if(uptime - spot_elevator_uptime > 1000000) {
+    static bool open = false;
       spot_elevator_uptime = uptime;
-      spot_elevator_manage(&l_spot_elevator);
+      //spot_elevator_manage(&l_spot_elevator);
       //spot_elevator_manage(&r_spot_elevator);
+      if (open)
+       {
+       open = false;
+       ax12_write_word(&ax12,
+                  2,
+                  AX12_ADDR_GOAL_POSITION_L, 
+                  SE_LEFT_CLAW_CLOSED_FOR_SPOT);
+       }
+       else
+       {
+       open = true;
+       ax12_write_word(&ax12,
+                  2,
+                  AX12_ADDR_GOAL_POSITION_L, 
+                  SE_LEFT_CLAW_OPENED);
+       }
     }
   }
 }
