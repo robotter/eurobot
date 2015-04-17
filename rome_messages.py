@@ -84,8 +84,6 @@ register_messages(
     # MECA
     (0x50, [
       # __ ORDERS __
-      # set arm position
-      (Order, 'meca_set_arm', [('upper','int16'), ('elbow','int16'), ('wrist','int16')]),
       # set sucker #n on / off (default off)
       (Order, 'meca_set_sucker', [('n','uint8'), ('active','bool')]),
       # set pump #n on / off (default off)
@@ -104,8 +102,6 @@ register_messages(
       (Order, 'meca_prepare_for_onboard_bulb', [('n','uint8')]),
 
       # __ TELEMETRY __
-      # return arm position
-      ('meca_tm_arm', [('upper','int16'), ('elbow','int16'), ('wrist','int16')]),
       # return pressure sensors
       ('meca_tm_suckers', [('a','bool'), ('b','bool')]),
       # match timer
