@@ -4,6 +4,11 @@
 /*
  * @brief PORT of the µC connected to the irq of the TCS37725 
  */
+#define OBJECT_DETECTION_TIMEOUT_US         100000
+
+/*
+ * @brief PORT of the µC connected to the irq of the TCS37725 
+ */
 #define TCS37725_IRQ_PORT     PORTD
 
 /*
@@ -27,8 +32,8 @@
 // number of pulses to detect object (between 1 and 255)
 #define TCS37725_PULSE_NB               3
 
-#define TCS37725_PROX_LOW_THRESHOLD           0x0000
-#define TCS37725_PROX_HI_THRESHOLD            0x01A0
+#define TCS37725_PROX_LOW_THRESHOLD           0
+#define TCS37725_PROX_HI_THRESHOLD            1000
 #define TCS37725_CONSECUTIVE_DETECT_THRESHOLD 5
 
 #define TCS37725_IR_LED_CURRENT       CONTROL_IR_LED_50mA

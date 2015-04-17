@@ -1,7 +1,6 @@
 #include <i2c/i2c.h>
 #include "tcs3772x.h"
 #include "tcs3772x_defs.h"
-#include <stdio.h>
 
 
 #define TCS3772x_FRAME_LENGTH 32u;

@@ -5,7 +5,7 @@ include ../../config.mk
 SRCS = $(wildcard *.c) rgb_led.c tcs3772x.c apds9800.c battery_monitor.c adc.c proximity_color_sensor_fsm.c
 ASRCS =
 TARGET = main
-MODULES = uart pwm timer i2c clock
+MODULES = uart pwm timer i2c clock rome
 
 
 ## Target configuration

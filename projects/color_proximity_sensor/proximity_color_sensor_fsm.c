@@ -3,15 +3,18 @@
 #include <avr/interrupt.h>
 #include <avarix/intlvl.h>
 #include <i2c/i2c.h>
+#include <timer/uptime.h>
+#include <rome/rome.h>
 #include "proximity_color_sensor_fsm.h"
 #include "proximity_color_sensor_fsm_config.h"
 #include "apds9800.h"
 #include "tcs3772x.h"
 #include "rgb_led.h"
-#include <stdio.h>
 
 #include "APDS9800_config.h"
 #include "tcs3772x_config.h"
+
+extern rome_intf_t rome;
 
 uint8_t Pcsfsm_IsIrqRequested(void);
 void Pcsfsm_init_tcs37725_irq(void);
@@ -30,6 +33,8 @@ typedef enum{
   PCSFSM_TCS3772_COLOR_MEASURE,
   PCSFSM_DISABLE_LEDS,
   PCSFSM_APPLY_FILTER,
+  PCSFSM_UPDATE_OBJ_DETECT_STATE,
+
 } Pcsfsm_state_t;
 
 EEMEM Color_Filter_t Eep_Color_Filter[COLOR_T_ELEMENT_NUMBER-1];
@@ -56,13 +61,20 @@ typedef struct{
 
   OBJECT_t object;
   Color_t color;
-
-  /*analog color sensor structure */
+  
+  /* uptime at color detection */
+  uint32_t detect_uptime;
+  uint32_t detect_uptime_threshold;
+  
+  /* analog color sensor structure */
   apds9800_object_detection_t apds9800;
 
   /* i2c color sensor structure */
   tcs3772x_t tcs37725;
   i2cm_t tcs37725_i2c;
+
+  /* debug data */
+  uint16_t tcs37725_distance;
 } Pcsfsm_t;
 
 /* singleton */
@@ -80,6 +92,7 @@ void PCSFSM_Init(void)
   fsm.object = APDS9800_NO_OBJECT;
   fsm.color = UNDEFINED_COLOR;
 
+  fsm.detect_uptime_threshold = OBJECT_DETECTION_TIMEOUT_US;
   /* Initialize APDS9800 structure */
 
   APDS9800_SetProximityEnablePort(&fsm.apds9800.apds, &APDS9800_EN_PROXIMITY_SENSOR_PORT);
@@ -117,7 +130,6 @@ void PCSFSM_Init(void)
 void PCSFSM_Update(void)
 {
   OBJECT_t object_detected;
-  //printf("state %u PORTD %x status %x enable %x\r\n", fsm.fsm_state, PORTD.IN, tcs3772x_GetStatus(&fsm.tcs37725), tcs3772x_GetEnable(&fsm.tcs37725));
   switch(fsm.fsm_state)
   {
     case PCSFSM_INACTIVE:
@@ -131,8 +143,18 @@ void PCSFSM_Update(void)
         // go to next step
         fsm.fsm_state = PCSFSM_APDS9800_PROXIMITY_DETECTION;
         fsm.fsm_state = PCSFSM_ENABLE_LEDS;
-        printf("RProx %x\r\n", tcs3772x_GetProxRawData(&fsm.tcs37725));
+        ROME_SEND_COLOR_SENSOR_TM_DETECTION(&rome, fsm.object==APDS9800_OBJECT_DETECTED, fsm.color);
       }
+      else
+      {
+        uint32_t uptime = uptime_us();
+        if (( (uptime - fsm.detect_uptime) > fsm.detect_uptime_threshold) &&
+        (fsm.object == APDS9800_OBJECT_DETECTED))
+        {
+          fsm.object = APDS9800_NO_OBJECT;
+        }
+      }
+      fsm.tcs37725_distance = tcs3772x_GetProxRawData(&fsm.tcs37725);
       break;
 
 
@@ -185,10 +207,14 @@ void PCSFSM_Update(void)
 
     case PCSFSM_APPLY_FILTER:
       Pcsfsm_ApplyFilters();
-        //tcs3772x_ProximityClearInterrupt(&fsm.tcs37725);
-        //tcs3772x_ProximityEnableDetection(&fsm.tcs37725);
-        tcs3772x_ProximityEnableInterrupt(&fsm.tcs37725);
+      tcs3772x_ProximityEnableInterrupt(&fsm.tcs37725);
+      fsm.fsm_state = PCSFSM_UPDATE_OBJ_DETECT_STATE;
+      break;
+
+    case PCSFSM_UPDATE_OBJ_DETECT_STATE:
       fsm.fsm_state = PCSFSM_WAIT_FOR_PRESENCE_DETECTION;
+      fsm.detect_uptime = uptime_us();
+      fsm.object = APDS9800_OBJECT_DETECTED;
       break;
 
     default : fsm.fsm_state = PCSFSM_INACTIVE;
@@ -203,6 +229,16 @@ OBJECT_t PCCFSM_IsObjectDetected(void)
 Color_t PCCFSM_GetObjectColor(void)
 {
   return fsm.color;
+}
+
+uint16_t PCSFSM_GetTcs37725ProxDistance(void)
+{
+  return fsm.tcs37725_distance;
+}
+
+void PCSFSM_SetTcs37725ProximityThreshold(uint16_t threshold_low, uint16_t threshold_high, uint8_t consecutive_detect_threshold)
+{
+  tcs3772x_SetProximityInterruptThreshold(&fsm.tcs37725, threshold_low, threshold_high, consecutive_detect_threshold);
 }
 
 void PCSFSM_updateColorFilter(Color_Filter_t *filter)
@@ -254,6 +290,7 @@ uint8_t Pcsfsm_IsIrqRequested(void)
 
 void Pcsfsm_ApplyFilters(void)
 {
+  fsm.color = UNDEFINED_COLOR;
   for (uint8_t it = 0; it < COLOR_T_ELEMENT_NUMBER-1; it++)
   {
     if ((fsm.Filter[it].UseRedThreshold == 0)

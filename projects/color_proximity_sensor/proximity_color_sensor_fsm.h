@@ -57,4 +57,9 @@ void PCSFSM_updateColorFilter(Color_Filter_t *filter);
  */
 void PCSFSM_GetColorFilter(Color_Filter_t *filter, Color_t color);
 
+uint16_t PCSFSM_GetTcs37725ProxDistance(void);
+
+void PCSFSM_SetTcs37725ProximityThreshold(uint16_t threshold_low, uint16_t threshold_high, uint8_t consecutive_detect_threshold);
+
+
 #endif //PROXIMITY_COLOR_SENSOR_FSM_H

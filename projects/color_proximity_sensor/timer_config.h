@@ -21,7 +21,16 @@
 #define TIMER_PRESCALER_DIV  64
 
 /// Enable TIMERxn
-#define TIMERE2_ENABLED
+#define TIMERE0_ENABLED
+
+/// Timer used for uptime as xn
+#define UPTIME_TIMER  E0
+///// Timer channel used for uptime
+#define UPTIME_TIMER_CHANNEL  'C'
+//
+///// Uptime tick period in microseconds
+#define UPTIME_TICK_US  10000
+//
 
 //@}
 //@}
