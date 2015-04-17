@@ -144,6 +144,7 @@ register_messages(
       ('color_sensor_tm_detection', [('detected','bool'), ('color', 'uint8')]),
       ('color_sensor_tm_dist_debug', [('distance','uint16'), ('detected','bool'), ('color', 'uint8')]),
       (Order, 'color_sensor_set_color_filter', [('i', 'uint8'), ('red_threshold','uint16'), ('green_threshold','uint16'), ('blue_threshold','uint16')]),
+      (Order, 'color_sensor_set_dist_threshold', [('low_threshold','uint16'), ('high_threshold','uint16'), ('consecutive_detect_threshold','uint8')]),
       ]),
 
 
