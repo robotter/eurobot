@@ -243,29 +243,6 @@ void autoset(autoset_side_t side, float x, float y)
   }
 }
 
-/// Move arm and wait for it to be in position
-void arm_set(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
-{
-  for(;;) {
-    uint32_t tend = uptime_us() + STRAT_TIMEOUT_US;
-    ROME_SENDWAIT_MECA_SET_ARM(&rome_meca, shoulder, elbow, wrist);
-    do {
-      update_rome_interfaces();
-      if(abs(shoulder-robot_state.arm.shoulder) < ARM_UPPER_MARGIN &&
-         abs(elbow-robot_state.arm.elbow) < ARM_LOWER_MARGIN &&
-         abs(wrist-robot_state.arm.wrist) < ARM_LOWER_MARGIN) {
-        return;
-      }
-    } while(uptime_us() < tend);
-  }
-}
-
-/// Move arm but don't wait
-void arm_set_nowait(uint16_t shoulder, uint16_t elbow, uint16_t wrist)
-{
-  ROME_SENDWAIT_MECA_SET_ARM(&rome_meca, shoulder, elbow, wrist);
-}
-
 /// delay for some ms
 void strat_delay_ms(uint32_t ms) {
   uint32_t tend = uptime_us() + 1000*ms;
@@ -401,9 +378,10 @@ void strat_init_galipeur(void)
 
 void strat_prepare_galipeur(team_t team)
 {
+#if 1
   // initialize asserv
-  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 0, 0, -M_PI/2);
-  ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, -M_PI/2);
+  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 0, 0, 0);
+  ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, 0);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
   // raise both arms
@@ -411,58 +389,32 @@ void strat_prepare_galipeur(team_t team)
   ext_arm_raise(EXTARM_RIGHT);
 
   // autoset robot
-  int8_t kx = team == TEAM_YELLOW ? -1 : 1;
-  autoset(AUTOSET_DOWN, 0, 100+SPOT_ELEVATOR_LENGTH);
-  goto_xya_rel(0, 100, 0);
-  goto_xya(0, 550, -M_PI/2);
-  goto_xya(-350, 550, -M_PI/2);
-  autoset_side_t side = team == TEAM_YELLOW ? AUTOSET_LEFT : AUTOSET_RIGHT;
-  autoset(side, kx*(1500-100-SPOT_ELEVATOR_LENGTH), 450);
+  autoset(AUTOSET_RIGHT, 1500-100, 0);
+  goto_xya_rel(-500, 0, 0);
+  goto_xya_rel(0, -350, 0);
+  autoset(AUTOSET_DOWN, 0, 100);
 
-  goto_xya_rel(500, 0, 0);
-  goto_xya_rel(0, 420, 0);
-  goto_xya(kx*(1500-230-SPOT_ELEVATOR_LENGTH), 1000, -M_PI/2);
+  // move out (in relative coordinates)
+  goto_xya_rel(0, 200, 0);
+  // approach front of start area
+  goto_xya(1500-600, 1030, 0);
+
+  // stack in start area
+  goto_xya(1220,1040,0);
+#else
+  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 1220, 1040, 0);
+  ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 1220, 1040, 0);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+#endif
 
   // prepare meca
-  ROME_SENDWAIT_MECA_PREPARE_FOR_ONBOARD_BULB(&rome_meca, SPOT_ELV_LEFT);
+  //ROME_SENDWAIT_MECA_PREPARE_FOR_ONBOARD_BULB(&rome_meca, SPOT_ELV_LEFT);
   //ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
-}
-
-static void _pick_spot_corner_0_0(team_t team)
-{
-
-  int8_t kx = team == TEAM_YELLOW ? -1 : +1;
-  goto_xya(kx*(1500-450),310,-M_PI/2);
-  strat_delay_ms(1000);
-
-//  approach spot
-  //goto_xya_rel(-200,0,0);
-  goto_xya(kx*(1500-280),310,-M_PI/2);
-  strat_delay_ms(1000);
-
-  //ext_arm_lower(EXTARM_RIGHT);
-  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
-  strat_delay_ms(5000);
-
-  goto_xya(kx*(1500-370),310,-M_PI/2);
-  strat_delay_ms(1000);
-
-  goto_xya(kx*(1500-370),220,-M_PI/2);
-  strat_delay_ms(1000);
-
-  goto_xya(kx*(1500-280),220,-M_PI/2);
-  strat_delay_ms(1000);
-
-  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
-  strat_delay_ms(5000);
- 
 }
 
 void strat_run_galipeur(team_t team)
 {
-  int8_t kx = team == TEAM_YELLOW ? -1 : +1;
-
-  #if 0
+#if 0
   // autoset before starting, to avoid gyro's drift
   autoset_side_t side = team == TEAM_YELLOW ? AUTOSET_LEFT : AUTOSET_RIGHT;
   ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
@@ -470,42 +422,67 @@ void strat_run_galipeur(team_t team)
   autoset(side, kx*(1500-100-70), 1000);
 #endif
 
-  goto_xya_rel(400,0,0);
-  strat_delay_ms(1000);
+  // front of start area
+  goto_xya(1500-600, 1030, 0);
   goto_xya_rel(0,-400,0);
-  strat_delay_ms(1000);
+  goto_xya_rel(+400,0,0);
   
-  _pick_spot_corner_0_0(team);
+  // autoset against right side
+  autoset(AUTOSET_RIGHT, 1500-100, 0);
 
-while(1);
-  goto_xya(kx*(1500-300),200,-M_PI/2 + M_PI/3);
+  // -- SE SPOTS --
+  // approach SE spots
+  goto_xya_rel(-100,0,0);
+  goto_xya(1500-160, 470, 0);
 
-  ext_arm_raise(EXTARM_RIGHT);
-  strat_delay_ms(500);
+  // pick one spot
+  goto_xya(1500-160, 450, 0);
+  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+  // XXX replace me by somehing more clever
+  _delay_ms(3000);
 
-  goto_xya(kx*(1500-600),200,-M_PI/2 + M_PI/3);
-  ext_arm_lower(EXTARM_RIGHT);
-  strat_delay_ms(500);
+  // pick one spot
+  goto_xya(1500-160, 340, 0);
+  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+  // XXX replace me by somehing more clever
+  _delay_ms(3000);
 
-  goto_xya(kx*(1500-900),200,-M_PI/2 + M_PI/3);
-  ext_arm_raise(EXTARM_RIGHT);
-  goto_xya(kx*(1500-980),370,-M_PI/2 - M_PI/4 + M_PI/3);
-  goto_xya_rel(150*0.7,-150*0.7,0);
-  goto_xya(kx*(1500-1000),500,-M_PI/2);
-  goto_xya(kx*(1500-1000),500,M_PI/2 - M_PI/4 + M_PI/3);
-  goto_xya(kx*(1500-550),900,M_PI/2 - M_PI/4 + M_PI/3);
+  // -- SE CLAPS -- 
+  goto_xya(1500-160, 290, 0);
+  // translate along SE border
+  goto_xya(1500-880, 290, 0);
 
-  //go push oponent side clap !
-  //goto_xya(kx*(-1500+1100),900,-M_PI/2 + M_PI/3);
-  //goto_xya(kx*(-1500+300),200,-M_PI/2  + M_PI/3);
-  //ext_arm_lower(EXTARM_RIGHT);
-  //strat_delay_ms(500);
-  //goto_xya(kx*(-1500+500),200,-M_PI/2  + M_PI/3);
-  //ext_arm_raise(EXTARM_RIGHT);
-  //strat_delay_ms(500);
-  //ext_arm_lower(EXTARM_RIGHT);
-  //strat_delay_ms(500);
-  //ext_arm_raise(EXTARM_RIGHT);
+  // -- S SPOTS --
+  goto_xya_rel(+100,0,0);
+  autoset(AUTOSET_DOWN, 0, 100);
+
+  goto_xya_rel(0,100,0);
+  goto_xya(1500-820,290,-.5*M_PI);
+
+  goto_xya_rel(-200, 0, 0);
+  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+  // XXX replace me by somehing more clever
+  _delay_ms(3000);
+
+  goto_xya(1500-1270, 350, -M_PI); 
+  goto_xya_rel(0, 200, 0);
+  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+  // XXX replace me by somehing more clever
+  _delay_ms(3000);
+
+  goto_xya(1500-830, 350, -M_PI); 
+  goto_xya_rel(0, 200, 0);
+  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+  // XXX replace me by somehing more clever
+  _delay_ms(3000);
+
+  goto_xya(1500-600, 1030, M_PI/2);
+  for(int i=0;i<2;i++) {
+    ROME_SENDWAIT_MECA_RELEASE_SPOT_STACK(&rome_meca, SPOT_ELV_LEFT);
+    _delay_ms(5000);
+  }
+
+  goto_xya_rel(-500, 0, 0);
 
   _delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);

@@ -88,11 +88,6 @@ static void rome_meca_handler(rome_intf_t *intf, const rome_frame_t *frame)
         return; // don't forward
       }
     } break;
-    case ROME_MID_MECA_TM_ARM:
-      robot_state.arm.shoulder = frame->meca_tm_arm.upper;
-      robot_state.arm.elbow = frame->meca_tm_arm.elbow;
-      robot_state.arm.wrist = frame->meca_tm_arm.wrist;
-      break;
     case ROME_MID_MECA_TM_SUCKERS:
       robot_state.suckers.a = frame->meca_tm_suckers.a;
       robot_state.suckers.b = frame->meca_tm_suckers.b;
@@ -244,9 +239,6 @@ int main(void)
 
   TIMER_SET_CALLBACK_US(F0, 'A', 1e6, ROME_SEND_INTLVL, match_end);
 
-
-
-  //strat_test(team);
   strat_run(team);
 
   for(;;) {
