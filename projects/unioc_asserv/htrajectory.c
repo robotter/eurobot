@@ -445,8 +445,8 @@ static void _htrajectory_update( htrajectory_t *htj )
       // shutdown robot CSs
       robot_cs_activate(htj->rcs, 0);
 
-      dx = SETTING_AUTOSET_SPEED*cos(-.5*M_PI);
-      dy = SETTING_AUTOSET_SPEED*sin(-.5*M_PI);
+      dx = SETTING_AUTOSET_SPEED*cos(M_PI/6.0);
+      dy = SETTING_AUTOSET_SPEED*sin(M_PI/6.0);
 
       // store current robot position
       hposition_get(htj->hrp, &(htj->autosetInitPos));
@@ -474,22 +474,22 @@ static void _htrajectory_update( htrajectory_t *htj )
         switch(htj->autosetSide)
         {
           case TS_LEFT:
-            htj->autosetInitPos.alpha = -M_PI_2;
+            htj->autosetInitPos.alpha = 5*M_PI/6.0;
             htj->autosetInitPos.x = htj->autosetTargetX;
             break;
 
           case TS_RIGHT:
-            htj->autosetInitPos.alpha = +M_PI_2;
+            htj->autosetInitPos.alpha = -M_PI/6.0;
             htj->autosetInitPos.x = htj->autosetTargetX;
             break;
 
           case TS_UP:
-            htj->autosetInitPos.alpha = +M_PI;
+            htj->autosetInitPos.alpha = +M_PI/3.0;
             htj->autosetInitPos.y = htj->autosetTargetY;
             break;
 
           case TS_DOWN:
-            htj->autosetInitPos.alpha = 0;
+            htj->autosetInitPos.alpha = -2*M_PI/3;
             htj->autosetInitPos.y = htj->autosetTargetY;
             break;
 
@@ -692,19 +692,19 @@ void htrajectory_autoset( htrajectory_t *htj, tableSide_t side,
   switch(side)
   {
     case TS_LEFT:
-      htj->carrotA = -M_PI_2;
+      htj->carrotA = 5*M_PI/6.0;
       break;
 
     case TS_RIGHT:
-      htj->carrotA = M_PI_2;
+      htj->carrotA = -M_PI/6.0;
       break;
 
     case TS_UP:
-      htj->carrotA = M_PI;
+      htj->carrotA = M_PI/3;
       break;
 
     case TS_DOWN:
-      htj->carrotA = 0;
+      htj->carrotA = -2*M_PI/3;
       break;
 
     default:
