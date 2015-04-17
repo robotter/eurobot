@@ -85,6 +85,8 @@ void rome_color_sensor_handler(rome_intf_t *intf, const rome_frame_t *frame)
 
 void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
+
+  ROME_LOGF(&rome_strat, DEBUG, "RCVD MID %d", frame->mid);
   switch(frame->mid) {
     case ROME_MID_START_TIMER: {
       match_timer_counting = true;
@@ -177,6 +179,7 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
     } break;
 
     default:
+      ROME_LOG(&rome_strat, DEBUG, "DEFAULT REACHED");
       break;
   }
 } 
@@ -277,9 +280,8 @@ bool is_spot_present_r(void)
 
 robot_color_t get_spot_color_l(void)
 {
-  /// XXX  TODO
-  return robot_color;
-  return color_sensor.left.color; 
+  return COLOR_GREEN;
+  //return color_sensor.left.color; 
 }
 
 robot_color_t get_spot_color_r(void)
@@ -353,7 +355,6 @@ int main(void)
   rome_color_sensor.right.handler = rome_color_sensor_handler;
 
   uint32_t luptime = UINT32_MAX;
-  uint32_t lluptime = UINT32_MAX;
   uint32_t spot_elevator_uptime = UINT32_MAX;
 
   arm_set_external_servo(S_LEFT, 120);
@@ -370,13 +371,11 @@ int main(void)
     // debug info
     PORTA.OUT = (t++)/1000;
     uint32_t uptime = uptime_us();
-    (void)lluptime;
-    (void)luptime;
 
     // update rome every 100 ms
     uptime = uptime_us();
-    if(uptime - lluptime > 100000) {
-      lluptime = uptime;
+    if(uptime - luptime > 100000) {
+      luptime = uptime;
       portpin_outtgl(&LED_COM_PP);
       rome_handle_input(&rome_strat);
       rome_handle_input(&rome_color_sensor.left);
@@ -385,27 +384,10 @@ int main(void)
     
     // update spot elevator every 10 ms
     uptime = uptime_us();
-    if(uptime - spot_elevator_uptime > 1000000) {
-    static bool open = false;
+    if(uptime - spot_elevator_uptime > 10000) {
       spot_elevator_uptime = uptime;
-      //spot_elevator_manage(&l_spot_elevator);
-      //spot_elevator_manage(&r_spot_elevator);
-      if (open)
-       {
-       open = false;
-       ax12_write_word(&ax12,
-                  2,
-                  AX12_ADDR_GOAL_POSITION_L, 
-                  SE_LEFT_CLAW_CLOSED_FOR_SPOT);
-       }
-       else
-       {
-       open = true;
-       ax12_write_word(&ax12,
-                  2,
-                  AX12_ADDR_GOAL_POSITION_L, 
-                  SE_LEFT_CLAW_OPENED);
-       }
+      spot_elevator_manage(&l_spot_elevator);
+      spot_elevator_manage(&r_spot_elevator);
     }
   }
 }

@@ -92,7 +92,7 @@
 #define SE_LEFT_SPIPE_OPENED            150
 
 #define SE_LEFT_CLAW_OPENED              320
-#define SE_LEFT_CLAW_CLOSED_FOR_SPOT     210
+#define SE_LEFT_CLAW_CLOSED_FOR_SPOT     200
 #define SE_LEFT_CLAW_CLOSED_FOR_BULB     210
 
 #define SE_LEFT_ELEVATOR_UP                 200
