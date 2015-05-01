@@ -33,7 +33,6 @@ int8_t tcs3772x_init(tcs3772x_t *Sensor, i2cm_t *i2c, uint16_t model);
  * @param sensor  pointer to the sensor tcs3772x_t structure
  * @param integration_time_ms integration time (in ms)
  * @retval -2 out of range IntegrationTime_ms value (must be between 2 and 614 ms)
- * @retval -1  error : i2c error
  * @retval 0   function ok
  * integration_time_ms is stored in structure and sent to the device
  */
@@ -52,45 +51,33 @@ int8_t tcs3772x_ProximitySetPulseNb(tcs3772x_t *Sensor, uint8_t proximityPulseNb
 
 /** @brief enable the sensor, wakes it from power off
  * @param sensor  pointer to the sensor tcs3772x_t structure
- * @retval -1  error : i2c error
- * @retval 0   function ok
  */
-int8_t tcs3772x_Enable(tcs3772x_t *Sensor);
+void tcs3772x_Enable(tcs3772x_t *Sensor);
 
 /** @brief disable the sensor, configure it in low power mode
  * @param sensor  pointer to the sensor tcs3772x_t structure
- * @retval -1  error : i2c error
- * @retval 0   function ok
  */
-int8_t tcs3772x_Disable(tcs3772x_t *Sensor);
+void tcs3772x_Disable(tcs3772x_t *Sensor);
 
 /** @brief enable the proximity detection 
  * @param sensor  pointer to the sensor tcs3772x_t structure
- * @retval -1  error : i2c error
- * @retval 0   function ok
  */
-int8_t tcs3772x_ProximityEnableDetection(tcs3772x_t *Sensor);
+void tcs3772x_ProximityEnableDetection(tcs3772x_t *Sensor);
 
 /** @brief disable the proximity detection 
  * @param sensor  pointer to the sensor tcs3772x_t structure
- * @retval -1  error : i2c error
- * @retval 0   function ok
  */
-int8_t tcs3772x_ProximityDisableDetection(tcs3772x_t *Sensor);
+void tcs3772x_ProximityDisableDetection(tcs3772x_t *Sensor);
 
 /** @brief enable the proximity detection interrupt
  * @param sensor  pointer to the sensor tcs3772x_t structure
- * @retval -1  error : i2c error
- * @retval 0   function ok
  */
-int8_t tcs3772x_ProximityEnableInterrupt(tcs3772x_t *Sensor);
+void tcs3772x_ProximityEnableInterrupt(tcs3772x_t *Sensor);
 
 /** @brief disable the proximity detection interrupt
  * @param sensor  pointer to the sensor tcs3772x_t structure
- * @retval -1  error : i2c error
- * @retval 0   function ok
  */
-int8_t tcs3772x_ProximityDisableInterrupt(tcs3772x_t *Sensor);
+void tcs3772x_ProximityDisableInterrupt(tcs3772x_t *Sensor);
 
 /** @brief Clear the pending proximity detection interrupt
  * @param sensor  pointer to the sensor tcs3772x_t structure
@@ -103,11 +90,9 @@ int8_t tcs3772x_ProximityClearInterrupt(tcs3772x_t *Sensor);
  * @param sensor  pointer to the sensor tcs3772x_t structure
  * @param result pointer to a tcs3772x_ColorResult_t strucutre that will contain the 
  * result of the color conversion cycle
- * @retval -1  error : i2c error
- * @retval 0   function ok
  * @remark stop proximity detection function, perform a color conversion and restart proximity detection function
  */
-int8_t tcs3772x_RGBCGetValue(tcs3772x_t *Sensor, tcs3772x_ColorResult_t *result);
+void tcs3772x_RGBCGetValue(tcs3772x_t *Sensor, tcs3772x_ColorResult_t *result);
 
 /** @brief set the threshold that will trigger a proximity interrupt. 
  * @brief set the number of consecutive proximity mesure out of range before triggering an interrupt 
@@ -125,6 +110,6 @@ uint8_t tcs3772x_GetID(tcs3772x_t *Sensor);
 uint8_t tcs3772x_GetStatus(tcs3772x_t *Sensor);
 uint8_t tcs3772x_GetEnable(tcs3772x_t *Sensor);
 uint16_t tcs3772x_GetProxRawData(tcs3772x_t *Sensor);
-int8_t tcs3772x_SetIRLedCurrentAndRGBCGain(tcs3772x_t *Sensor,tcs3772x_ControlIRLedCurrent_t IrLedCurrent , tcs3772x_ControlRGBCGain_t RGBCGain);
+void tcs3772x_SetIRLedCurrentAndRGBCGain(tcs3772x_t *Sensor,tcs3772x_ControlIRLedCurrent_t IrLedCurrent , tcs3772x_ControlRGBCGain_t RGBCGain);
 
 #endif //TCS3772X__

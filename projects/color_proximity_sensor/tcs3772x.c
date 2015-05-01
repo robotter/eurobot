@@ -1,4 +1,5 @@
 #include <i2c/i2c.h>
+#include <avarix.h>
 #include "tcs3772x.h"
 #include "tcs3772x_defs.h"
 
@@ -13,9 +14,9 @@ typedef enum {
 /************* Local functions declaration ************/
 static void tcs3772x_EncodeFrameHeader(uint8_t *Packet, _tcs37725_is_special_fn  IsSpecialFunction, tcs3772x_CommandAddrSF_t AddrSf);
 
-static int8_t tcs3772x_UpdateRegister8Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint8_t Value); 
+static void tcs3772x_UpdateRegister8Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint8_t Value); 
 
-static int8_t tcs3772x_UpdateRegister16Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint16_t Value);
+static void tcs3772x_UpdateRegister16Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint16_t Value);
 
 static int8_t tcs3772x_ReadRegister8Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint8_t *Value); 
 
@@ -37,7 +38,7 @@ static void tcs3772x_EncodeFrameHeader(uint8_t *Packet, _tcs37725_is_special_fn 
   }
 }
 
-static int8_t tcs3772x_UpdateRegister8Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint8_t Value)
+static void tcs3772x_UpdateRegister8Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint8_t Value)
 {
   uint8_t Payload[2u];
 
@@ -51,11 +52,24 @@ static int8_t tcs3772x_UpdateRegister8Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Ad
   /* set register value */
   Payload[1u] = Value;
 
-  /* send it to the i2c bus */
-  return (PayloadLength == i2cm_send(Sensor->I2c, Sensor->I2cAddress, Payload, PayloadLength)); 
+  uint8_t ReadVal = ~Value;
+
+  do{
+    /* initialize readden data to false one */
+    ReadVal = ~Value;
+
+    /* send it to the i2c bus */
+    i2cm_send(Sensor->I2c, Sensor->I2cAddress, Payload, PayloadLength);
+  
+    /* read the data through i2c */ 
+    i2cm_send(Sensor->I2c, Sensor->I2cAddress, Payload, 1);
+    i2cm_recv(Sensor->I2c, Sensor->I2cAddress, &ReadVal, 1);
+
+  }
+  while (ReadVal != Value);
 }
 
-static int8_t tcs3772x_UpdateRegister16Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint16_t Value)
+static void tcs3772x_UpdateRegister16Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint16_t Value)
 {
   uint8_t Payload[3u];
 
@@ -70,8 +84,20 @@ static int8_t tcs3772x_UpdateRegister16Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t A
   Payload[1u] = (uint8_t)(Value & 0x00ffu);
   Payload[2u] = (uint8_t)((Value >>8) & 0x00ffu);
 
-  /* send it to the i2c bus */
-  return (PayloadLength == i2cm_send(Sensor->I2c, Sensor->I2cAddress, Payload, PayloadLength)); 
+  uint8_t ReadVal[2u];
+  do 
+  {
+      ReadVal[0u] = ~Payload[0u];
+      ReadVal[1u] = ~Payload[1u];
+
+    /* send it to the i2c bus */
+    i2cm_send(Sensor->I2c, Sensor->I2cAddress, Payload, PayloadLength);
+
+    /* set address point in tcs3772x component state machine before reading */
+    i2cm_send(Sensor->I2c, Sensor->I2cAddress, Payload, 1u);
+    i2cm_recv(Sensor->I2c, Sensor->I2cAddress, ReadVal, 2);
+  } 
+  while ((ReadVal[0u] != Payload[1u]) || (ReadVal[1u] != Payload[2u]));
 }
 
 static int8_t tcs3772x_ReadRegister8Bits(tcs3772x_t *Sensor, tcs3772x_Reg_t Addr, uint8_t *Value)
@@ -148,7 +174,7 @@ static int8_t tcs3772x_IsRGBCCyclePerformed(tcs3772x_t *Sensor, uint8_t *CyclePe
 }
 /************* Global functions ************/
 
-int8_t tcs3772x_init(tcs3772x_t *Sensor, i2cm_t *i2c, uint16_t tcs3772x_model )
+int8_t  tcs3772x_init(tcs3772x_t *Sensor, i2cm_t *i2c, uint16_t tcs3772x_model )
 {
   /* configure i2c address and check model of component */
   switch(tcs3772x_model)
@@ -170,7 +196,8 @@ int8_t tcs3772x_init(tcs3772x_t *Sensor, i2cm_t *i2c, uint16_t tcs3772x_model )
   i2c_init();
 
 
-  return tcs3772x_Disable(Sensor);
+  tcs3772x_Disable(Sensor);
+  return 0;
 }
 
 uint8_t tcs3772x_GetID(tcs3772x_t *Sensor)
@@ -220,14 +247,8 @@ int8_t tcs3772x_RGBCSetIntegrationTime_ms(tcs3772x_t *Sensor, uint16_t Integrati
 
     uint8_t Reg = (uint8_t)(RegMult10 /10);
 
-    if (tcs3772x_UpdateRegister8Bits(Sensor, ATIME, Reg))
-    {
-      return 0;
-    }
-    else
-    {
-      return -1;
-    }
+    tcs3772x_UpdateRegister8Bits(Sensor, ATIME, Reg);
+    return 0;
   }
 }
 
@@ -240,73 +261,39 @@ int8_t tcs3772x_ProximitySetPulseNb(tcs3772x_t *Sensor, uint8_t ProximityPulseNb
   }
   else
   {
-    if (tcs3772x_UpdateRegister8Bits(Sensor, PPULSE, ProximityPulseNb))
-    {
-      return 0;
-    }
-    else
-    {
-      return -1;
-    }
+    tcs3772x_UpdateRegister8Bits(Sensor, PPULSE, ProximityPulseNb);
+    return 1;
   }
 }
 
-int8_t tcs3772x_Enable(tcs3772x_t *Sensor)
+void tcs3772x_Enable(tcs3772x_t *Sensor)
 {
-  if (tcs3772x_UpdateRegister8Bits(Sensor, ENABLE, (uint8_t)ENABLE_PON))
-  {
-    return 0;
-  }
-  else
-  {
-    return -1;
-  }
+  tcs3772x_UpdateRegister8Bits(Sensor, ENABLE, (uint8_t)ENABLE_PON);
 }
 
-int8_t tcs3772x_Disable(tcs3772x_t *Sensor)
+void tcs3772x_Disable(tcs3772x_t *Sensor)
 {
-  if (tcs3772x_UpdateRegister8Bits(Sensor, ENABLE, 0x00u))
-  {
-    return 0;
-  }
-  else
-  {
-    return -1;
-  }
+  tcs3772x_UpdateRegister8Bits(Sensor, ENABLE, 0x00u);
 }
 
-int8_t tcs3772x_ProximityEnableDetection(tcs3772x_t *Sensor)
+void tcs3772x_ProximityEnableDetection(tcs3772x_t *Sensor)
 {
-  if (tcs3772x_UpdateRegister8Bits(Sensor, ENABLE, (uint8_t)ENABLE_PON|ENABLE_PEN))
-  {
-    return 0;
-  }
-  else
-  {
-    return -1;
-  }
+  tcs3772x_UpdateRegister8Bits(Sensor, ENABLE, (uint8_t)ENABLE_PON|ENABLE_PEN);
 }
 
-int8_t tcs3772x_ProximityDisableDetection(tcs3772x_t *Sensor)
+void tcs3772x_ProximityDisableDetection(tcs3772x_t *Sensor)
 {
-  return tcs3772x_Disable(Sensor);
+   tcs3772x_Disable(Sensor);
 }
 
-int8_t tcs3772x_ProximityEnableInterrupt(tcs3772x_t *Sensor)
+void tcs3772x_ProximityEnableInterrupt(tcs3772x_t *Sensor)
 {
-  if (tcs3772x_UpdateRegister8Bits(Sensor, ENABLE, (uint8_t)ENABLE_PON|ENABLE_PEN|ENABLE_PIEN))
-  {
-    return 0;
-  }
-  else
-  {
-    return -1;
-  }
+  tcs3772x_UpdateRegister8Bits(Sensor, ENABLE, (uint8_t)ENABLE_PON|ENABLE_PEN|ENABLE_PIEN);
 }
 
-int8_t tcs3772x_ProximityDisableInterrupt(tcs3772x_t *Sensor)
+void tcs3772x_ProximityDisableInterrupt(tcs3772x_t *Sensor)
 {
-  return tcs3772x_Disable(Sensor);
+   tcs3772x_Disable(Sensor);
 }
 
 
@@ -322,11 +309,10 @@ int8_t tcs3772x_ProximityClearInterrupt(tcs3772x_t *Sensor)
   return (1u == i2cm_send(Sensor->I2c, Sensor->I2cAddress, &Payload, 1u)); 
 }
 
-int8_t tcs3772x_RGBCGetValue(tcs3772x_t *Sensor, tcs3772x_ColorResult_t *result)
+void tcs3772x_RGBCGetValue(tcs3772x_t *Sensor, tcs3772x_ColorResult_t *result)
 {
   /* disable poximity sensor and enable color sensor*/
-  if (tcs3772x_UpdateRegister8Bits(Sensor, ENABLE, (uint8_t)ENABLE_PON|ENABLE_AEN))
-  {
+  tcs3772x_UpdateRegister8Bits(Sensor, ENABLE, (uint8_t)ENABLE_PON|ENABLE_AEN);
   
   /* wait for color acquisition cycle to be performed */
     uint8_t RGBCConversionPerformed = 0;
@@ -334,20 +320,12 @@ int8_t tcs3772x_RGBCGetValue(tcs3772x_t *Sensor, tcs3772x_ColorResult_t *result)
       tcs3772x_IsRGBCCyclePerformed(Sensor, &RGBCConversionPerformed);
     } while (RGBCConversionPerformed == 0);
 
-    int8_t CdataResult = tcs3772x_ReadRegister16Bits(Sensor,CDATA, &(result->clear_value));
-    int8_t RdataResult = tcs3772x_ReadRegister16Bits(Sensor,RDATA, &(result->red_value));
-    int8_t GdataResult = tcs3772x_ReadRegister16Bits(Sensor,GDATA, &(result->green_value));
-    int8_t BdataResult = tcs3772x_ReadRegister16Bits(Sensor,BDATA, &(result->blue_value));
+    tcs3772x_ReadRegister16Bits(Sensor,CDATA, &(result->clear_value));
+    tcs3772x_ReadRegister16Bits(Sensor,RDATA, &(result->red_value));
+    tcs3772x_ReadRegister16Bits(Sensor,GDATA, &(result->green_value));
+    tcs3772x_ReadRegister16Bits(Sensor,BDATA, &(result->blue_value));
 
-    if ((CdataResult != 0) &&
-        (RdataResult != 0) &&
-        (GdataResult != 0) &&
-        (BdataResult != 0))
-    {
-      return tcs3772x_ProximityEnableDetection(Sensor);
-    }
-  }
-  return -1;
+    tcs3772x_ProximityEnableDetection(Sensor);
 }
 
 
@@ -360,29 +338,19 @@ int8_t tcs3772x_SetProximityInterruptThreshold(tcs3772x_t *Sensor, uint16_t LowT
   else
   {
 
-    int8_t PiltlReturn = tcs3772x_UpdateRegister16Bits(Sensor, PILTL, LowThreshold);
+    tcs3772x_UpdateRegister16Bits(Sensor, PILTL, LowThreshold);
 
-    int8_t PihtlReturn =  tcs3772x_UpdateRegister16Bits(Sensor, PIHTL, HighThreshold);
+    tcs3772x_UpdateRegister16Bits(Sensor, PIHTL, HighThreshold);
 
     uint8_t PersValue = (ConsecutiveMeasOutRangeThreshold << TCS3772x_PPERS_bp) & TCS3772x_PPERS_MASK;
-    int8_t PersReturn = tcs3772x_UpdateRegister8Bits(Sensor, PERS, PersValue);
-
-    if ((PiltlReturn!=0) &&
-        (PihtlReturn != 0) &&
-        (PersReturn != 0))
-    {
-      return 0;
-    }
-    else 
-    {
-      return -1;
-    }
+    tcs3772x_UpdateRegister8Bits(Sensor, PERS, PersValue);
+    return 1;
   }
 }
 
-int8_t tcs3772x_SetIRLedCurrentAndRGBCGain(tcs3772x_t *Sensor,tcs3772x_ControlIRLedCurrent_t IrLedCurrent , tcs3772x_ControlRGBCGain_t RGBCGain)
+void tcs3772x_SetIRLedCurrentAndRGBCGain(tcs3772x_t *Sensor,tcs3772x_ControlIRLedCurrent_t IrLedCurrent , tcs3772x_ControlRGBCGain_t RGBCGain)
 {
   uint8_t control = 0x00;
   control = IrLedCurrent | RGBCGain;
-  return (tcs3772x_UpdateRegister8Bits(Sensor, CONTROL, control));
+  tcs3772x_UpdateRegister8Bits(Sensor, CONTROL, control);
 }
