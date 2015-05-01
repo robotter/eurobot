@@ -194,10 +194,8 @@ void PCSFSM_Update(void)
       break;
 
     case PCSFSM_TCS3772_COLOR_MEASURE:
-      if (tcs3772x_RGBCGetValue(&fsm.tcs37725, &fsm.color_measured) == 0)
-      {
-        fsm.fsm_state = PCSFSM_DISABLE_LEDS;
-      }
+      tcs3772x_RGBCGetValue(&fsm.tcs37725, &fsm.color_measured);
+      fsm.fsm_state = PCSFSM_DISABLE_LEDS;
       break;
         
     case PCSFSM_DISABLE_LEDS:

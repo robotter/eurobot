@@ -30,10 +30,10 @@
 #define TCS37725_INTEGRATION_TIME_MS    200
 
 // number of pulses to detect object (between 1 and 255)
-#define TCS37725_PULSE_NB               3
+#define TCS37725_PULSE_NB                     2
 
 #define TCS37725_PROX_LOW_THRESHOLD           0
-#define TCS37725_PROX_HI_THRESHOLD            1000
+#define TCS37725_PROX_HI_THRESHOLD            500
 #define TCS37725_CONSECUTIVE_DETECT_THRESHOLD 5
 
 #define TCS37725_IR_LED_CURRENT       CONTROL_IR_LED_50mA
