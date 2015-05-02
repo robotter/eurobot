@@ -106,6 +106,9 @@ register_messages(
       ('meca_tm_suckers', [('a','bool'), ('b','bool')]),
       # match timer
       ('meca_tm_match_timer', [('seconds','int16')]),
+      # spot elevators
+      ('meca_tm_left_elevator'  ,[('state','int8'),('nb_spots','int8')]),
+      ('meca_tm_right_elevator' ,[('state','int8'),('nb_spots','int8')]),
       ]),
 
     # STRATEGY

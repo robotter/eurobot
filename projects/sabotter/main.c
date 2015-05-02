@@ -92,6 +92,14 @@ static void rome_meca_handler(rome_intf_t *intf, const rome_frame_t *frame)
       robot_state.suckers.a = frame->meca_tm_suckers.a;
       robot_state.suckers.b = frame->meca_tm_suckers.b;
       break;
+    case ROME_MID_MECA_TM_LEFT_ELEVATOR:
+      robot_state.left_elev.state = frame->meca_tm_left_elevator.state;
+      robot_state.left_elev.nb_spots = frame->meca_tm_left_elevator.nb_spots;
+      break;
+    case ROME_MID_MECA_TM_RIGHT_ELEVATOR:
+      robot_state.right_elev.state = frame->meca_tm_right_elevator.state;
+      robot_state.right_elev.nb_spots = frame->meca_tm_right_elevator.nb_spots;
+      break;
     default:
       break;
   }

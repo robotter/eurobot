@@ -21,6 +21,7 @@ typedef enum{
   ELEVATOR_UP = 0,
   ELEVATOR_DOWN_WAITING_SPOT,
   ELEVATOR_DOWN_WAITING_BULB,
+  ELEVATOR_UP_FIFTH_SPOT,
 
   // ELEVATOR_AX12_POSITIONS_LENGTH must be the last element of this enum
   ELEVATOR_AX12_POSITIONS_LENGTH
@@ -65,7 +66,7 @@ typedef enum{
   SESM_WAIT_CLAW_CLOSED_FOR_BULB,
   SESM_LIFT_UP_ELEVATOR_FOR_BULB,
   SESM_WAIT_ELEVATOR_UP_FOR_BULB,
-  // third main loop : discharge shit
+  // third main loop : discharge spots pile
   SESM_DISCHARGE_ELEVATOR_DOWN,
   SESM_DISCHARGE_ELEVATOR_DOWN_WAIT,
   SESM_DISCHARGE_CLAW_OPEN,
@@ -74,6 +75,15 @@ typedef enum{
   SESM_DISCHARGE_ELEVATOR_UP_WAIT,
 
 }_spot_elevator_state_t;
+
+typedef enum{
+  //elevator won't accept commands and robot shouldn't move
+  SESM_TM_S_BUSY,
+  //elevator won't accept commands but robot can move
+  SESM_TM_S_GROUND_CLEAR,
+  //elevator ready for new commands
+  SESM_TM_S_READY,
+}_spot_elevator_tm_state_t;
 
 typedef struct{
   ax12_addr_t claw_ax12_addr;
@@ -100,6 +110,8 @@ typedef struct{
   // indicates if the elevator is active or not
   bool is_active;
 
+  _spot_elevator_tm_state_t tm_state;
+  int8_t nb_spots;
 }spot_elevator_t;
 
 

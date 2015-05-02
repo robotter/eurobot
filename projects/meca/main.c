@@ -35,7 +35,7 @@ spot_elevator_t l_spot_elevator =
   .claw_ax12_addr = SE_LEFT_AX12_CLAW_ID,
   .elevator_ax12_addr = SE_LEFT_AX12_ELEVATOR_ID,
   .claw_ax12_positions = {SE_LEFT_CLAW_OPENED, SE_LEFT_CLAW_CLOSED_FOR_SPOT, SE_LEFT_CLAW_CLOSED_FOR_BULB},
-  .elevator_ax12_positions = {SE_LEFT_ELEVATOR_UP, SE_LEFT_ELEVATOR_DOWN_WAIT_SPOT, SE_LEFT_ELEVATOR_DOWN_WAIT_BULB},
+  .elevator_ax12_positions = {SE_LEFT_ELEVATOR_UP, SE_LEFT_ELEVATOR_DOWN_WAIT_SPOT, SE_LEFT_ELEVATOR_DOWN_WAIT_BULB, SE_LEFT_ELEVATOR_UP_FIFTH_SPOT},
 };
 spot_elevator_t r_spot_elevator; // right spot elevator
 
@@ -363,7 +363,7 @@ int main(void)
   uint32_t t = 0;
 
   spot_elevator_set_enable(&l_spot_elevator, true);
-  spot_elevator_automatic_spot_stacking(&l_spot_elevator);
+  spot_elevator_pick_bulb(&l_spot_elevator);
 
   // main loop
   for(;;) {
@@ -387,7 +387,9 @@ int main(void)
     if(uptime - spot_elevator_uptime > 10000) {
       spot_elevator_uptime = uptime;
       spot_elevator_manage(&l_spot_elevator);
+      ROME_SEND_MECA_TM_LEFT_ELEVATOR(&rome_strat,l_spot_elevator.tm_state,l_spot_elevator.nb_spots);
       spot_elevator_manage(&r_spot_elevator);
+      ROME_SEND_MECA_TM_RIGHT_ELEVATOR(&rome_strat,r_spot_elevator.tm_state,r_spot_elevator.nb_spots);
     }
   }
 }

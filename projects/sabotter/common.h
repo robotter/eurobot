@@ -43,6 +43,15 @@ typedef struct {
   struct {
     r3d2_object_t objects[2];
   } r3d2;
+  // spot elevators
+  struct {
+    int8_t state;
+    int8_t nb_spots;
+  }left_elev;
+  struct {
+    int8_t state;
+    int8_t nb_spots;
+  }right_elev;
 } robot_state_t;
 
 extern robot_state_t robot_state;

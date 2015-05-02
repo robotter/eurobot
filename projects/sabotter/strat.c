@@ -23,6 +23,12 @@ typedef enum {
 }spot_elevator_t;
 
 typedef enum {
+  SPOT_ELV_S_BUSY = 0,
+  SPOT_ELV_S_GROUND_CLEAR,
+  SPOT_ELV_S_READY,
+}spot_elevator_state_t;
+
+typedef enum {
   EXTARM_LEFT = 0,
   EXTARM_FRONT = 1,
   EXTARM_RIGHT = 2,
@@ -103,6 +109,20 @@ void ext_arm_over_border(external_arm_t n)
   }
 }
 
+static inline void _pick_one_spot_blocking(void){
+  //wait for meca to be ready
+  //for (;;){
+  //  if (robot_state.left_elev.state == SPOT_ELV_S_READY)
+  //    break;
+  //    }
+  //send order
+  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+  //wait for meca to stop being busy
+  _delay_ms(3000);
+  //for (;;){
+  //  if (robot_state.left_elev.state != SPOT_ELV_S_BUSY)
+  //    return;}
+}
 
 /// Go to given position, avoid opponents
 void goto_xya(int16_t x, int16_t y, float a)
@@ -437,15 +457,11 @@ void strat_run_galipeur(team_t team)
 
   // pick one spot
   goto_xya(1500-160, 450, 0);
-  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
-  // XXX replace me by somehing more clever
-  _delay_ms(3000);
+  _pick_one_spot_blocking();
 
   // pick one spot
   goto_xya(1500-160, 340, 0);
-  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
-  // XXX replace me by somehing more clever
-  _delay_ms(3000);
+  _pick_one_spot_blocking();
 
   // -- SE CLAPS -- 
   goto_xya(1500-160, 290, 0);
@@ -460,27 +476,20 @@ void strat_run_galipeur(team_t team)
   goto_xya(1500-820,290,-.5*M_PI);
 
   goto_xya_rel(-200, 0, 0);
-  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
-  // XXX replace me by somehing more clever
-  _delay_ms(3000);
+  _pick_one_spot_blocking();
 
   goto_xya(1500-1270, 350, -M_PI); 
   goto_xya_rel(0, 200, 0);
-  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
-  // XXX replace me by somehing more clever
-  _delay_ms(3000);
+  _pick_one_spot_blocking();
 
-  goto_xya(1500-830, 350, -M_PI); 
-  goto_xya_rel(0, 200, 0);
-  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
-  // XXX replace me by somehing more clever
-  _delay_ms(3000);
+  //we can make only 4 spots pile ... so sad ...
+  //goto_xya(1500-830, 350, -M_PI); 
+  //goto_xya_rel(0, 200, 0);
+  //_pick_one_spot_blocking();
 
-  goto_xya(1500-600, 1030, M_PI/2);
-  for(int i=0;i<2;i++) {
-    ROME_SENDWAIT_MECA_RELEASE_SPOT_STACK(&rome_meca, SPOT_ELV_LEFT);
-    _delay_ms(5000);
-  }
+  goto_xya(1500-600, 1030, M_PI/2);  
+  ROME_SENDWAIT_MECA_RELEASE_SPOT_STACK(&rome_meca, SPOT_ELV_LEFT);
+  _delay_ms(5000);
 
   goto_xya_rel(-500, 0, 0);
 
