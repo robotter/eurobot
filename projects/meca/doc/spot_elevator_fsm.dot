@@ -1,0 +1,69 @@
+digraph G {
+				"inactive" [shape = "Mrecord"];
+				"prepare_claw_for_onboard_bulb" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">prepare claw for onboard bulb</font></td></tr><tr><td align="left" port="r0">set_claw(CLAW_CLOSED_FOR_BULB)</td></tr><tr><td align="left" port="r1">set_elevator(ELEVATOR_UP, ELEVATOR_FAST)</td></tr></table>>, shape = "Mrecord"];
+
+				"open_claw_for_bulb" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">open claw for bulb</font></td></tr><tr><td align="left" port="r0">set_claw(CLAW_OPENED)</td></tr><tr><td align="left" port="r1">set_elevator(ELEVATOR_DOWN_WAITING_SPOT, ELEVATOR_FAST)</td></tr></table>>, shape = "Mrecord"];
+
+				check_spot_presence [shape=diamond, label = "is spot present ?"];
+				check_spot_color [shape=Mdiamond, label = "robot_color == spot_color ?"];
+				check_elevator_position [shape=Mdiamond, label = "is elevator up ?"];
+				check_claw_opened [shape=Mdiamond, label = "is claw opened ?"];
+
+				"open_claw" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">open claw</font></td></tr><tr><td align="left" port="r0">set_claw(CLAW_OPENED)</td></tr><tr><td align="left" port="r1">is claw opened ?</td></tr></table>>, shape = "Mrecord"];
+
+				"lift_down_elevator" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">lift down elevator</font></td></tr><tr><td align="left" port="r0">set_elevator(ELEVATOR_DOWN_WAITING_SPOT)</td></tr><tr><td align="left" port="r1">is elevator down waiting_spot ?</td></tr></table>>, shape = "Mrecord"];
+
+				"close_claw" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">close claw</font></td></tr><tr><td align="left" port="r0">set_claw(CLAW_CLOSED_FOR_SPOT)</td></tr><tr><td align="left" port="r1">is claw closed for spot ?</td></tr></table>>, shape = "Mrecord"];
+				"lift_up_elevator" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">lift up elevator</font></td></tr><tr><td align="left" port="r0">set_elevator(ELEVATOR_UP, ELEVATOR_FAST)</td></tr><tr><td align="left" port="r1">is claw closed for spot ?</td></tr></table>>, shape = "Mrecord"];
+				check_spot_stack_size [shape=Mdiamond, label = "spot_size < 4 ?"];
+				"lift_up_elevator_fourfth_pos" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">lift up elevator fourfth position</font></td></tr><tr><td align="left" port="r0">set_elevator(ELEVATOR_UP_FOURFTH_POS, ELEVATOR_FAST)</td></tr><tr><td align="left" port="r1">is claw closed for spot ?</td></tr></table>>, shape = "Mrecord"];
+				
+				
+				"close_claw_for_bulb" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">close claw for bulb</font></td></tr><tr><td align="left" port="r0">set_claw(CLAW_CLOSED_FOR_BULB)</td></tr><tr><td align="left" port="r1">is claw closed for bulb ?</td></tr></table>>, shape = "Mrecord"];
+				"lift_up_elevator_for_bulb" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">lift elevator up for bulb</font></td></tr><tr><td align="left" port="r0">set_elevator(ELEVATOR_UP, ELEVATOR_FAST)</td></tr><tr><td align="left" port="r1">is elevator up ?</td></tr></table>>, shape = "Mrecord"];
+
+				"discharge_elevator_down" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">discharge elevator down</font></td></tr><tr><td align="left" port="r0">set_elevator(ELEVATOR_DOWN_WAITING_SPOT, ELEVATOR_SLOW)</td></tr><tr><td align="left" port="r1">is elevator down ?</td></tr></table>>, shape = "Mrecord"];
+				"discharge_claw_open" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">discharge claw open</font></td></tr><tr><td align="left" port="r0">set_claw(CLAW_OPENED)</td></tr><tr><td align="left" port="r1">is claw opened ?</td></tr></table>>, shape = "Mrecord"];
+				"discharge_elevator_up" [ label = <<table border="0" cellborder="0" cellpadding="3" bgcolor="white"><tr><td bgcolor="black" align="center" colspan="2"><font color="white">discharge elevator up</font></td></tr><tr><td align="left" port="r0">set_elevator(ELEVATOR_UP, ELEVATOR_FAST)</td></tr><tr><td align="left" port="r1">is claw opened ?</td></tr></table>>, shape = "Mrecord"];
+
+
+				init -> inactive -> inactive;
+				inactive -> prepare_claw_for_onboard_bulb:n [label = "user action"];
+				prepare_claw_for_onboard_bulb:s -> inactive;
+
+				inactive -> open_claw_for_bulb [label = "user action"];
+				open_claw_for_bulb:s ->inactive;
+
+				inactive -> check_spot_presence [label = "user action"];
+				check_spot_presence -> check_spot_color[label = "yes"];
+				check_spot_presence:e -> check_spot_presence:n[label = "no"];
+				check_spot_color -> check_claw_opened[label = "yes"];
+				check_spot_color:e -> check_spot_color:n[label = "no"];
+				check_claw_opened:e -> open_claw [label = "no"];
+				check_claw_opened -> lift_down_elevator[label = "yes"];
+				open_claw -> lift_down_elevator:n[label = "yes"];
+				open_claw:e -> open_claw:n[label = "no"];
+				lift_down_elevator -> close_claw [label = "yes"];	
+				lift_down_elevator:e -> lift_down_elevator:n [label = "no"];	
+				close_claw -> check_spot_stack_size[label = "yes"];
+				close_claw -> close_claw[label = "no"];
+				check_spot_stack_size -> lift_up_elevator [label = "yes"];
+				check_spot_stack_size -> lift_up_elevator_fourfth_pos [label = "no"];
+				lift_up_elevator -> inactive[label = "yes"];
+				lift_up_elevator:e -> check_spot_stack_size:n[label = "no"];
+				lift_up_elevator_fourfth_pos -> inactive[label = "yes"];
+				lift_up_elevator_fourfth_pos:e -> check_spot_stack_size:n[label = "no"];
+
+				inactive -> close_claw_for_bulb [label = "user action"];
+				close_claw_for_bulb -> lift_up_elevator_for_bulb[label = "yes"];
+				close_claw_for_bulb:e -> close_claw_for_bulb:n[label = "no"];
+				lift_up_elevator_for_bulb:e -> lift_up_elevator_for_bulb:n[label = "no"];
+				lift_up_elevator_for_bulb -> inactive[label = "yes"];
+
+				inactive -> discharge_elevator_down [label = "user action"];
+				discharge_elevator_down -> discharge_claw_open -> discharge_elevator_up -> inactive[label = "yes"];
+				discharge_elevator_down -> discharge_elevator_down[label = "no"];
+				discharge_claw_open -> discharge_claw_open[label = "no"];
+				discharge_elevator_up -> discharge_elevator_up[label = "no"];
+
+}
