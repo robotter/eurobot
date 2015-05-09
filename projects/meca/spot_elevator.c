@@ -15,48 +15,62 @@ extern rome_intf_t rome_strat;
 
 #define AX12_ELEVATOR_POS_ERROR 10
 
+// return ax12 load ranging from 0 to 1023, or -1 on error
+static int16_t _get_ax12_load(ax12_addr_t address) {
+  uint16_t load;
+  uint8_t rv = ax12_read_word(&ax12, address, AX12_ADDR_PRESENT_LOAD_L, &load);
+
+  if(rv&AX12_ERROR_INVALID_PACKET) {
+    return -1;
+  }
+
+  // bit 10 is the load direction, remove it
+  return load & 0x3f;
+}
+
 // set the claw ax12 to one of the _claw_ax12_positions_t enum positions
-void _set_claw_ax12(spot_elevator_t *elevator, _claw_ax12_positions_t pos)
+static bool _set_claw_ax12(spot_elevator_t *elevator, _claw_ax12_positions_t pos)
 {
+  uint8_t rv = 0;
   ROME_LOGF(&rome_strat, DEBUG,"claw %d", pos);
   ax12_addr_t address = elevator->claw_ax12_addr;
-  ax12_write_word(&ax12, address, AX12_ADDR_MOVING_SPEED_L, 0x1FF);
-  ax12_write_byte(&ax12, address, AX12_ADDR_TORQUE_ENABLE, 0x01);
-  ax12_write_word(&ax12, address, AX12_ADDR_TORQUE_LIMIT_L, 0x150);
-  ax12_write_word(&ax12, address, AX12_ADDR_GOAL_POSITION_L,
+  rv |= ax12_write_word(&ax12, address, AX12_ADDR_MOVING_SPEED_L, 0x1FF);
+  rv |= ax12_write_byte(&ax12, address, AX12_ADDR_TORQUE_ENABLE, 0x01);
+  rv |= ax12_write_word(&ax12, address, AX12_ADDR_TORQUE_LIMIT_L, 0x150);
+  rv |= ax12_write_word(&ax12, address, AX12_ADDR_GOAL_POSITION_L,
     elevator->claw_ax12_positions[pos]);
+
+  return !(rv&AX12_ERROR_INVALID_PACKET);
 }
 
 
-void _set_elevator_ax12(spot_elevator_t *elevator, _elevator_ax12_positions_t pos, 
+static bool _set_elevator_ax12(spot_elevator_t *elevator, _elevator_ax12_positions_t pos, 
                         _elevator_ax12_positions_t speed)
 {
+  uint8_t rv = 0;
   ax12_addr_t address = elevator->elevator_ax12_addr;
-  ax12_write_word(&ax12, address, AX12_ADDR_MOVING_SPEED_L, speed);
-  ax12_write_byte(&ax12, address, AX12_ADDR_TORQUE_ENABLE, 0x01);
-  ax12_write_word(&ax12, address, AX12_ADDR_GOAL_POSITION_L,
+  rv |= ax12_write_word(&ax12, address, AX12_ADDR_MOVING_SPEED_L, speed);
+  rv |= ax12_write_byte(&ax12, address, AX12_ADDR_TORQUE_ENABLE, 0x01);
+  rv |= ax12_write_word(&ax12, address, AX12_ADDR_GOAL_POSITION_L,
     elevator->elevator_ax12_positions[pos]);
+
+  return !(rv&AX12_ERROR_INVALID_PACKET);
 }
 
 bool _is_claw_ax12_in_position(spot_elevator_t *elevator, _elevator_ax12_positions_t pos)
 {
   uint16_t read_pos = 0;
-  uint16_t read_load = 0; 
 
   ax12_read_word(&ax12,
                   elevator->claw_ax12_addr,
                   AX12_ADDR_PRESENT_POSITION_L,
                   &read_pos);
-  uint8_t rv = ax12_read_word(&ax12,
-                  elevator->claw_ax12_addr,
-                  AX12_ADDR_PRESENT_LOAD_L,
-                  &read_load);
+  int16_t read_load = _get_ax12_load(elevator->claw_ax12_addr);
 
   uint16_t consign = elevator->claw_ax12_positions[pos];
   int16_t diff = (int16_t)consign - (int16_t) read_pos;
 
-
-  if (!(rv&AX12_ERROR_INVALID_PACKET)){
+  if (read_load < 0) {
     // load too high, set position to current pos and declare claw in position
     if (read_load > 100)
       elevator->claw_blocked_cnt ++;
@@ -69,7 +83,7 @@ bool _is_claw_ax12_in_position(spot_elevator_t *elevator, _elevator_ax12_positio
       elevator->claw_blocked_cnt = 0;
       return true;
       }
-    ROME_LOGF(&rome_strat, DEBUG,"load %d : %d", rv, read_load);
+    ROME_LOGF(&rome_strat, DEBUG,"load %d", read_load);
   }
 
   if ( ((diff >=0) && (diff < AX12_ELEVATOR_POS_ERROR)) ||  ((diff < 0) && (diff >- AX12_ELEVATOR_POS_ERROR)) )
