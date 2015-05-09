@@ -94,6 +94,36 @@ static htrajectory_manager_t htraj_man_data;
 // avoidance system
 extern avoidance_t avoidance;
 
+typedef struct {
+  float left,right,up,down;
+  float base;
+
+} autoset_configuration_t ;
+
+const autoset_configuration_t AUTOSET_CONFIGURATIONS[] = {
+  [ROBOT_SIDE_BACK] = {
+    .left =  -M_PI_2,
+    .right = +M_PI_2,
+    .up =     M_PI,
+    .down =   0.0,
+    .base =  -0.5*M_PI,
+  },
+  [ROBOT_SIDE_RIGHT] = {
+    .left =   5*M_PI/6.0,
+    .right = -M_PI/6.0,
+    .up =     M_PI/3.0,
+    .down =  -2*M_PI/3.0,
+    .base =   M_PI/6.0,
+  },
+  [ROBOT_SIDE_LEFT] = {
+    .left = M_PI/6.0,
+    .right = -5*M_PI/6.0,
+    .up = -2*M_PI/6.0,
+    .down = 4*M_PI/6.0,
+    .base = -2*M_PI/6.0,
+  },
+};
+
 /* -- private functions -- */
 
 void htrajectory_panning_fsm( htrajectory_manager_t *man_data);
@@ -453,8 +483,10 @@ static void _htrajectory_update( htrajectory_t *htj )
       // shutdown robot CSs
       robot_cs_activate(htj->rcs, 0);
 
-      dx = SETTING_AUTOSET_SPEED*cos(M_PI/6.0);
-      dy = SETTING_AUTOSET_SPEED*sin(M_PI/6.0);
+      const autoset_configuration_t autoconf =
+        AUTOSET_CONFIGURATIONS[htj->autosetRobotSide];
+      dx = SETTING_AUTOSET_SPEED*cos(autoconf.base);
+      dy = SETTING_AUTOSET_SPEED*sin(autoconf.base);
 
       // store current robot position
       hposition_get(htj->hrp, &(htj->autosetInitPos));
@@ -479,25 +511,27 @@ static void _htrajectory_update( htrajectory_t *htj )
       if( htj->autosetCount > SETTING_AUTOSET_ZEROCOUNT )
       {
         // autoset done
-        switch(htj->autosetSide)
+        const autoset_configuration_t autoconf = 
+          AUTOSET_CONFIGURATIONS[htj->autosetRobotSide];
+        switch(htj->autosetTableSide)
         {
           case TS_LEFT:
-            htj->autosetInitPos.alpha = 5*M_PI/6.0;
+            htj->autosetInitPos.alpha = autoconf.left;
             htj->autosetInitPos.x = htj->autosetTargetX;
             break;
 
           case TS_RIGHT:
-            htj->autosetInitPos.alpha = -M_PI/6.0;
+            htj->autosetInitPos.alpha = autoconf.right;
             htj->autosetInitPos.x = htj->autosetTargetX;
             break;
 
           case TS_UP:
-            htj->autosetInitPos.alpha = +M_PI/3.0;
+            htj->autosetInitPos.alpha = autoconf.up;
             htj->autosetInitPos.y = htj->autosetTargetY;
             break;
 
           case TS_DOWN:
-            htj->autosetInitPos.alpha = -2*M_PI/3;
+            htj->autosetInitPos.alpha = autoconf.down;
             htj->autosetInitPos.y = htj->autosetTargetY;
             break;
 
@@ -682,7 +716,8 @@ void htrajectory_update( htrajectory_t *htj ) {
 
 // --- AUTOSET ---
 
-void htrajectory_autoset( htrajectory_t *htj, tableSide_t side,
+void htrajectory_autoset( htrajectory_t *htj, 
+                          robot_side_t robot_side, tableSide_t table_side,
                           double x, double y)
 {
   vect_xy_t robot;
@@ -697,22 +732,23 @@ void htrajectory_autoset( htrajectory_t *htj, tableSide_t side,
   // set carrot position to current position
   setCarrotXYPosition( htj, robot);
 
-  switch(side)
+  const autoset_configuration_t autoconf = AUTOSET_CONFIGURATIONS[robot_side];
+  switch(table_side)
   {
     case TS_LEFT:
-      htj->carrotA = 5*M_PI/6.0;
+      htj->carrotA = autoconf.left;
       break;
 
     case TS_RIGHT:
-      htj->carrotA = -M_PI/6.0;
+      htj->carrotA = autoconf.right;
       break;
 
     case TS_UP:
-      htj->carrotA = M_PI/3;
+      htj->carrotA = autoconf.up;
       break;
 
     case TS_DOWN:
-      htj->carrotA = -2*M_PI/3;
+      htj->carrotA = autoconf.down;
       break;
 
     default:
@@ -724,7 +760,8 @@ void htrajectory_autoset( htrajectory_t *htj, tableSide_t side,
   htj->autosetTargetX = x;
   htj->autosetTargetY = y;
 
-  htj->autosetSide = side;
+  htj->autosetTableSide = table_side;
+  htj->autosetRobotSide = robot_side;
 }
 
 void htrajectory_reset_carrot( htrajectory_t *htj )

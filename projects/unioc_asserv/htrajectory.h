@@ -37,6 +37,12 @@
 
 #define HTRAJECTORY_ERROR 0x70
 
+typedef enum {
+  ROBOT_SIDE_LEFT = 0,
+  ROBOT_SIDE_RIGHT,
+  ROBOT_SIDE_BACK,
+} robot_side_t;
+
 typedef enum
 {
   STATE_STOP = 0,
@@ -95,7 +101,8 @@ typedef struct
   uint8_t blocked;
 
   // autoset
-  tableSide_t autosetSide;
+  tableSide_t autosetTableSide;
+  robot_side_t autosetRobotSide;
   uint8_t autosetCount;
   double autosetTargetX;
   double autosetTargetY;
@@ -156,7 +163,7 @@ void htrajectory_gotoXY_R( htrajectory_t *htj, double x, double y);
 void htrajectory_gotoXY_panning( htrajectory_t *htj, double dx, double dy, double panning_angle, void(*acq_callback)(double a));
 
 /**\brief Perform robot autoset */
-void htrajectory_autoset( htrajectory_t *htj, tableSide_t side,
+void htrajectory_autoset( htrajectory_t *htj, robot_side_t robot_side, tableSide_t table_side,
                             double x, double y);
 
 /**\brief Reset carrot position to current robot position */

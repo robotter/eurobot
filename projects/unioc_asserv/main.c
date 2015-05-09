@@ -96,10 +96,11 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
     case ROME_MID_ASSERV_AUTOSET: {
-      uint8_t side = frame->asserv_autoset.side;
+      uint8_t table_side = frame->asserv_autoset.table_side;
+      uint8_t robot_side = frame->asserv_autoset.robot_side;
       float x = frame->asserv_autoset.x;
       float y = frame->asserv_autoset.y;
-      htrajectory_autoset(&trajectory, side, x, y);
+      htrajectory_autoset(&trajectory, robot_side, table_side, x, y);
       rome_reply_ack(intf, frame);
     } break;
     case ROME_MID_ASSERV_GOTO_XY: {

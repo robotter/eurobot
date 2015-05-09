@@ -20,7 +20,7 @@ register_messages(
       (Order, 'asserv_goto_xya_panning', [('x','dist'), ('y','dist'), ('pan_angle', 'angle')]),
 
       # autoset robot, sides are (from 0 to 4): none, left, right, up, down
-      (Order, 'asserv_autoset', [('side','uint8'), ('x','float'), ('y','float')]),
+      (Order, 'asserv_autoset', [('robot_side','uint8'), ('table_side','uint8'), ('x','float'), ('y','float')]),
 
       # __ SETTERS __
       # set robot current position (will force and reset position system to this position)
