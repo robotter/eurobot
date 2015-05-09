@@ -5,6 +5,7 @@
 #include <avarix.h>
 #include <stdlib.h>
 #include <rome/rome.h>
+#include "config.h"
 
 extern ax12_t ax12;
 
@@ -21,7 +22,7 @@ void _set_claw_ax12(spot_elevator_t *elevator, _claw_ax12_positions_t pos)
   ax12_addr_t address = elevator->claw_ax12_addr;
   ax12_write_word(&ax12, address, AX12_ADDR_MOVING_SPEED_L, 0x1FF);
   ax12_write_byte(&ax12, address, AX12_ADDR_TORQUE_ENABLE, 0x01);
-  ax12_write_word(&ax12, address, AX12_ADDR_TORQUE_LIMIT_L, 0x390);
+  ax12_write_word(&ax12, address, AX12_ADDR_TORQUE_LIMIT_L, 0x150);
   ax12_write_word(&ax12, address, AX12_ADDR_GOAL_POSITION_L,
     elevator->claw_ax12_positions[pos]);
 }
@@ -40,28 +41,40 @@ void _set_elevator_ax12(spot_elevator_t *elevator, _elevator_ax12_positions_t po
 bool _is_claw_ax12_in_position(spot_elevator_t *elevator, _elevator_ax12_positions_t pos)
 {
   uint16_t read_pos = 0;
-  static uint8_t blocked_count = 0;
   uint16_t read_load = 0; 
 
   ax12_read_word(&ax12,
                   elevator->claw_ax12_addr,
                   AX12_ADDR_PRESENT_POSITION_L,
                   &read_pos);
-  ax12_read_word(&ax12,
+  uint8_t rv = ax12_read_word(&ax12,
                   elevator->claw_ax12_addr,
                   AX12_ADDR_PRESENT_LOAD_L,
                   &read_load);
-  int16_t diff = (int16_t)elevator->claw_ax12_positions[pos] - (int16_t) read_pos;
+
+  uint16_t consign = elevator->claw_ax12_positions[pos];
+  int16_t diff = (int16_t)consign - (int16_t) read_pos;
 
 
-  if (read_load > 0x380)
-    blocked_count++;
-  else
-    blocked_count = 0;
-    
-  ROME_LOGF(&rome_strat, DEBUG,"load %x", read_load);
+  if (!(rv&AX12_ERROR_INVALID_PACKET)){
+    // load too high, set position to current pos and declare claw in position
+    if (read_load > 100)
+      elevator->claw_blocked_cnt ++;
+    else
+      elevator->claw_blocked_cnt = 0;
+  
+    if (elevator->claw_blocked_cnt > 10){
+      uint16_t newpos = (read_pos + 2*consign)/3;
+      ax12_write_word(&ax12, elevator->claw_ax12_addr, AX12_ADDR_GOAL_POSITION_L,newpos);
+      elevator->claw_blocked_cnt = 0;
+      return true;
+      }
+    ROME_LOGF(&rome_strat, DEBUG,"load %d : %d", rv, read_load);
+  }
+
   if ( ((diff >=0) && (diff < AX12_ELEVATOR_POS_ERROR)) ||  ((diff < 0) && (diff >- AX12_ELEVATOR_POS_ERROR)) )
   {
+    elevator->claw_blocked_cnt = 0;
     return true;
   }
   else
@@ -69,8 +82,6 @@ bool _is_claw_ax12_in_position(spot_elevator_t *elevator, _elevator_ax12_positio
     return false;
   }
 
-  if (blocked_count > 20)
-    return true;
 }
 
 bool _is_elevator_ax12_in_position(spot_elevator_t *elevator, _elevator_ax12_positions_t pos)
@@ -112,6 +123,14 @@ _spot_elevator_state_t _sesm_init(spot_elevator_t *elevator)
 _spot_elevator_state_t _sesm_inactive(spot_elevator_t *elevator)
 {
   return SESM_INACTIVE; 
+}
+
+void _spipe_close(spot_elevator_t *elevator){
+  pwm_motor_set(&elevator->spipe_servo, elevator->spipe_close);
+}
+
+void _spipe_open(spot_elevator_t *elevator){
+  pwm_motor_set(&elevator->spipe_servo, elevator->spipe_open);
 }
 
 _spot_elevator_state_t _sesm_prepare_claw_for_onboard_buld(spot_elevator_t *elevator)
@@ -275,25 +294,29 @@ _spot_elevator_state_t _sesm_lift_up_elevator(spot_elevator_t *elevator)
 _spot_elevator_state_t _sesm_wait_elevator_up(spot_elevator_t *elevator)
 {
   _spot_elevator_state_t next_state = SESM_INACTIVE;
- 
+  _spipe_open(elevator);
+  uint16_t consign;
   // send ax12 order
-  if (elevator->nb_spots < 4) 
+  if (elevator->nb_spots < 4){
     _set_elevator_ax12(elevator, ELEVATOR_UP, ELEVATOR_FAST);
-  else
-    _set_elevator_ax12(elevator, ELEVATOR_UP_FIFTH_SPOT, ELEVATOR_FAST);
+    consign = ELEVATOR_UP;
+    }
+  else{
+    _set_elevator_ax12(elevator, ELEVATOR_UP_FOURTH_SPOT, ELEVATOR_FAST);
+    consign = ELEVATOR_UP_FOURTH_SPOT;
+    }
 
-  
-  if( _is_elevator_ax12_in_position(elevator, ELEVATOR_UP))
+  if( _is_elevator_ax12_in_position(elevator, consign))
   {
     //next_state = SESM_CHECK_SPOT_PRESENCE;
     next_state = SESM_INACTIVE;
+    _spipe_close(elevator);
   }
   else
   {
     // continue in this step
     next_state = SESM_WAIT_ELEVATOR_UP;
   }
-
 
   return next_state;
 }
@@ -385,6 +408,7 @@ _spot_elevator_state_t _sesm_discharge_elevator_up_wait(spot_elevator_t *elevato
     return SESM_DISCHARGE_ELEVATOR_UP;
 }
 
+
 // public functions
 void spot_elevator_init(spot_elevator_t *elevator)
 {
@@ -396,8 +420,10 @@ void spot_elevator_init(spot_elevator_t *elevator)
     elevator->is_active = false;
     elevator->nb_spots = 0;
     elevator->tm_state = SESM_TM_S_READY;
+    elevator->spipe_state = SESM_SPIPE_CLOSE;
   }
 }
+
 void spot_elevator_set_claw_ax12_addr(spot_elevator_t *elevator, ax12_addr_t addr)
 {
   if (elevator!= NULL)
@@ -412,6 +438,13 @@ void spot_elevator_set_elevator_ax12_addr(spot_elevator_t *elevator, ax12_addr_t
   {
     elevator->elevator_ax12_addr = addr;
   }
+}
+
+void spot_elevator_init_spipe_servo(spot_elevator_t *elevator, char channel, int16_t open_pwm_us, int16_t close_pwm_us){
+  pwm_servo_init(&elevator->spipe_servo, &TCD0, channel);
+  elevator->spipe_open  = open_pwm_us;
+  elevator->spipe_close = close_pwm_us;
+  _spipe_close(elevator);
 }
 
 void spot_elevator_set_is_spot_present_fn(spot_elevator_t *elevator, bool (*is_spot_present)(void))
@@ -553,6 +586,7 @@ void spot_elevator_manage(spot_elevator_t *elevator)
 
       case SESM_DISCHARGE_CLAW_OPEN:
         elevator->tm_state = SESM_TM_S_BUSY;
+        _spipe_open(elevator);
         elevator->sm_state = _sesm_discharge_claw_open(elevator);
         // no break
       case SESM_DISCHARGE_CLAW_OPEN_WAIT:
@@ -615,3 +649,19 @@ void spot_elevator_discharge_spot_stack(spot_elevator_t *se)
   se->sm_state = SESM_DISCHARGE_ELEVATOR_DOWN;
 }
 
+void spot_elevator_move_middle_arm(uint16_t position){
+  //TODO check that tubes are closed
+  int16_t ax12_consign = position;
+  if (ax12_consign > SE_MIDDLE_ARM_MAX)
+    ax12_consign = SE_MIDDLE_ARM_MAX;
+  if (ax12_consign < SE_MIDDLE_ARM_MIN)
+    ax12_consign = SE_MIDDLE_ARM_MIN;
+
+  ax12_write_word(&ax12, SE_AX12_MIDDLE_ARM_ID, AX12_ADDR_MOVING_SPEED_L,  0x1FF);
+  ax12_write_byte(&ax12, SE_AX12_MIDDLE_ARM_ID, AX12_ADDR_TORQUE_ENABLE,   0x01);
+  ax12_write_word(&ax12, SE_AX12_MIDDLE_ARM_ID, AX12_ADDR_GOAL_POSITION_L, ax12_consign);
+}
+
+spot_elevator_end_of_match(spot_elevator_t *se){
+  
+}

@@ -11,10 +11,10 @@
 #include <math.h>
 #include <rome/rome.h>
 #include "config.h"
-#include "arm.h"
-#include "barometer.h"
 #include "telemetry.h"
 #include "spot_elevator.h"
+#include "arm.h"
+#include <pwm/motor.h>
 
 // match timer
 bool match_timer_counting = false;
@@ -30,6 +30,7 @@ struct {
 robot_color_t robot_color = COLOR_GREEN; // TODO
 
 // spot_elevator structure
+// left spot elevator
 spot_elevator_t l_spot_elevator = 
 {
   .claw_ax12_addr = SE_LEFT_AX12_CLAW_ID,
@@ -37,7 +38,15 @@ spot_elevator_t l_spot_elevator =
   .claw_ax12_positions = {SE_LEFT_CLAW_OPENED, SE_LEFT_CLAW_CLOSED_FOR_SPOT, SE_LEFT_CLAW_CLOSED_FOR_BULB},
   .elevator_ax12_positions = {SE_LEFT_ELEVATOR_UP, SE_LEFT_ELEVATOR_DOWN_WAIT_SPOT, SE_LEFT_ELEVATOR_DOWN_WAIT_BULB, SE_LEFT_ELEVATOR_UP_FIFTH_SPOT},
 };
-spot_elevator_t r_spot_elevator; // right spot elevator
+
+// right spot elevator
+spot_elevator_t r_spot_elevator = 
+{
+  .claw_ax12_addr = SE_RIGHT_AX12_CLAW_ID,
+  .elevator_ax12_addr = SE_RIGHT_AX12_ELEVATOR_ID,
+  .claw_ax12_positions = {SE_RIGHT_CLAW_OPENED, SE_RIGHT_CLAW_CLOSED_FOR_SPOT, SE_RIGHT_CLAW_CLOSED_FOR_BULB},
+  .elevator_ax12_positions = {SE_RIGHT_ELEVATOR_UP, SE_RIGHT_ELEVATOR_DOWN_WAIT_SPOT, SE_RIGHT_ELEVATOR_DOWN_WAIT_BULB, SE_RIGHT_ELEVATOR_UP_FOURTH_SPOT},
+};
 
 // color sensor structure
 struct {
@@ -103,8 +112,8 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
 
-    case ROME_MID_MECA_SET_SERVO: {
-      arm_set_external_servo(frame->meca_set_servo.n, frame->meca_set_servo.position);
+    case ROME_MID_MECA_SET_ARM: {
+      spot_elevator_move_middle_arm(frame->meca_set_arm.position);
       rome_reply_ack(intf, frame);
     } break;
 
@@ -257,6 +266,8 @@ void update_match_timer(void)
   // check match timer
   if(match_timer_ms > 1000*(int32_t)MATCH_DURATION_SECS) {
     // out of time
+    spot_elevator_end_of_match(&l_spot_elevator);
+    spot_elevator_end_of_match(&r_spot_elevator);
   }
   else {
     // update match timer
@@ -293,6 +304,9 @@ int main(void)
 {
   clock_init();
 
+  // timer
+  timer_init();
+
   // initialize leds
   portpin_dirset(&LED_RUN_PP);
   portpin_dirset(&LED_ERROR_PP);
@@ -315,29 +329,23 @@ int main(void)
   uart_fopen(UART_PPP);
   portpin_dirset(&AX12_DIR_PP);
 
-  // intialize barometers
-  barometer_t baro0, baro1;
-  // ADCA4
-  barometer_init(&baro0, &ADCA, ADC_CH_MUXPOS_PIN4_gc);
-  // ADCA5
-  barometer_init(&baro1, &ADCA, ADC_CH_MUXPOS_PIN5_gc);
-
   // initialize spot elevator
   spot_elevator_init(&l_spot_elevator);
   spot_elevator_set_claw_ax12_addr(&l_spot_elevator, SE_LEFT_AX12_CLAW_ID);
   spot_elevator_set_elevator_ax12_addr(&l_spot_elevator, SE_LEFT_AX12_ELEVATOR_ID);
   spot_elevator_set_is_spot_present_fn(&l_spot_elevator, is_spot_present_l);
   spot_elevator_set_get_spot_color_fn(&l_spot_elevator, get_spot_color_l);
+  spot_elevator_init_spipe_servo(&l_spot_elevator, SE_SERVO_LEFT_TUBE, SE_LEFT_TUBE_OPEN_PWM_US, SE_LEFT_TUBE_CLOSE_PWM_US);
 
   spot_elevator_init(&r_spot_elevator);
   spot_elevator_set_claw_ax12_addr(&r_spot_elevator, SE_RIGHT_AX12_CLAW_ID);
   spot_elevator_set_elevator_ax12_addr(&r_spot_elevator, SE_RIGHT_AX12_ELEVATOR_ID);
+  spot_elevator_init_spipe_servo(&r_spot_elevator, SE_SERVO_RIGHT_TUBE, SE_RIGHT_TUBE_OPEN_PWM_US, SE_RIGHT_TUBE_CLOSE_PWM_US);
   
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
-  // timer
-  timer_init();
+  //uptime
   uptime_init();
   TIMER_SET_CALLBACK_US(E0, 'B', UPDATE_MATCH_TIMER_TICK_US, INTLVL_HI, update_match_timer);
 
@@ -350,20 +358,19 @@ int main(void)
   rome_color_sensor.left.uart = UART_COLOR_SENSOR_LEFT;
   rome_color_sensor.left.handler = rome_color_sensor_handler;
 
-  rome_intf_init(&rome_color_sensor.right);
-  rome_color_sensor.right.uart = UART_COLOR_SENSOR_RIGHT;
-  rome_color_sensor.right.handler = rome_color_sensor_handler;
+  //rome_intf_init(&rome_color_sensor.right);
+  //rome_color_sensor.right.uart = UART_COLOR_SENSOR_RIGHT;
+  //rome_color_sensor.right.handler = rome_color_sensor_handler;
 
   uint32_t luptime = UINT32_MAX;
   uint32_t spot_elevator_uptime = UINT32_MAX;
 
-  arm_set_external_servo(S_LEFT, 120);
-  arm_set_external_servo(S_RIGHT, -120);
-
   uint32_t t = 0;
 
   spot_elevator_set_enable(&l_spot_elevator, true);
-  spot_elevator_pick_bulb(&l_spot_elevator);
+  //spot_elevator_set_enable(&r_spot_elevator, true);
+
+  spot_elevator_automatic_spot_stacking(&l_spot_elevator);
 
   // main loop
   for(;;) {
@@ -388,8 +395,8 @@ int main(void)
       spot_elevator_uptime = uptime;
       spot_elevator_manage(&l_spot_elevator);
       ROME_SEND_MECA_TM_LEFT_ELEVATOR(&rome_strat,l_spot_elevator.tm_state,l_spot_elevator.nb_spots);
-      spot_elevator_manage(&r_spot_elevator);
-      ROME_SEND_MECA_TM_RIGHT_ELEVATOR(&rome_strat,r_spot_elevator.tm_state,r_spot_elevator.nb_spots);
+      //spot_elevator_manage(&r_spot_elevator);
+      //ROME_SEND_MECA_TM_RIGHT_ELEVATOR(&rome_strat,r_spot_elevator.tm_state,r_spot_elevator.nb_spots);
     }
   }
 }

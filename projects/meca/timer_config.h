@@ -22,6 +22,7 @@
 
 /// Enable TIMERxn
 #define TIMERE0_ENABLED
+#define TIMERD0_ENABLED
 
 
 /// Timer used for uptime as xn

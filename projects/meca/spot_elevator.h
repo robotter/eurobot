@@ -85,11 +85,19 @@ typedef enum{
   SESM_TM_S_READY,
 }_spot_elevator_tm_state_t;
 
+typedef enum{
+  SESM_SPIPE_OPEN = 0,
+  SESM_SPIPE_CLOSE,
+} _spot_elevator_spipe_state_t;
+
 typedef struct{
   ax12_addr_t claw_ax12_addr;
   ax12_addr_t elevator_ax12_addr;
+
   // pwm used to control analog servo that controls the spot pipe opening.
-  pwm_motor_t spipe_pwm; 
+  pwm_motor_t spipe_servo;
+  int16_t spipe_open, spipe_close;
+  _spot_elevator_spipe_state_t spipe_state; 
   
   // table of positions for ax12 used to control claw. Use _claw_ax12_positions_t enum to access to table.
   int16_t claw_ax12_positions[CLAW_AX12_POSITIONS_LENGTH];
@@ -112,6 +120,9 @@ typedef struct{
 
   _spot_elevator_tm_state_t tm_state;
   int8_t nb_spots;
+  
+  uint8_t claw_blocked_cnt;
+
 }spot_elevator_t;
 
 
@@ -121,6 +132,8 @@ void spot_elevator_init(spot_elevator_t *elevator);
 // accessors to set addresses of ax12 used to control elevators.
 void spot_elevator_set_claw_ax12_addr(spot_elevator_t *elevator, ax12_addr_t addr);
 void spot_elevator_set_elevator_ax12_addr(spot_elevator_t *elevator, ax12_addr_t addr);
+
+void spot_elevator_init_spipe_servo(spot_elevator_t *elevator, char channel, int16_t open_pwm_us, int16_t close_pwm_us);
 
 void spot_elevator_set_is_spot_present_fn(spot_elevator_t *elevator, bool (*is_spot_present)(void));
 void spot_elevator_set_get_spot_color_fn(spot_elevator_t *elevator, robot_color_t(*get_spot_color)(void));
@@ -140,4 +153,5 @@ void spot_elevator_automatic_spot_stacking(spot_elevator_t *se);
 
 void spot_elevator_discharge_spot_stack(spot_elevator_t *se);
 
+void spot_elevator_move_middle_arm(uint16_t position);
 #endif //SPOT_ELEVATOR_H

@@ -85,7 +85,7 @@ void katioucha_fire(uint8_t n)
 void ext_arm_raise(external_arm_t n)
 {
   switch(n) {
-    case EXTARM_LEFT:  ext_arm_set(n, 120); break;
+    case EXTARM_LEFT:  ext_arm_set(n, 50); break;
     case EXTARM_RIGHT: ext_arm_set(n, -60); break;
     default: return;
   }
@@ -405,8 +405,14 @@ void strat_prepare_galipeur(team_t team)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
   // raise both arms
-  ext_arm_raise(EXTARM_LEFT);
-  ext_arm_raise(EXTARM_RIGHT);
+//  ext_arm_lower(EXTARM_RIGHT);
+//  ext_arm_lower(EXTARM_LEFT);
+//  _delay_ms(500);
+//  ext_arm_over_border(EXTARM_RIGHT);
+//  ext_arm_over_border(EXTARM_LEFT);
+//  _delay_ms(500);
+//  ext_arm_raise(EXTARM_RIGHT);
+//  ext_arm_raise(EXTARM_LEFT);
 
   // autoset robot
   autoset(AUTOSET_RIGHT, 1500-100, 0);

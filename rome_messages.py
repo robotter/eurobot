@@ -84,14 +84,10 @@ register_messages(
     # MECA
     (0x50, [
       # __ ORDERS __
-      # set sucker #n on / off (default off)
-      (Order, 'meca_set_sucker', [('n','uint8'), ('active','bool')]),
-      # set pump #n on / off (default off)
-      (Order, 'meca_set_pump', [('n','uint8'), ('active','bool')]),
       # activate/deactivate motor power
       (Order, 'meca_set_power', [('active','bool')]),
       # set servo #n
-      (Order, 'meca_set_servo', [('n','uint8'), ('position','int16')]),
+      (Order, 'meca_set_arm', [('position','int16')]),
       # enable picking of one spot of elevator #n
       (Order, 'meca_pick_one_spot', [('n','uint8')]),
       # release spot stack of elevator #n
@@ -102,8 +98,6 @@ register_messages(
       (Order, 'meca_prepare_for_onboard_bulb', [('n','uint8')]),
 
       # __ TELEMETRY __
-      # return pressure sensors
-      ('meca_tm_suckers', [('a','bool'), ('b','bool')]),
       # match timer
       ('meca_tm_match_timer', [('seconds','int16')]),
       # spot elevators
