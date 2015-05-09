@@ -33,6 +33,14 @@
 
 #include "avoidance.h"
 
+// float angles normalization
+#define ANGLE_TYPE__ float
+#include "modulo.inc.h"
+#undef ANGLE_TYPE__
+
+#define NORMALIZE_RADIANS_FLOAT_0_2PI(x) (float_modulo__(x, 0, 2*M_PI))
+#define NORMALIZE_RADIANS_FLOAT_PI_PI(x) (float_modulo__(x, -M_PI, M_PI))
+
 typedef enum
 {
   TRAJ_WITHOUT_MANAGER = 0,
@@ -271,7 +279,7 @@ void htrajectory_gotoA( htrajectory_t *htj, double a )
   hposition_get_a( htj->hrp, &robot_a );
 
   // compute distance between consign and position modulo 2pi
-  da = fmod( a - robot_a, 2*M_PI );
+  da = NORMALIZE_RADIANS_FLOAT_PI_PI(a - robot_a);
 
   // update consign
   htj->carrotA = robot_a + da;
