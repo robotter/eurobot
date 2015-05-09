@@ -149,17 +149,26 @@ void _spipe_open(spot_elevator_t *elevator){
 
 _spot_elevator_state_t _sesm_prepare_claw_for_onboard_buld(spot_elevator_t *elevator)
 {
-  _set_claw_ax12(elevator, CLAW_CLOSED_FOR_BULB);
-  _set_elevator_ax12(elevator, ELEVATOR_UP, ELEVATOR_FAST);
-
-  return SESM_INACTIVE; 
+  bool success;
+  success =  _set_claw_ax12(elevator, CLAW_CLOSED_FOR_BULB);
+  success &= _set_elevator_ax12(elevator, ELEVATOR_UP, ELEVATOR_FAST);
+  
+  if (success)
+    return SESM_INACTIVE; 
+  else
+    return SESM_PREPARE_CLAW_FOR_ONBOARD_BULB;
 }
 
 _spot_elevator_state_t _sesm_open_claw_for_bulb(spot_elevator_t *elevator)
 {
-  _set_claw_ax12(elevator, CLAW_OPENED);
-  _set_elevator_ax12(elevator, ELEVATOR_DOWN_WAITING_SPOT, ELEVATOR_FAST);
-  return SESM_INACTIVE; 
+  bool success;
+  success =  _set_claw_ax12(elevator, CLAW_OPENED);
+  success &= _set_elevator_ax12(elevator, ELEVATOR_DOWN_WAITING_SPOT, ELEVATOR_FAST);
+
+  if (success)
+    return SESM_INACTIVE; 
+  else
+    return SESM_PREPARE_CLAW_FOR_ONBOARD_BULB;
 }
 
 _spot_elevator_state_t _sesm_check_spot_presence(spot_elevator_t *elevator)
@@ -408,6 +417,16 @@ _spot_elevator_state_t _sesm_discharge_claw_open_wait(spot_elevator_t *elevator)
     return SESM_DISCHARGE_CLAW_OPEN;
 }
 
+_spot_elevator_state_t _sesm_endofmatch_claw_open(spot_elevator_t *elevator)
+{
+  _set_claw_ax12(elevator, CLAW_OPENED);
+
+  if ( _is_claw_ax12_in_position(elevator, CLAW_OPENED))
+    return SESM_ENDOFMATCH_SPIPE_OPEN;
+  else
+    return SESM_ENDOFMATCH_CLAW_OPEN;
+}
+
 _spot_elevator_state_t _sesm_discharge_elevator_up(spot_elevator_t *elevator)
 {
   _set_elevator_ax12(elevator, ELEVATOR_UP, ELEVATOR_FAST);
@@ -617,6 +636,15 @@ void spot_elevator_manage(spot_elevator_t *elevator)
         elevator->sm_state = _sesm_discharge_elevator_up_wait(elevator);
         break;
 
+      case SESM_ENDOFMATCH_CLAW_OPEN:
+        elevator->tm_state = SESM_TM_S_BUSY;
+        elevator->sm_state = _sesm_endofmatch_claw_open(elevator);
+        break;
+
+      case SESM_ENDOFMATCH_SPIPE_OPEN:
+        _spipe_open(elevator);
+        elevator->sm_state = SESM_INACTIVE;
+        break;
 
       default : 
       // shall not arrive !!!
@@ -676,6 +704,6 @@ void spot_elevator_move_middle_arm(uint16_t position){
   ax12_write_word(&ax12, SE_AX12_MIDDLE_ARM_ID, AX12_ADDR_GOAL_POSITION_L, ax12_consign);
 }
 
-spot_elevator_end_of_match(spot_elevator_t *se){
-  
+void spot_elevator_end_of_match(spot_elevator_t *se){
+  se->sm_state = SESM_ENDOFMATCH_CLAW_OPEN;
 }

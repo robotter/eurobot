@@ -73,6 +73,8 @@ typedef enum{
   SESM_DISCHARGE_CLAW_OPEN_WAIT,
   SESM_DISCHARGE_ELEVATOR_UP,
   SESM_DISCHARGE_ELEVATOR_UP_WAIT,
+  SESM_ENDOFMATCH_CLAW_OPEN,
+  SESM_ENDOFMATCH_SPIPE_OPEN,
 
 }_spot_elevator_state_t;
 
@@ -154,4 +156,6 @@ void spot_elevator_automatic_spot_stacking(spot_elevator_t *se);
 void spot_elevator_discharge_spot_stack(spot_elevator_t *se);
 
 void spot_elevator_move_middle_arm(uint16_t position);
+
+void spot_elevator_end_of_match(spot_elevator_t *se);
 #endif //SPOT_ELEVATOR_H

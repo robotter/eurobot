@@ -370,8 +370,6 @@ int main(void)
   spot_elevator_set_enable(&l_spot_elevator, true);
   //spot_elevator_set_enable(&r_spot_elevator, true);
 
-  spot_elevator_automatic_spot_stacking(&l_spot_elevator);
-
   // main loop
   for(;;) {
     

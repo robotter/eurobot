@@ -71,9 +71,9 @@ void activate_asserv(bool b)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, b);
 }
 
-void ext_arm_set(external_arm_t n, int16_t pos)
+void ext_arm_set(int16_t pos)
 {
-  ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca, n, pos);
+  ROME_SENDWAIT_MECA_SET_ARM(&rome_meca, pos);
 }
 
 void katioucha_fire(uint8_t n)
@@ -82,31 +82,19 @@ void katioucha_fire(uint8_t n)
 }
 
 /// Set side arm position
-void ext_arm_raise(external_arm_t n)
+void ext_arm_raise(void)
 {
-  switch(n) {
-    case EXTARM_LEFT:  ext_arm_set(n, 50); break;
-    case EXTARM_RIGHT: ext_arm_set(n, -60); break;
-    default: return;
-  }
+  ext_arm_set(50);
 }
 
-void ext_arm_lower(external_arm_t n)
+void ext_arm_lower(void)
 {
-  switch(n) {
-    case EXTARM_LEFT:  ext_arm_set(n, -100); break;
-    case EXTARM_RIGHT: ext_arm_set(n, 150); break;
-    default: return;
-  }
+  ext_arm_set(150);
 }
 
 void ext_arm_over_border(external_arm_t n)
 {
-  switch(n) {
-    case EXTARM_LEFT:  ext_arm_set(n, -240); break;
-    case EXTARM_RIGHT: ext_arm_set(n, 300); break;
-    default: return;
-  }
+  ext_arm_set(300);
 }
 
 static inline void _pick_one_spot_blocking(void){
