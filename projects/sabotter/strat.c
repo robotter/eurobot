@@ -382,6 +382,7 @@ void strat_init_galipeur(void)
 
   // initialize meca
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
+  _pick_one_spot_blocking();
 }
 
 void strat_prepare_galipeur(team_t team)
