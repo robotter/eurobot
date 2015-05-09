@@ -96,6 +96,9 @@ register_messages(
       (Order, 'meca_pick_bulb', [('n','uint8')]),
       # prepare elevator #n for boarding bulb
       (Order, 'meca_prepare_for_onboard_bulb', [('n','uint8')]),
+      (Order, 'meca_prepare_cup', [('n','uint8')]),
+      (Order, 'meca_unload_cup', [('n','uint8')]),
+      (Order, 'meca_pick_cup', [('n','uint8')]),
 
       # __ TELEMETRY __
       # match timer

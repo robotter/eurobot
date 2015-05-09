@@ -28,12 +28,6 @@ typedef enum {
   SPOT_ELV_S_READY,
 }spot_elevator_state_t;
 
-typedef enum {
-  EXTARM_LEFT = 0,
-  EXTARM_FRONT = 1,
-  EXTARM_RIGHT = 2,
-}external_arm_t;
-
 // Return true if an opponent is detected
 bool opponent_detected(void)
 {
@@ -84,32 +78,65 @@ void katioucha_fire(uint8_t n)
 /// Set side arm position
 void ext_arm_raise(void)
 {
-  ext_arm_set(50);
+  ext_arm_set(430);
 }
 
 void ext_arm_lower(void)
 {
-  ext_arm_set(150);
+  ext_arm_set(100);
 }
 
-void ext_arm_over_border(external_arm_t n)
+void ext_arm_clap(void)
 {
   ext_arm_set(300);
 }
 
-static inline void _pick_one_spot_blocking(void){
+typedef enum {
+  MECA_PICK_SPOT = 0,
+  MECA_RELEASE_STACK,
+  MECA_UNLOAD_CUP,
+  MECA_PREPARE_CUP,
+  MECA_PICK_CUP,
+}meca_orders_t;
+
+static inline void _meca_order_blocking(spot_elevator_t side, meca_orders_t order){
   //wait for meca to be ready
-  //for (;;){
-  //  if (robot_state.left_elev.state == SPOT_ELV_S_READY)
-  //    break;
-  //    }
+  for (;;){
+    if (robot_state.left_elev.state == SPOT_ELV_S_READY)
+      break;
+    update_rome_interfaces();
+  }
   //send order
-  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+  switch(order){
+    case MECA_PICK_CUP:
+      ROME_SENDWAIT_MECA_PICK_CUP(&rome_meca, side);
+      break;
+
+    case MECA_UNLOAD_CUP:
+      ROME_SENDWAIT_MECA_UNLOAD_CUP(&rome_meca, side);
+      break;
+
+    case MECA_PREPARE_CUP:
+      ROME_SENDWAIT_MECA_PREPARE_CUP(&rome_meca, side);
+      break;
+
+    case MECA_PICK_SPOT:
+      ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, side);
+      break;
+
+    case MECA_RELEASE_STACK:
+      ROME_SENDWAIT_MECA_RELEASE_SPOT_STACK(&rome_meca, side);
+      break;
+  }
+  //wait for meca to compute order ...
+  _delay_ms(50);
+  update_rome_interfaces();
   //wait for meca to stop being busy
-  _delay_ms(3000);
-  //for (;;){
-  //  if (robot_state.left_elev.state != SPOT_ELV_S_BUSY)
-  //    return;}
+  for (;;){
+    if (robot_state.left_elev.state != SPOT_ELV_S_BUSY)
+      return;
+    update_rome_interfaces();
+  }
 }
 
 /// Go to given position, avoid opponents
@@ -365,25 +392,15 @@ void strat_wait_start(team_t team)
 
 void strat_init_galipeur(void)
 {
-  // initialize asserv variables
-  //ROME_SENDWAIT_ASSERV_SET_X_PID(&rome_asserv, 3000, 0, 0, 50000, 100000, 0);
-  //ROME_SENDWAIT_ASSERV_SET_Y_PID(&rome_asserv, 3000, 0, 0, 50000, 100000, 0);
-  //ROME_SENDWAIT_ASSERV_SET_A_PID(&rome_asserv, 2500, 0, 0, 50000, 1000, 0);
-  //ROME_SENDWAIT_ASSERV_SET_A_QRAMP(&rome_asserv, 200.0, 100.0);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20.0, 100.0);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 5.0, 0.1);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(&rome_asserv, 1.0, 0.1);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XYSTEERING_WINDOW(&rome_asserv, 50.0);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_STOP_WINDOWS(&rome_asserv, 5.0, 0.03);
-
-
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
 
   // initialize meca
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
-  _pick_one_spot_blocking();
-}
+
+  ext_arm_lower(); 
+  ROME_SENDWAIT_MECA_PREPARE_FOR_ONBOARD_BULB(&rome_meca, SPOT_ELV_LEFT);
+  }
 
 void strat_prepare_galipeur(team_t team)
 {
@@ -392,16 +409,6 @@ void strat_prepare_galipeur(team_t team)
   ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 0, 0, 0);
   ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, 0);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-
-  // raise both arms
-//  ext_arm_lower(EXTARM_RIGHT);
-//  ext_arm_lower(EXTARM_LEFT);
-//  _delay_ms(500);
-//  ext_arm_over_border(EXTARM_RIGHT);
-//  ext_arm_over_border(EXTARM_LEFT);
-//  _delay_ms(500);
-//  ext_arm_raise(EXTARM_RIGHT);
-//  ext_arm_raise(EXTARM_LEFT);
 
   // autoset robot
   autoset(AUTOSET_RIGHT, 1500-100, 0);
@@ -442,51 +449,71 @@ void strat_run_galipeur(team_t team)
   goto_xya_rel(0,-400,0);
   goto_xya_rel(+400,0,0);
   
+
   // autoset against right side
   autoset(AUTOSET_RIGHT, 1500-100, 0);
+  goto_xya_rel(-100,0,0);
 
   // -- SE SPOTS --
   // approach SE spots
-  goto_xya_rel(-100,0,0);
   goto_xya(1500-160, 470, 0);
-
   // pick one spot
   goto_xya(1500-160, 450, 0);
-  _pick_one_spot_blocking();
+  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
 
   // pick one spot
   goto_xya(1500-160, 340, 0);
-  _pick_one_spot_blocking();
+  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
 
   // -- SE CLAPS -- 
   goto_xya(1500-160, 290, 0);
-  // translate along SE border
+  // translate along SE bordea
+  ext_arm_clap();
+  goto_xya(1500-300, 290, 0);
+  ext_arm_raise();
+  goto_xya(1500-700, 290, 0);
+  ext_arm_clap();
   goto_xya(1500-880, 290, 0);
 
   // -- S SPOTS --
-  goto_xya_rel(+100,0,0);
+  goto_xya_rel(+50,0,0);
+  ext_arm_lower();
+  goto_xya_rel(+50,0,0);
   autoset(AUTOSET_DOWN, 0, 100);
 
   goto_xya_rel(0,100,0);
   goto_xya(1500-820,290,-.5*M_PI);
 
   goto_xya_rel(-200, 0, 0);
-  _pick_one_spot_blocking();
+  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
 
   goto_xya(1500-1270, 350, -M_PI); 
   goto_xya_rel(0, 200, 0);
-  _pick_one_spot_blocking();
+  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
 
   //we can make only 4 spots pile ... so sad ...
   //goto_xya(1500-830, 350, -M_PI); 
   //goto_xya_rel(0, 200, 0);
-  //_pick_one_spot_blocking();
+  //_meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
 
   goto_xya(1500-600, 1030, M_PI/2);  
-  ROME_SENDWAIT_MECA_RELEASE_SPOT_STACK(&rome_meca, SPOT_ELV_LEFT);
-  _delay_ms(5000);
+  goto_xya_rel(200, 0, 0);
+  _meca_order_blocking(SPOT_ELV_LEFT,MECA_RELEASE_STACK);
+  goto_xya_rel(-100, 0, 0);
+  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PREPARE_CUP);
 
-  goto_xya_rel(-500, 0, 0);
+  goto_xya(1500-600, 1030, M_PI/2);  
+  goto_xya(1500-920, 900,  M_PI);
+  goto_xya(1500-920, 1070, M_PI);
+  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_CUP);
+
+  goto_xya(1500-600, 1030, M_PI/2);  
+  _meca_order_blocking(SPOT_ELV_LEFT,MECA_UNLOAD_CUP);
+
+  goto_xya_rel(-300, 0, 0);
+
+  //reviens robot !
+  goto_xya(1500-880, 290, M_PI);
 
   _delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);

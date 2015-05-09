@@ -41,40 +41,53 @@ typedef enum{
 
 // states of the state machine that handles the elevator and claw
 typedef enum{
-  SESM_INIT,
+  SESM_INIT = 0,
   SESM_INACTIVE,
   // prepare claw to retain bulb boarded during preparation of match
-  SESM_PREPARE_CLAW_FOR_ONBOARD_BULB,
+  SESM_PREPARE_CLAW_FOR_ONBOARD_BULB_CLAW,
+  SESM_PREPARE_CLAW_FOR_ONBOARD_BULB_ELEV,
   // second init loop : bulb picking (tennis ball)
   SESM_OPEN_CLAW_FOR_BULB,
   
   // first main loop : spot handling
-  SESM_CHECK_SPOT_PRESENCE,
-  SESM_CHECK_SPOT_COLOR, // 5
+  SESM_CHECK_SPOT_PRESENCE = 10,
+  SESM_CHECK_SPOT_COLOR, 
   SESM_CHECK_ELEVATOR_POSITION,
   SESM_CHECK_CLAW_OPENED,
   SESM_OPEN_CLAW,
-  SESM_WAIT_CLAW_OPENED,
-  SESM_LIFT_DOWN_ELEVATOR, // 10
+  SESM_WAIT_CLAW_OPENED, 
+  SESM_LIFT_DOWN_ELEVATOR, 
   SESM_WAIT_ELEVATOR_DOWN,
   SESM_CLOSE_CLAW,
-  SESM_WAIT_CLAW_CLOSED, // 13
+  SESM_WAIT_CLAW_CLOSED, 
   SESM_LIFT_UP_ELEVATOR,
   SESM_WAIT_ELEVATOR_UP,
   // second main loop : prepare claw for bulb picking
-  SESM_CLOSE_CLAW_FOR_BULB,
+  SESM_CLOSE_CLAW_FOR_BULB = 30,
   SESM_WAIT_CLAW_CLOSED_FOR_BULB,
   SESM_LIFT_UP_ELEVATOR_FOR_BULB,
   SESM_WAIT_ELEVATOR_UP_FOR_BULB,
   // third main loop : discharge spots pile
-  SESM_DISCHARGE_ELEVATOR_DOWN,
+  SESM_DISCHARGE_ELEVATOR_DOWN = 50,
   SESM_DISCHARGE_ELEVATOR_DOWN_WAIT,
   SESM_DISCHARGE_CLAW_OPEN,
   SESM_DISCHARGE_CLAW_OPEN_WAIT,
   SESM_DISCHARGE_ELEVATOR_UP,
   SESM_DISCHARGE_ELEVATOR_UP_WAIT,
-  SESM_ENDOFMATCH_CLAW_OPEN,
+  //fourth main loop : pick cup
+  SESM_PICK_CUP_CLAW_OPEN = 70,
+  SESM_PICK_CUP_CLAW_OPEN_WAIT,
+  SESM_PICK_CUP_ELEVATOR_DOWN,
+  SESM_PICK_CUP_ELEVATOR_DOWN_WAIT,
+  SESM_PICK_CUP_CHECK_CUP_PRESENCE,
+  SESM_PICK_CUP_CLAW_CLOSE,
+  SESM_PICK_CUP_CLAW_CLOSE_WAIT,
+  SESM_PICK_CUP_ELEVATOR_UP,
+  SESM_PICK_CUP_ELEVATOR_UP_WAIT, //35
+  //last loop : end of match
+  SESM_ENDOFMATCH_CLAW_OPEN = 250,
   SESM_ENDOFMATCH_SPIPE_OPEN,
+  SESM_ENDOFMATCH,
 
 }_spot_elevator_state_t;
 
@@ -107,9 +120,6 @@ typedef struct{
   // table of positions for ax12 used to control elevator. Use _elevator_ax12_positions_t enum to access to table.
   int16_t elevator_ax12_positions[ELEVATOR_AX12_POSITIONS_LENGTH];
   
-  // table of positions for analog servo that controls the spot pipe (spipe). Use _spipe_positions_t enum to access to table.
-  int16_t spipe_pwm_positions[ELEVATOR_AX12_POSITIONS_LENGTH];
-
   // accessors that return spot presence and color
   bool (*is_spot_present)(void);
   robot_color_t (*get_spot_color)(void);
@@ -124,6 +134,7 @@ typedef struct{
   int8_t nb_spots;
   
   uint8_t claw_blocked_cnt;
+  uint8_t elev_blocked_cnt;
 
 }spot_elevator_t;
 
@@ -156,6 +167,9 @@ void spot_elevator_automatic_spot_stacking(spot_elevator_t *se);
 void spot_elevator_discharge_spot_stack(spot_elevator_t *se);
 
 void spot_elevator_move_middle_arm(uint16_t position);
+
+void spot_elevator_prepare_unload_cup(spot_elevator_t *se,bool block);
+void spot_elevator_pick_cup(spot_elevator_t *se);
 
 void spot_elevator_end_of_match(spot_elevator_t *se);
 #endif //SPOT_ELEVATOR_H

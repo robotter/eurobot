@@ -147,6 +147,51 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
 
+    case ROME_MID_MECA_PICK_CUP: {
+      switch(frame->meca_pick_cup.n)
+      {
+        case 0:
+          spot_elevator_pick_cup(&l_spot_elevator);
+          break;
+        case 1:
+          spot_elevator_pick_cup(&r_spot_elevator);
+          break;
+        default :
+          break;
+      }
+      rome_reply_ack(intf, frame);
+    } break;
+
+    case ROME_MID_MECA_PREPARE_CUP: {
+      switch(frame->meca_prepare_cup.n)
+      {
+        case 0:
+          spot_elevator_prepare_unload_cup(&l_spot_elevator,false);
+          break;
+        case 1:
+          spot_elevator_prepare_unload_cup(&r_spot_elevator,false);
+          break;
+        default :
+          break;
+      }
+      rome_reply_ack(intf, frame);
+    } break;
+
+    case ROME_MID_MECA_UNLOAD_CUP: {
+      switch(frame->meca_unload_cup.n)
+      {
+        case 0:
+          spot_elevator_prepare_unload_cup(&l_spot_elevator,true);
+          break;
+        case 1:
+          spot_elevator_prepare_unload_cup(&r_spot_elevator,true);
+          break;
+        default :
+          break;
+      }
+      rome_reply_ack(intf, frame);
+    } break;
+
     case ROME_MID_MECA_PICK_BULB: {
       switch(frame->meca_pick_bulb.n)
       {
@@ -368,7 +413,7 @@ int main(void)
   uint32_t t = 0;
 
   spot_elevator_set_enable(&l_spot_elevator, true);
-  //spot_elevator_set_enable(&r_spot_elevator, true);
+  spot_elevator_set_enable(&r_spot_elevator, true);
 
   // main loop
   for(;;) {
