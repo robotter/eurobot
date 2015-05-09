@@ -120,14 +120,6 @@ register_messages(
       ('strat_tm_battery', [('voltage','uint16')]),
       ]),
 
-    # KATIOUCHA
-    (0x65, [
-      # fire n KATIOUCHA tubes
-      (Order, 'katioucha_fire', [('n','uint8')]),
-      #
-      ('katioucha_tm_rounds_fired', [('i','uint8')]),
-      ]),
-
     # R3D2
     (0x70, [
       # Detection of object i (i is 0 or 1)
