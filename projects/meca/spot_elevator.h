@@ -3,6 +3,7 @@
 
 #include <ax12/ax12.h>
 #include <pwm/motor.h>
+#include <rome/rome_msg.h>
 #include "color_defs.h"
 /* 
  * In this module, spipe defines the "spot pipe" used to contain the spots
@@ -99,14 +100,8 @@ typedef enum{
 
 }_spot_elevator_state_t;
 
-typedef enum{
-  //elevator won't accept commands and robot shouldn't move
-  SESM_TM_S_BUSY,
-  //elevator won't accept commands but robot can move
-  SESM_TM_S_GROUND_CLEAR,
-  //elevator ready for new commands
-  SESM_TM_S_READY,
-}_spot_elevator_tm_state_t;
+// elevator states
+#define SESM_TM_S(s)  ROME_ENUM_MECA_ELEVATOR_STATE_ ## s
 
 typedef enum{
   SESM_SPIPE_OPEN = 0,
@@ -138,7 +133,7 @@ typedef struct{
   // indicates if the elevator is active or not
   bool is_active;
 
-  _spot_elevator_tm_state_t tm_state;
+  rome_enum_meca_elevator_state_t tm_state;
   int8_t nb_spots;
   
   uint8_t claw_blocked_cnt;

@@ -1,4 +1,4 @@
-from rome.frame import register_messages, Order
+from rome.frame import register_messages, Order, rome_types
 
 register_messages(
     (0x10, [
@@ -109,8 +109,13 @@ register_messages(
       # match timer
       ('meca_tm_match_timer', [('seconds','int16')]),
       # spot elevators
-      ('meca_tm_left_elevator'  ,[('state','int8'),('nb_spots','int8')]),
-      ('meca_tm_right_elevator' ,[('state','int8'),('nb_spots','int8')]),
+      rome_types.rome_enum('meca_elevator_state', (
+          'busy',  # elevator won't accept commands, robot shouldn't move
+          'ground_clear',  # elevator won't accept commands, robot can move
+          'ready',  # elevator ready for new commands
+          )),
+      ('meca_tm_left_elevator'  ,[('state','meca_elevator_state'),('nb_spots','int8')]),
+      ('meca_tm_right_elevator' ,[('state','meca_elevator_state'),('nb_spots','int8')]),
       ]),
 
     # STRATEGY
