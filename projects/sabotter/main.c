@@ -161,7 +161,7 @@ static void match_end(void)
     portpin_outset(&LED_G_PP);
     portpin_outset(&LED_B_PP);
     for(;;) {
-      update_rome_interfaces();
+      idle();
     }
   }
 }
@@ -229,7 +229,7 @@ int main(void)
       } else {
         portpin_outclr(&LED_R_PP);
       }
-      update_rome_interfaces();
+      idle();
     }
   }
 

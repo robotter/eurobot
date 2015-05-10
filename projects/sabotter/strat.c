@@ -112,7 +112,7 @@ void _wait_meca_ready(void){
     if(//(robot_state.left_elev.state == SPOT_ELV_S_READY)&&
        (robot_state.right_elev.state == SPOT_ELV_S_READY))
       return;
-    update_rome_interfaces();
+    idle();
   }
 }
 
@@ -121,7 +121,7 @@ void _wait_meca_ground_clear(void){
     if(//(robot_state.left_elev.state != SPOT_ELV_S_BUSY)&&
        (robot_state.right_elev.state != SPOT_ELV_S_BUSY))
       return;
-    update_rome_interfaces();
+    idle();
   }
 }
 
@@ -159,7 +159,7 @@ static void _meca_order_blocking(spot_elevator_t side, meca_orders_t order){
   }
   //wait for meca to compute order ...
   _delay_ms(50);
-  update_rome_interfaces();
+  idle();
   _wait_meca_ground_clear();
 }
 
@@ -179,12 +179,12 @@ void goto_xya(int16_t x, int16_t y, float a)
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         //TODO use opponent_detected_arc()
         while(opponent_detected()) {
-          update_rome_interfaces();
+          idle();
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
       }
-      update_rome_interfaces();
+      idle();
     }
   }
 }
@@ -205,12 +205,12 @@ void goto_xya_panning(int16_t x, int16_t y, float pan_angle)
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         //TODO use opponent_detected_arc()
         while(opponent_detected()) {
-          update_rome_interfaces();
+          idle();
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
       }
-      update_rome_interfaces();
+      idle();
     }
   }
 }
@@ -254,12 +254,12 @@ void goto_xya_painting(int16_t x, int16_t y, float a)
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         //TODO use opponent_detected_arc()
         while(opponent_detected()) {
-          update_rome_interfaces();
+          idle();
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
       }
-      update_rome_interfaces();
+      idle();
     }
   }
 }
@@ -281,12 +281,12 @@ void goto_xya_rel(int16_t x, int16_t y, float a)
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         //TODO use opponent_detected_arc()
         while(opponent_detected()) {
-          update_rome_interfaces();
+          idle();
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
       }
-      update_rome_interfaces();
+      idle();
     }
   }
 }
@@ -298,7 +298,7 @@ void autoset(robot_side_t robot_side, autoset_side_t table_side, float x, float 
   robot_state.asserv.autoset = 0;
   while(!robot_state.asserv.autoset) {
     //TODO avoid opponent
-    update_rome_interfaces();
+    idle();
   }
 }
 
@@ -309,7 +309,7 @@ void strat_delay_ms(uint32_t ms) {
     if(uptime_us() >= tend) {
       return;
     }
-    update_rome_interfaces();
+    idle();
   }
 }
 
@@ -339,7 +339,7 @@ team_t strat_select_team(void)
     } else {
       portpin_outclr(&LED_B_PP);
     }
-    update_rome_interfaces();
+    idle();
   }
 
   // wait for color to be selected
@@ -362,13 +362,13 @@ team_t strat_select_team(void)
       portpin_outclr(&LED_B_PP);
       break;
     }
-    update_rome_interfaces();
+    idle();
   }
 
   // wait 2s before next step
   uint32_t tend = uptime_us() + 2e6;
   while(uptime_us() < tend) {
-    update_rome_interfaces();
+    idle();
   }
 
   return team;
@@ -395,7 +395,7 @@ void strat_wait_start(team_t team)
       portpin_outclr(&LED_G_PP);
       portpin_outset(&LED_B_PP);
     }
-    update_rome_interfaces();
+    idle();
   }
 
   /*
@@ -629,8 +629,8 @@ void strat_run_galipette(team_t team)
   //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20.0, 100.0);
   goto_xya(-460,1300,M_PI/3);
   goto_xya(-1000,1000,M_PI/3);
-  while(1) 
-          update_rome_interfaces();
+  while(1)
+    idle();
   strat_delay_ms(5000);
   goto_xya(-300, 900,0);
   strat_delay_ms(5000);
