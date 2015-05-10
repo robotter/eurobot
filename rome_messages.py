@@ -68,6 +68,8 @@ register_messages(
       ('asserv_tm_gp2_det', [('g0','uint16'), ('g1','uint16'), ('g2','uint16')]),
       # match timer
       ('asserv_tm_match_timer', [('seconds','int16')]),
+      # gyro calibration status
+      ('asserv_tm_gyro_calibration', [('active','bool')]),
 
       # __ DEBUG __
       # all purposes debug message

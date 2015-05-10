@@ -73,7 +73,12 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
   switch(frame->mid) {
 
     case ROME_MID_ASSERV_ACTIVATE: {
-      robot_cs_activate(&robot_cs, frame->asserv_activate.activate);
+      if(adxrs_get_calibration_mode()) {
+        ROME_LOG(&rome, DEBUG, "ASSERV_ACTIVATE refuse, gyro is in calibration");
+      }
+      else {
+        robot_cs_activate(&robot_cs, frame->asserv_activate.activate);
+      }
       rome_reply_ack(intf, frame);
     } break;
     case ROME_MID_ASSERV_CALIBRATE: { 
@@ -332,7 +337,20 @@ int main(void)
 
   PORTQ.OUT = 5;
   adxrs_calibration_mode(true);
-  _delay_ms(2000);
+  while(1) {
+    int16_t offset = adxrs_get_offset();
+    float offset_sqsd = adxrs_get_offset_sqsd();
+
+    // exit calibration if sqsd is low enough
+    if(offset_sqsd < 8.0) {
+      break;
+    }
+
+    // downlink debug infos
+    ROME_LOGF(&rome, DEBUG, "gyro cal off=%d sqsd=%f", offset, offset_sqsd);
+    rome_handle_input(&rome);
+    _delay_ms(500);
+  }
   adxrs_calibration_mode(false);
 
   // remove break

@@ -194,7 +194,7 @@ void hposition_update(void *dummy)
   // update telemetry
   TM_DL_ENCODER_RAW(vectors[0], vectors[1], vectors[2]);
   TM_DL_XYA(hpos->position.x, hpos->position.y, 1000*hpos->position.alpha);
-
+  TM_DL_GYRO_CALIBRATION(adxrs_get_calibration_mode());
   return;
 }
 
