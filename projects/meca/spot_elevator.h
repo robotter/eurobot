@@ -29,7 +29,7 @@ typedef enum{
 
 typedef uint16_t _elevator_ax12_speeds_t;
 static const uint16_t ELEVATOR_SLOW = 0x40;
-static const uint16_t ELEVATOR_FAST = 0x1FF;
+static const uint16_t ELEVATOR_FAST = 0x3FF;
 
 typedef enum{
   SPIPE_CLOSED = 0,
@@ -51,8 +51,8 @@ typedef enum{
   
   // first main loop : spot handling
   SESM_PREPARE_SPOT_INIT = 10,
-  SESM_PREPARE_SPOT_PRE_LIFT_UP_ELEVATOR,
-  SESM_PREPARE_SPOT_PRE_WAIT_ELEVATOR_UP,
+  SESM_PREPARE_SPOT_LIFT_UP_ELEVATOR,
+  SESM_PREPARE_SPOT_WAIT_ELEVATOR_UP,
   SESM_PICK_SPOT_INIT = 15,
   SESM_PICK_SPOT_PRE_LIFT_UP_ELEVATOR,
   SESM_PICK_SPOT_PRE_WAIT_ELEVATOR_UP,
@@ -78,6 +78,7 @@ typedef enum{
   SESM_DISCHARGE_ELEVATOR_DOWN_WAIT,
   SESM_DISCHARGE_CLAW_OPEN,
   SESM_DISCHARGE_CLAW_OPEN_WAIT,
+  SESM_DISCHARGE_RELEASE_PILE,
   SESM_DISCHARGE_ELEVATOR_UP,
   SESM_DISCHARGE_ELEVATOR_UP_WAIT,
   //MOVE main loop : pick cup
@@ -173,6 +174,7 @@ void spot_elevator_prepare_spot_stacking(spot_elevator_t *se);
 void spot_elevator_automatic_spot_stacking(spot_elevator_t *se);
 
 void spot_elevator_discharge_spot_stack(spot_elevator_t *se);
+void spot_elevator_release_spot_stack(spot_elevator_t *se);
 
 void spot_elevator_move_middle_arm(uint16_t position);
 
@@ -180,4 +182,5 @@ void spot_elevator_prepare_unload_cup(spot_elevator_t *se,bool block);
 void spot_elevator_pick_cup(spot_elevator_t *se);
 
 void spot_elevator_end_of_match(spot_elevator_t *se);
+void spot_elevator_reset(spot_elevator_t *se);
 #endif //SPOT_ELEVATOR_H

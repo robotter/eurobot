@@ -94,6 +94,7 @@ register_messages(
       (Order, 'meca_prepare_pick_spot', [('n','uint8')]),
       (Order, 'meca_pick_one_spot', [('n','uint8')]),
       # release spot stack of elevator #n
+      (Order, 'meca_discharge_spot_stack', [('n','uint8')]),
       (Order, 'meca_release_spot_stack', [('n','uint8')]),
       # pick one bulb for elevator #n
       (Order, 'meca_pick_bulb', [('n','uint8')]),
@@ -102,6 +103,7 @@ register_messages(
       (Order, 'meca_prepare_cup', [('n','uint8')]),
       (Order, 'meca_unload_cup', [('n','uint8')]),
       (Order, 'meca_pick_cup', [('n','uint8')]),
+      (Order, 'meca_reset_elevator', [('n','uint8')]),
 
       # __ TELEMETRY __
       # match timer

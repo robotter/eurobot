@@ -101,18 +101,32 @@ typedef enum {
   MECA_PICK_SPOT,
   MECA_LIFT_SPOT,
   MECA_RELEASE_STACK,
+  MECA_DISCHARGE_STACK,
   MECA_UNLOAD_CUP,
   MECA_PREPARE_CUP,
   MECA_PICK_CUP,
 }meca_orders_t;
 
-static void _meca_order_blocking(spot_elevator_t side, meca_orders_t order){
-  //wait for meca to be ready
+void _wait_meca_ready(void){
   for (;;){
-    if (robot_state.left_elev.state == SPOT_ELV_S_READY)
-      break;
+    if(//(robot_state.left_elev.state == SPOT_ELV_S_READY)&&
+       (robot_state.right_elev.state == SPOT_ELV_S_READY))
+      return;
     update_rome_interfaces();
   }
+}
+
+void _wait_meca_ground_clear(void){
+  for (;;){
+    if(//(robot_state.left_elev.state != SPOT_ELV_S_BUSY)&&
+       (robot_state.right_elev.state != SPOT_ELV_S_BUSY))
+      return;
+    update_rome_interfaces();
+  }
+}
+
+static void _meca_order_blocking(spot_elevator_t side, meca_orders_t order){
+  _wait_meca_ready();
   //send order
   switch(order){
     case MECA_PICK_CUP:
@@ -135,6 +149,10 @@ static void _meca_order_blocking(spot_elevator_t side, meca_orders_t order){
       ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, side);
       break;
 
+    case MECA_DISCHARGE_STACK:
+      ROME_SENDWAIT_MECA_DISCHARGE_SPOT_STACK(&rome_meca, side);
+      break;
+
     case MECA_RELEASE_STACK:
       ROME_SENDWAIT_MECA_RELEASE_SPOT_STACK(&rome_meca, side);
       break;
@@ -142,12 +160,7 @@ static void _meca_order_blocking(spot_elevator_t side, meca_orders_t order){
   //wait for meca to compute order ...
   _delay_ms(50);
   update_rome_interfaces();
-  //wait for meca to stop being busy
-  for (;;){
-    if (robot_state.right_elev.state != SPOT_ELV_S_BUSY)
-      return;
-    update_rome_interfaces();
-  }
+  _wait_meca_ground_clear();
 }
 
 /// Go to given position, avoid opponents
@@ -410,8 +423,10 @@ void strat_init_galipeur(void)
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
 
   ext_arm_lower(); 
-  ROME_SENDWAIT_MECA_PREPARE_FOR_ONBOARD_BULB(&rome_meca, SPOT_ELV_LEFT);
-  }
+  ROME_SENDWAIT_MECA_RESET_ELEVATOR(&rome_meca, SPOT_ELV_RIGHT);
+  ROME_SENDWAIT_MECA_RESET_ELEVATOR(&rome_meca, SPOT_ELV_LEFT);
+  ROME_SENDWAIT_MECA_PREPARE_FOR_ONBOARD_BULB(&rome_meca, SPOT_ELV_RIGHT);
+}
 
 void strat_prepare_galipeur(team_t team)
 {
@@ -424,7 +439,7 @@ void strat_prepare_galipeur(team_t team)
   // autoset robot
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_RIGHT, 1500-100, 0);
   goto_xya_rel(-500, 0, 0);
-  goto_xya_rel(0, -350, 0);
+  goto_xya_rel(0, -350, -M_PI/4);
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_DOWN, 0, 100);
 
   // move out (in relative coordinates)
@@ -441,8 +456,8 @@ void strat_prepare_galipeur(team_t team)
 #endif
 
   // prepare meca
-  //ROME_SENDWAIT_MECA_PREPARE_FOR_ONBOARD_BULB(&rome_meca, SPOT_ELV_LEFT);
-  //ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+  //ROME_SENDWAIT_MECA_PREPARE_FOR_ONBOARD_BULB(&rome_meca, SPOT_ELV_RIGHT);
+  //ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_RIGHT);
 }
 
 void strat_run_galipeur(team_t team)
@@ -450,37 +465,33 @@ void strat_run_galipeur(team_t team)
 #if 0
   // autoset before starting, to avoid gyro's drift
   autoset_side_t side = team == TEAM_YELLOW ? AUTOSET_LEFT : AUTOSET_RIGHT;
-  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_LEFT);
+  ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, SPOT_ELV_RIGHT);
   strat_delay_ms(500);
   autoset(side, kx*(1500-100-70), 1000);
 #endif
 
   // front of start area
   goto_xya(1500-600, 1030, 0);
+
   goto_xya_rel(0,-400,0);
   goto_xya_rel(+400,0,0);
   
-
   // autoset against right side
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_RIGHT, 1500-100, 0);
   goto_xya_rel(-100,0,0);
 
   // -- SE SPOTS --
   // approach SE spots
-  do
-    goto_xya(1500-160, 470, 0);
-  while(robot_state.left_elev.state != SPOT_ELV_S_READY);
+  goto_xya(1500-160, 470, 0);
   // pick one spot
   goto_xya(1500-160, 450, 0);
-  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
-  _meca_order_blocking(SPOT_ELV_LEFT,MECA_LIFT_SPOT);
-  do
-    goto_xya(1500-160, 450, 0);
-  while(robot_state.left_elev.state != SPOT_ELV_S_READY);
+  _meca_order_blocking(SPOT_ELV_RIGHT,MECA_PICK_SPOT);
+  
+  goto_xya(1500-160, 450, 0);
   // pick one spot
+  _wait_meca_ready();
   goto_xya(1500-160, 340, 0);
-  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
-  _meca_order_blocking(SPOT_ELV_LEFT,MECA_LIFT_SPOT);
+  _meca_order_blocking(SPOT_ELV_RIGHT,MECA_PICK_SPOT);
 
   // -- SE CLAPS -- 
   goto_xya(1500-160, 290, 0);
@@ -499,41 +510,38 @@ void strat_run_galipeur(team_t team)
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_DOWN, 0, 100);
 
   goto_xya_rel(0,100,0);
-  goto_xya(1500-820,290,-.5*M_PI);
 
+  _wait_meca_ready();
   goto_xya_rel(-200, 0, 0);
-  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
-  _meca_order_blocking(SPOT_ELV_LEFT,MECA_LIFT_SPOT);
+  _meca_order_blocking(SPOT_ELV_RIGHT,MECA_PICK_SPOT);
+  goto_xya(1500-1270, 350, -M_PI);
+  _wait_meca_ready();
+  goto_xya(1500-1270, 550, -M_PI);
+  _meca_order_blocking(SPOT_ELV_RIGHT,MECA_PICK_SPOT);
 
-  do
-    goto_xya(1500-1270, 350, -M_PI);
-  while(robot_state.left_elev.state != SPOT_ELV_S_READY);
-  goto_xya_rel(0, 200, 0);
-  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
+  goto_xya(1500-1500, 350, 0);
+  _meca_order_blocking(SPOT_ELV_RIGHT,MECA_DISCHARGE_STACK);
+  _meca_order_blocking(SPOT_ELV_RIGHT,MECA_RELEASE_STACK);
+  goto_xya(1500-1500, 600, 0);
 
   //we can make only 4 spots pile ... so sad ...
   //goto_xya(1500-830, 350, -M_PI); 
   //goto_xya_rel(0, 200, 0);
-  //_meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
+  //_meca_order_blocking(SPOT_ELV_RIGHT,MECA_PICK_SPOT);
 
-  goto_xya(1500-600, 1030, M_PI/2);  
-  goto_xya_rel(200, 0, 0);
-  _meca_order_blocking(SPOT_ELV_LEFT,MECA_RELEASE_STACK);
-  goto_xya_rel(-100, 0, 0);
-  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PREPARE_CUP);
+  //goto_xya(1500-600, 1030, M_PI/2);  
+  //goto_xya_rel(200, 0, 0);
+  //_meca_order_blocking(SPOT_ELV_RIGHT,MECA_PREPARE_CUP);
 
-  goto_xya(1500-600, 1030, M_PI/2);  
-  goto_xya(1500-920, 900,  M_PI);
-  goto_xya(1500-920, 1070, M_PI);
-  _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_CUP);
+  //goto_xya(1500-600, 1030, M_PI/2);  
+  //goto_xya(1500-920, 900,  M_PI);
+  //goto_xya(1500-920, 1070, M_PI);
+  //_meca_order_blocking(SPOT_ELV_RIGHT,MECA_PICK_CUP);
 
-  goto_xya(1500-600, 1030, M_PI/2);  
-  _meca_order_blocking(SPOT_ELV_LEFT,MECA_UNLOAD_CUP);
+  //goto_xya(1500-600, 1030, M_PI/2);  
+  //_meca_order_blocking(SPOT_ELV_RIGHT,MECA_UNLOAD_CUP);
 
-  goto_xya_rel(-300, 0, 0);
-
-  //reviens robot !
-  goto_xya(1500-880, 290, M_PI);
+  goto_xya(1500-900,900,0);
 
   _delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);

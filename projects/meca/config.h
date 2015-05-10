@@ -14,8 +14,8 @@
 
 #define UART_AX12  uartC1
 #define UART_PPP  uartF0
-#define UART_COLOR_SENSOR_RIGHT   uartF1
-#define UART_COLOR_SENSOR_LEFT    uartD1
+#define UART_COLOR_SENSOR_LEFT   uartF1
+#define UART_COLOR_SENSOR_RIGHT    uartD1
 
 // Tick period of match timer, in microseconds
 #define UPDATE_MATCH_TIMER_TICK_US  10000
@@ -100,7 +100,7 @@
 #define SE_RIGHT_ELEVATOR_UP              200
 #define SE_RIGHT_ELEVATOR_DOWN_WAIT_SPOT  750
 #define SE_RIGHT_ELEVATOR_DOWN_WAIT_BULB  750
-#define SE_RIGHT_ELEVATOR_UP_MOVE_SPOT   550
+#define SE_RIGHT_ELEVATOR_UP_MOVE_SPOT    510
 
 #define SE_LEFT_SPIPE_CLOSED            150
 #define SE_LEFT_SPIPE_OPENED            150
