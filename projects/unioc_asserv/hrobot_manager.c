@@ -151,9 +151,9 @@ void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega)
   for(i=0;i<3;i++)
   {
     float v = dp[i];
+    v *= motors_scales[i];
     if(v > 32767) v = 32767;
     if(v < -32768) v = -32768;
-    v *= motors_scales[i];
     motors[i] = (int16_t)v;
     pwm_motor_set(system.pwms+i, (int16_t)v);
   }
