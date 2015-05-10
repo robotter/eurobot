@@ -89,6 +89,7 @@ register_messages(
       # set servo #n
       (Order, 'meca_set_arm', [('position','int16')]),
       # enable picking of one spot of elevator #n
+      (Order, 'meca_prepare_pick_spot', [('n','uint8')]),
       (Order, 'meca_pick_one_spot', [('n','uint8')]),
       # release spot stack of elevator #n
       (Order, 'meca_release_spot_stack', [('n','uint8')]),

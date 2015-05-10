@@ -18,6 +18,12 @@ extern rome_intf_t rome_paddock;
 robot_state_t robot_state;
 
 typedef enum {
+  ROBOT_SIDE_LEFT = 0,
+  ROBOT_SIDE_RIGHT,
+  ROBOT_SIDE_BACK,
+} robot_side_t;
+
+typedef enum {
   SPOT_ELV_LEFT = 0,
   SPOT_ELV_RIGHT = 1
 }spot_elevator_t;
@@ -92,14 +98,15 @@ void ext_arm_clap(void)
 }
 
 typedef enum {
-  MECA_PICK_SPOT = 0,
+  MECA_PICK_SPOT,
+  MECA_LIFT_SPOT,
   MECA_RELEASE_STACK,
   MECA_UNLOAD_CUP,
   MECA_PREPARE_CUP,
   MECA_PICK_CUP,
 }meca_orders_t;
 
-static inline void _meca_order_blocking(spot_elevator_t side, meca_orders_t order){
+static void _meca_order_blocking(spot_elevator_t side, meca_orders_t order){
   //wait for meca to be ready
   for (;;){
     if (robot_state.left_elev.state == SPOT_ELV_S_READY)
@@ -120,6 +127,10 @@ static inline void _meca_order_blocking(spot_elevator_t side, meca_orders_t orde
       ROME_SENDWAIT_MECA_PREPARE_CUP(&rome_meca, side);
       break;
 
+    case MECA_LIFT_SPOT:
+      ROME_SENDWAIT_MECA_PREPARE_PICK_SPOT(&rome_meca, side);
+      break;
+
     case MECA_PICK_SPOT:
       ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, side);
       break;
@@ -133,7 +144,7 @@ static inline void _meca_order_blocking(spot_elevator_t side, meca_orders_t orde
   update_rome_interfaces();
   //wait for meca to stop being busy
   for (;;){
-    if (robot_state.left_elev.state != SPOT_ELV_S_BUSY)
+    if (robot_state.right_elev.state != SPOT_ELV_S_BUSY)
       return;
     update_rome_interfaces();
   }
@@ -268,9 +279,9 @@ void goto_xya_rel(int16_t x, int16_t y, float a)
 }
 
 /// Do an autoset
-void autoset(autoset_side_t side, float x, float y)
+void autoset(robot_side_t robot_side, autoset_side_t table_side, float x, float y)
 {
-  ROME_SENDWAIT_ASSERV_AUTOSET(&rome_asserv, side, x, y);
+  ROME_SENDWAIT_ASSERV_AUTOSET(&rome_asserv, robot_side, table_side, x, y);
   robot_state.asserv.autoset = 0;
   while(!robot_state.asserv.autoset) {
     //TODO avoid opponent
@@ -411,10 +422,10 @@ void strat_prepare_galipeur(team_t team)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
   // autoset robot
-  autoset(AUTOSET_RIGHT, 1500-100, 0);
+  autoset(ROBOT_SIDE_RIGHT,AUTOSET_RIGHT, 1500-100, 0);
   goto_xya_rel(-500, 0, 0);
   goto_xya_rel(0, -350, 0);
-  autoset(AUTOSET_DOWN, 0, 100);
+  autoset(ROBOT_SIDE_RIGHT,AUTOSET_DOWN, 0, 100);
 
   // move out (in relative coordinates)
   goto_xya_rel(0, 200, 0);
@@ -451,19 +462,25 @@ void strat_run_galipeur(team_t team)
   
 
   // autoset against right side
-  autoset(AUTOSET_RIGHT, 1500-100, 0);
+  autoset(ROBOT_SIDE_RIGHT,AUTOSET_RIGHT, 1500-100, 0);
   goto_xya_rel(-100,0,0);
 
   // -- SE SPOTS --
   // approach SE spots
-  goto_xya(1500-160, 470, 0);
+  do
+    goto_xya(1500-160, 470, 0);
+  while(robot_state.left_elev.state != SPOT_ELV_S_READY);
   // pick one spot
   goto_xya(1500-160, 450, 0);
   _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
-
+  _meca_order_blocking(SPOT_ELV_LEFT,MECA_LIFT_SPOT);
+  do
+    goto_xya(1500-160, 450, 0);
+  while(robot_state.left_elev.state != SPOT_ELV_S_READY);
   // pick one spot
   goto_xya(1500-160, 340, 0);
   _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
+  _meca_order_blocking(SPOT_ELV_LEFT,MECA_LIFT_SPOT);
 
   // -- SE CLAPS -- 
   goto_xya(1500-160, 290, 0);
@@ -479,15 +496,18 @@ void strat_run_galipeur(team_t team)
   goto_xya_rel(+50,0,0);
   ext_arm_lower();
   goto_xya_rel(+50,0,0);
-  autoset(AUTOSET_DOWN, 0, 100);
+  autoset(ROBOT_SIDE_RIGHT,AUTOSET_DOWN, 0, 100);
 
   goto_xya_rel(0,100,0);
   goto_xya(1500-820,290,-.5*M_PI);
 
   goto_xya_rel(-200, 0, 0);
   _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
+  _meca_order_blocking(SPOT_ELV_LEFT,MECA_LIFT_SPOT);
 
-  goto_xya(1500-1270, 350, -M_PI); 
+  do
+    goto_xya(1500-1270, 350, -M_PI);
+  while(robot_state.left_elev.state != SPOT_ELV_S_READY);
   goto_xya_rel(0, 200, 0);
   _meca_order_blocking(SPOT_ELV_LEFT,MECA_PICK_SPOT);
 

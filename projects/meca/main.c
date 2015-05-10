@@ -117,6 +117,21 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
 
+    case ROME_MID_MECA_PREPARE_PICK_SPOT: {
+      switch(frame->meca_prepare_pick_spot.n)
+      {
+        case 0:
+          spot_elevator_prepare_spot_stacking(&l_spot_elevator);
+          break;
+        case 1:
+          spot_elevator_prepare_spot_stacking(&r_spot_elevator);
+          break;
+        default :
+          break;
+      }
+      rome_reply_ack(intf, frame);
+    } break;
+
     case ROME_MID_MECA_PICK_ONE_SPOT: {
       switch(frame->meca_pick_one_spot.n)
       {
