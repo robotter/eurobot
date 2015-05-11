@@ -83,41 +83,6 @@ register_messages(
 
       ]),
 
-    # MECA
-    (0x50, [
-      # __ ORDERS __
-      # activate/deactivate motor power
-      (Order, 'meca_set_power', [('active','bool')]),
-      # set servo #n
-      (Order, 'meca_set_arm', [('position','int16')]),
-      # enable picking of one spot of elevator #n
-      (Order, 'meca_prepare_pick_spot', [('n','uint8')]),
-      (Order, 'meca_pick_one_spot', [('n','uint8')]),
-      # release spot stack of elevator #n
-      (Order, 'meca_discharge_spot_stack', [('n','uint8')]),
-      (Order, 'meca_release_spot_stack', [('n','uint8')]),
-      # pick one bulb for elevator #n
-      (Order, 'meca_pick_bulb', [('n','uint8')]),
-      # prepare elevator #n for boarding bulb
-      (Order, 'meca_prepare_for_onboard_bulb', [('n','uint8')]),
-      (Order, 'meca_prepare_cup', [('n','uint8')]),
-      (Order, 'meca_unload_cup', [('n','uint8')]),
-      (Order, 'meca_pick_cup', [('n','uint8')]),
-      (Order, 'meca_reset_elevator', [('n','uint8')]),
-
-      # __ TELEMETRY __
-      # match timer
-      ('meca_tm_match_timer', [('seconds','int16')]),
-      # spot elevators
-      rome_types.rome_enum('meca_elevator_state', (
-          'busy',  # elevator won't accept commands, robot shouldn't move
-          'ground_clear',  # elevator won't accept commands, robot can move
-          'ready',  # elevator ready for new commands
-          )),
-      ('meca_tm_left_elevator'  ,[('state','meca_elevator_state'),('nb_spots','int8')]),
-      ('meca_tm_right_elevator' ,[('state','meca_elevator_state'),('nb_spots','int8')]),
-      ]),
-
     # STRATEGY
     (0x60, [
       # __ TELEMETRY __
@@ -144,6 +109,43 @@ register_messages(
       (Order, 'color_sensor_set_dist_threshold', [('low_threshold','uint16'), ('high_threshold','uint16'), ('consecutive_detect_threshold','uint8')]),
       ]),
 
+    # MECA
+    (0xA0, [
+      # __ ORDERS __
+      # activate/deactivate motor power
+      (Order, 'meca_set_power', [('active','bool')]),
+      # set servo #n
+      (Order, 'meca_set_arm', [('position','int16')]),
+      # enable picking of one spot of elevator #n
+      (Order, 'meca_prepare_pick_spot', [('n','uint8')]),
+      (Order, 'meca_pick_one_spot', [('n','uint8')]),
+      # release spot stack of elevator #n
+      (Order, 'meca_discharge_spot_stack', [('n','uint8')]),
+      (Order, 'meca_release_spot_stack', [('n','uint8')]),
+      # pick one bulb for elevator #n
+      (Order, 'meca_pick_bulb', [('n','uint8')]),
+      # prepare elevator #n for boarding bulb
+      (Order, 'meca_prepare_for_bulb', [('n','uint8')]),
+      (Order, 'meca_prepare_cup', [('n','uint8')]),
+      (Order, 'meca_unload_cup', [('n','uint8')]),
+      (Order, 'meca_pick_cup', [('n','uint8')]),
+      (Order, 'meca_reset_elevator', [('n','uint8')]),
+      # carpets
+      (Order, 'meca_carpet_lock', [('n','uint8')]),
+      (Order, 'meca_carpet_unlock', [('n','uint8')]),
+
+      # __ TELEMETRY __
+      # match timer
+      ('meca_tm_match_timer', [('seconds','int16')]),
+      # spot elevators
+      rome_types.rome_enum('meca_elevator_state', (
+          'busy',  # elevator won't accept commands, robot shouldn't move
+          'ground_clear',  # elevator won't accept commands, robot can move
+          'ready',  # elevator ready for new commands
+          )),
+      ('meca_tm_left_elevator'  ,[('state','meca_elevator_state'),('nb_spots','int8')]),
+      ('meca_tm_right_elevator' ,[('state','meca_elevator_state'),('nb_spots','int8')]),
+      ]),
 
   )
 
