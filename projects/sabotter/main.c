@@ -61,6 +61,9 @@ static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_ASSERV_TM_HTRAJ_AUTOSET_DONE:
       robot_state.asserv.autoset = frame->asserv_tm_htraj_autoset_done.b;
       break;
+    case ROME_MID_ASSERV_TM_GYRO_CALIBRATION:
+      robot_state.gyro_calibration = frame->asserv_tm_gyro_calibration.active;
+      break;
     case ROME_MID_R3D2_TM_DETECTION: {
       uint8_t i = frame->r3d2_tm_detection.i;
       if(i < R3D2_OBJECTS_MAX) {
@@ -69,6 +72,11 @@ static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
         object->a = frame->r3d2_tm_detection.a/1000.;
         object->r = frame->r3d2_tm_detection.r;
       }
+    } break;
+    case ROME_MID_ASSERV_TM_XYA:{
+      robot_state.current_pos.x = frame->asserv_tm_xya.x;
+      robot_state.current_pos.y = frame->asserv_tm_xya.y;
+      robot_state.current_pos.a = frame->asserv_tm_xya.a/1000.;
     } break;
     default:
       break;
