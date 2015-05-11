@@ -109,6 +109,49 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
 
+    case ROME_MID_MECA_CMD: {
+      void (*func)(spot_elevator_t*);
+      switch(frame->meca_cmd.cmd) {
+        case ROME_ENUM_MECA_COMMAND_RESET_ELEVATOR:
+          func = spot_elevator_reset;
+          break;
+        case ROME_ENUM_MECA_COMMAND_PREPARE_PICK_SPOT:
+          func = spot_elevator_prepare_spot_stacking;
+          break;
+        case ROME_ENUM_MECA_COMMAND_PICK_SPOT:
+          func = spot_elevator_automatic_spot_stacking;
+          break;
+        case ROME_ENUM_MECA_COMMAND_RELEASE_SPOT_STACK:
+          func = spot_elevator_release_spot_stack;
+          break;
+        case ROME_ENUM_MECA_COMMAND_DISCHARGE_SPOT_STACK:
+          func = spot_elevator_discharge_spot_stack;
+          break;
+        case ROME_ENUM_MECA_COMMAND_PICK_CUP:
+          func = spot_elevator_pick_cup;
+          break;
+        case ROME_ENUM_MECA_COMMAND_PREPARE_CUP:
+          func = spot_elevator_prepare_cup;
+          break;
+        case ROME_ENUM_MECA_COMMAND_UNLOAD_CUP:
+          func = spot_elevator_unload_cup;
+          break;
+        case ROME_ENUM_MECA_COMMAND_PICK_BULB:
+          func = spot_elevator_pick_bulb;
+          break;
+        case ROME_ENUM_MECA_COMMAND_PREPARE_BULB:
+          func = spot_elevator_prepare_bulb;
+          break;
+        case ROME_ENUM_MECA_COMMAND_NONE:
+        default:
+          func = NULL;
+          break;
+      }
+      if(func)
+        func(frame->meca_cmd.side ? &r_spot_elevator : &l_spot_elevator);
+      rome_reply_ack(intf, frame);
+    } break;
+
     case ROME_MID_MECA_SET_POWER: {
       uint8_t active = frame->meca_set_power.active;
       if(active) {
@@ -121,157 +164,6 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
 
     case ROME_MID_MECA_SET_ARM: {
       spot_elevator_move_middle_arm(frame->meca_set_arm.position);
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_RESET_ELEVATOR: {
-      switch(frame->meca_reset_elevator.n)
-      {
-        case 0:
-          spot_elevator_reset(&l_spot_elevator);
-          break;
-        case 1:
-          spot_elevator_reset(&r_spot_elevator);
-          break;
-        default :
-          break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_PREPARE_PICK_SPOT: {
-      switch(frame->meca_prepare_pick_spot.n)
-      {
-        case 0:
-          spot_elevator_prepare_spot_stacking(&l_spot_elevator);
-          break;
-        case 1:
-          spot_elevator_prepare_spot_stacking(&r_spot_elevator);
-          break;
-        default :
-          break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_PICK_ONE_SPOT: {
-      switch(frame->meca_pick_one_spot.n)
-      {
-        case 0:
-          spot_elevator_automatic_spot_stacking(&l_spot_elevator);
-          break;
-        case 1:
-          spot_elevator_automatic_spot_stacking(&r_spot_elevator);
-          break;
-        default :
-          break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_RELEASE_SPOT_STACK: {
-      switch(frame->meca_release_spot_stack.n)
-      {
-        case 0:
-          spot_elevator_release_spot_stack(&l_spot_elevator);
-          break;
-        case 1:
-          spot_elevator_release_spot_stack(&r_spot_elevator);
-          break;
-        default :
-          break;
-      }
-      rome_reply_ack(intf, frame);
-    } 
-    break;
-
-    case ROME_MID_MECA_DISCHARGE_SPOT_STACK: {
-      switch(frame->meca_discharge_spot_stack.n)
-      {
-        case 0:
-          spot_elevator_discharge_spot_stack(&l_spot_elevator);
-          break;
-        case 1:
-          spot_elevator_discharge_spot_stack(&r_spot_elevator);
-          break;
-        default :
-          break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_PICK_CUP: {
-      switch(frame->meca_pick_cup.n)
-      {
-        case 0:
-          spot_elevator_pick_cup(&l_spot_elevator);
-          break;
-        case 1:
-          spot_elevator_pick_cup(&r_spot_elevator);
-          break;
-        default :
-          break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_PREPARE_CUP: {
-      switch(frame->meca_prepare_cup.n)
-      {
-        case 0:
-          spot_elevator_prepare_unload_cup(&l_spot_elevator,false);
-          break;
-        case 1:
-          spot_elevator_prepare_unload_cup(&r_spot_elevator,false);
-          break;
-        default :
-          break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_UNLOAD_CUP: {
-      switch(frame->meca_unload_cup.n)
-      {
-        case 0:
-          spot_elevator_prepare_unload_cup(&l_spot_elevator,true);
-          break;
-        case 1:
-          spot_elevator_prepare_unload_cup(&r_spot_elevator,true);
-          break;
-        default :
-          break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_PICK_BULB: {
-      switch(frame->meca_pick_bulb.n)
-      {
-        case 0:
-          spot_elevator_pick_bulb(&l_spot_elevator);
-          break;
-        case 1:
-          spot_elevator_pick_bulb(&r_spot_elevator);
-          break;
-        default :
-          break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_PREPARE_FOR_BULB: {
-      switch(frame->meca_prepare_for_bulb.n)
-      {
-        case 0:
-          spot_elevator_prepare_for_bulb(&l_spot_elevator);
-          break;
-        case 1:
-          spot_elevator_prepare_for_bulb(&r_spot_elevator);
-          break;
-        default :
-          break;
-      }
       rome_reply_ack(intf, frame);
     } break;
 

@@ -5,6 +5,7 @@
 #include <avarix/portpin.h>
 #include <rome/rome.h>
 #include <timer/uptime.h>
+#include <idle/idle.h>
 #include "strat.h"
 #include "common.h"
 #include "config.h"
@@ -76,33 +77,15 @@ void ext_arm_set(int16_t pos)
   ROME_SENDWAIT_MECA_SET_ARM(&rome_meca, pos);
 }
 
-void katioucha_fire(uint8_t n)
-{
-  ROME_SENDWAIT_KATIOUCHA_FIRE(&rome_asserv, n);
-}
-
 /// Set arm position
 void ext_arm_raise(void) { ext_arm_set(430); }
 void ext_arm_lower(void) { ext_arm_set(100); }
 void ext_arm_clap(void)  { ext_arm_set(300); }
 void ext_arm_galipette(void)  { ext_arm_set(180); }
 
-typedef enum {
-  MECA_NONE,
-  MECA_PICK_SPOT,
-  MECA_LIFT_SPOT,
-  MECA_RELEASE_STACK,
-  MECA_DISCHARGE_STACK,
-  MECA_UNLOAD_CUP,
-  MECA_PREPARE_CUP,
-  MECA_PICK_CUP,
-  MECA_PREPARE_BULB,
-  MECA_PICK_BULB,
-}meca_orders_t;
-
 void _wait_meca_ready(void){
   for (;;){
-    if(//(robot_state.left_elev.state == SPOT_ELV_S_READY)&&
+    if((robot_state.left_elev.state == SPOT_ELV_S_READY)&&
        (robot_state.right_elev.state == SPOT_ELV_S_READY))
       return;
     idle();
@@ -111,71 +94,32 @@ void _wait_meca_ready(void){
 
 void _wait_meca_ground_clear(void){
   for (;;){
-    if(//(robot_state.left_elev.state != SPOT_ELV_S_BUSY)&&
+    if((robot_state.left_elev.state != SPOT_ELV_S_BUSY)&&
        (robot_state.right_elev.state != SPOT_ELV_S_BUSY))
       return;
     idle();
   }
 }
 
-static void _meca_order_one_elevator(spot_elevator_t side, meca_orders_t order){
-  switch(order){
-    case MECA_NONE:
-      break;
 
-    case MECA_PICK_CUP:
-      ROME_SENDWAIT_MECA_PICK_CUP(&rome_meca, side);
-      break;
-
-    case MECA_UNLOAD_CUP:
-      ROME_SENDWAIT_MECA_UNLOAD_CUP(&rome_meca, side);
-      break;
-
-    case MECA_PREPARE_CUP:
-      ROME_SENDWAIT_MECA_PREPARE_CUP(&rome_meca, side);
-      break;
-
-    case MECA_LIFT_SPOT:
-      ROME_SENDWAIT_MECA_PREPARE_PICK_SPOT(&rome_meca, side);
-      break;
-
-    case MECA_PICK_SPOT:
-      ROME_SENDWAIT_MECA_PICK_ONE_SPOT(&rome_meca, side);
-      break;
-
-    case MECA_DISCHARGE_STACK:
-      ROME_SENDWAIT_MECA_DISCHARGE_SPOT_STACK(&rome_meca, side);
-      break;
-
-    case MECA_RELEASE_STACK:
-      ROME_SENDWAIT_MECA_RELEASE_SPOT_STACK(&rome_meca, side);
-      break;
-
-    case MECA_PREPARE_BULB:
-      ROME_SENDWAIT_MECA_PREPARE_FOR_BULB(&rome_meca, side);
-      break;
-
-    case MECA_PICK_BULB:
-      ROME_SENDWAIT_MECA_PICK_BULB(&rome_meca, side);
-      break;
-
-  }
-}
-
-static void _meca_order_blocking_lr(meca_orders_t order_left, meca_orders_t order_right){
+static void _meca_order_blocking_left_right(uint8_t cmd_left, uint8_t cmd_right){
   _wait_meca_ready();
   //send orders
-  _meca_order_one_elevator(SPOT_ELV_LEFT,order_left);
-  _meca_order_one_elevator(SPOT_ELV_RIGHT,order_right);
+  if (cmd_left){
+    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_left, SPOT_ELV_LEFT);
+    robot_state.right_elev.state = SPOT_ELV_S_BUSY;
+  }
+  if (cmd_right){
+    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_right, SPOT_ELV_RIGHT);
+    robot_state.right_elev.state = SPOT_ELV_S_BUSY;
+  }
   //wait for meca to compute orders...
-  _delay_ms(50);
   idle();
   _wait_meca_ground_clear();
 }
 
-static void _meca_order_blocking_both(meca_orders_t order){
-  _meca_order_blocking_lr(order,order);
-}
+#define _meca_order_blocking_lr(l,r) _meca_order_blocking_left_right(ROME_ENUM_MECA_COMMAND_##l,ROME_ENUM_MECA_COMMAND_##r)
+#define _meca_order_blocking_both(cmd) _meca_order_blocking_lr(cmd,cmd)
 
 /// Go to given position, avoid opponents
 void goto_xya(int16_t x, int16_t y, float a)
@@ -456,13 +400,13 @@ void strat_init_galipeur(void)
 
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, SPOT_ELV_RIGHT);
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, SPOT_ELV_LEFT);
-  _meca_order_blocking_both(MECA_PREPARE_BULB);
+  _meca_order_blocking_both(PREPARE_BULB);
   for(;;) {
     update_rome_interfaces();
     if(!robot_state.gyro_calibration)
       break;
     }
-  _meca_order_blocking_both(MECA_PICK_BULB);
+  _meca_order_blocking_both(PICK_BULB);
   ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, SPOT_ELV_RIGHT);
   ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, SPOT_ELV_LEFT);
 }
@@ -496,9 +440,8 @@ void strat_prepare_galipeur(team_t team)
 #endif
 
   //prepare meca
-  ROME_SENDWAIT_MECA_RESET_ELEVATOR(&rome_meca, SPOT_ELV_RIGHT);
-  ROME_SENDWAIT_MECA_RESET_ELEVATOR(&rome_meca, SPOT_ELV_LEFT);
-  _meca_order_blocking_both(MECA_PICK_BULB);
+  _meca_order_blocking_both(RESET_ELEVATOR);
+  _meca_order_blocking_both(PICK_BULB);
 }
 
 void strat_run_galipeur(team_t team)
@@ -511,7 +454,7 @@ void strat_run_galipeur(team_t team)
   
   // autoset against right side
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_RIGHT, 1500-100, 0);
-  _meca_order_blocking_lr(MECA_PREPARE_CUP,MECA_NONE);
+  _meca_order_blocking_lr(PREPARE_CUP,NONE);
   goto_xya_rel(-100,0,0);
 
   // -- SE SPOTS --
@@ -520,13 +463,13 @@ void strat_run_galipeur(team_t team)
   // pick one spot
   _wait_meca_ready();
   goto_xya(1500-160, 450, 0);
-  _meca_order_blocking_lr(MECA_PICK_CUP,MECA_PICK_SPOT);
+  _meca_order_blocking_lr(PICK_CUP,PICK_SPOT);
   
   goto_xya(1500-160, 450, 0);
   // pick one spot
   _wait_meca_ready();
   goto_xya(1500-160, 340, 0);
-  _meca_order_blocking_lr(MECA_NONE,MECA_PICK_SPOT);
+  _meca_order_blocking_lr(NONE,PICK_SPOT);
 
   // -- SE CLAPS -- 
   goto_xya(1500-160, 340, 0);
@@ -547,19 +490,19 @@ void strat_run_galipeur(team_t team)
 
   _wait_meca_ready();
   goto_xya_rel(-200, 0, 0);
-  _meca_order_blocking_lr(MECA_NONE,MECA_PICK_SPOT);
+  _meca_order_blocking_lr(NONE,PICK_SPOT);
 
   // -- MIDDLE SPOT --
   goto_xya(1500-1270, 350, -M_PI);
   _wait_meca_ready();
   goto_xya(1500-1270, 550, -M_PI);
-  _meca_order_blocking_lr(MECA_UNLOAD_CUP,MECA_PICK_SPOT);
+  _meca_order_blocking_lr(UNLOAD_CUP,PICK_SPOT);
 
   // -- DISCHARGE ON THE RED AREA --
   goto_xya(1500-1050, 300, -M_PI/4);
-  _meca_order_blocking_lr(MECA_NONE,MECA_DISCHARGE_STACK);
+  _meca_order_blocking_lr(NONE,DISCHARGE_SPOT_STACK);
   goto_xy_rel_align_course(-65, -75, true);
-  _meca_order_blocking_lr(MECA_NONE,MECA_RELEASE_STACK);
+  _meca_order_blocking_lr(NONE,RELEASE_SPOT_STACK);
   goto_xy_rel_align_course(65*1.2, 75*1.2, false);
   goto_xya_rel(200,0,0);
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_DOWN, 0, 100);
@@ -568,7 +511,7 @@ void strat_run_galipeur(team_t team)
   goto_xya(1500-700, 600, M_PI/2);
 
   // -- BACK TO START AREA --
-  _meca_order_blocking_lr(MECA_NONE,MECA_PREPARE_BULB);
+  _meca_order_blocking_lr(NONE,PREPARE_BULB);
   goto_xya(1500-700, 1030, M_PI/2);
   // -- TAKE GALIPETTE --
   goto_xya(1500-420, 1040, M_PI/2);
@@ -581,16 +524,16 @@ void strat_run_galipeur(team_t team)
   // -- TAKE BULB --
   goto_xya(1500-350, 1000, M_PI/2);
   autoset(ROBOT_SIDE_BACK,AUTOSET_RIGHT, 1500-227, 0);
-  _meca_order_blocking_lr(MECA_NONE,MECA_PICK_BULB);
+  _meca_order_blocking_lr(NONE,PICK_BULB);
   goto_xya(1500-700, 1030, M_PI/2);
 
   // -- GO TO STAIRS ! --
   goto_xya(1500-800, 1600, M_PI);
   goto_xya(1500-830, 1700, M_PI);
-  _meca_order_blocking_lr(MECA_NONE,MECA_PICK_SPOT);
+  _meca_order_blocking_lr(NONE,PICK_SPOT);
   _wait_meca_ready();
   goto_xya(1500-830, 1800, M_PI);
-  _meca_order_blocking_lr(MECA_NONE,MECA_PICK_SPOT);
+  _meca_order_blocking_lr(NONE,PICK_SPOT);
   
   goto_xya_rel(0,-160,0);
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_LEFT, 1500-967-100, 0);
@@ -605,19 +548,19 @@ void strat_run_galipeur(team_t team)
   //we can make only 4 spots pile ... so sad ...
   //goto_xya(1500-830, 350, -M_PI); 
   //goto_xya_rel(0, 200, 0);
-  //_meca_order_blocking_lr(MECA_NONE,MECA_PICK_SPOT);
+  //_meca_order_blocking_lr(NONE,PICK_SPOT);
 
   //goto_xya(1500-600, 1030, M_PI/2);  
   //goto_xya_rel(200, 0, 0);
-  //_meca_order_blocking_lr(MECA_NONE,MECA_PREPARE_CUP);
+  //_meca_order_blocking_lr(NONE,PREPARE_CUP);
 
   //goto_xya(1500-600, 1030, M_PI/2);  
   //goto_xya(1500-920, 900,  M_PI);
   //goto_xya(1500-920, 1070, M_PI);
-  //_meca_order_blocking_lr(MECA_NONE,MECA_PICK_CUP);
+  //_meca_order_blocking_lr(NONE,PICK_CUP);
 
   //goto_xya(1500-600, 1030, M_PI/2);  
-  //_meca_order_blocking_lr(MECA_NONE,MECA_UNLOAD_CUP);
+  //_meca_order_blocking_lr(NONE,UNLOAD_CUP);
 
 
   //back to prog !
@@ -653,92 +596,21 @@ void strat_homologation_galipeur(team_t team)
 
 void strat_init_galipette(void)
 {
-  // initialize asserv variables
-  //ROME_SENDWAIT_ASSERV_SET_X_PID(&rome_asserv, 3000, 0, 0, 50000, 100000, 0);
-  //ROME_SENDWAIT_ASSERV_SET_Y_PID(&rome_asserv, 3000, 0, 0, 50000, 100000, 0);
-  //ROME_SENDWAIT_ASSERV_SET_A_PID(&rome_asserv, 2500, 0, 0, 50000, 1000, 0);
-  //ROME_SENDWAIT_ASSERV_SET_A_QRAMP(&rome_asserv, 200.0, 100.0);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 10.0, 0.05);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 5.0, 0.1);
-  
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(&rome_asserv, 1.0, 0.05);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XYSTEERING_WINDOW(&rome_asserv, 50.0);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_STOP_WINDOWS(&rome_asserv, 5.0, 0.03);
-  // set position
-  //ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 820,-1300,-M_PI_4);
-
-  // disable asserv
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
 }
 
 void strat_prepare_galipette(team_t team)
 {
-  // initialize asserv
-  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, -1300,1100,0);
-  ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, -1300,1100,0);
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-  // inhibit avoidance
-  ROME_SENDWAIT_ASSERV_AVOIDANCE(&rome_asserv, 0);
+  (void) team;
 }
 
 void strat_run_galipette(team_t team)
 {
-  //strat_delay_ms(9000);
-
-  int8_t kx = team == TEAM_YELLOW ? 1 : -1;
-
-  kx = 1;
-  
-  goto_xya(-1300,1100, 0);
-  goto_xya(-1200,1000, 0);
-
-  // go around pop corn glass
-  goto_xya(-400,1000,0);
-  goto_xya(-400,1300,M_PI/3);
-  goto_xya(-460,1300,M_PI/3);
-  strat_delay_ms(500);
-  goto_xya(-1000,1000,M_PI/3);
-
-  strat_delay_ms(2000);
-  ROME_SENDWAIT_ASSERV_SET_A_QRAMP(&rome_asserv, 300.0, 300.0);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 10.0, 50.0);
-  goto_xya_panning(-400, 1000, M_PI/3);
-  goto_xya(-400,1000,M_PI/3);
-  goto_xya_panning(-400,1300,M_PI/3);
-  goto_xya(-400,1300,M_PI/3);
-  ROME_SENDWAIT_ASSERV_SET_A_QRAMP(&rome_asserv, 200.0, 100.0);
-  //ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20.0, 100.0);
-  goto_xya(-460,1300,M_PI/3);
-  goto_xya(-1000,1000,M_PI/3);
-  while(1)
-    idle();
-  strat_delay_ms(5000);
-  goto_xya(-300, 900,0);
-  strat_delay_ms(5000);
-  goto_xya(-400,980,0);
-  strat_delay_ms(2000);
-
-  //push it to cinema
-  goto_xya(-1300,820,0);
-  strat_delay_ms(1000);
-
-  // then go to stares
-  goto_xya(-500,1100,0);
-  goto_xya(-50,1100,0);
-
-  strat_delay_ms(5000);
-  while(1);
-  // go out of table for at least 1m and pray 
-  // XXX tirette is connected to painting click XXX
-  goto_xya_painting(kx*1000,1000,M_PI);
-  goto_xya_rel(0,0,0);
-  strat_delay_ms(500);
-
-  goto_xya_rel(0,-200,0);
+  (void) team;
 }
 
 void strat_test_galipette(team_t team)
 {
+  (void) team;
 }
 
 #if (defined GALIPEUR)

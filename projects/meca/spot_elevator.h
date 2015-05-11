@@ -164,9 +164,7 @@ void spot_elevator_manage(spot_elevator_t *elevator);
 
 void spot_elevator_set_enable(spot_elevator_t *se, bool enable);
 
-void spot_elevator_prepare_for_bulb_picking(spot_elevator_t *se);
-
-void spot_elevator_prepare_for_bulb(spot_elevator_t *se);
+void spot_elevator_prepare_bulb(spot_elevator_t *se);
 
 void spot_elevator_pick_bulb(spot_elevator_t *se);
 
@@ -178,7 +176,8 @@ void spot_elevator_release_spot_stack(spot_elevator_t *se);
 
 void spot_elevator_move_middle_arm(uint16_t position);
 
-void spot_elevator_prepare_unload_cup(spot_elevator_t *se,bool block);
+void spot_elevator_unload_cup(spot_elevator_t *se);
+void spot_elevator_prepare_cup(spot_elevator_t *se);
 void spot_elevator_pick_cup(spot_elevator_t *se);
 
 void spot_elevator_end_of_match(spot_elevator_t *se);

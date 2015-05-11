@@ -505,7 +505,7 @@ void spot_elevator_set_enable(spot_elevator_t *se, bool enable)
   se->is_active = enable;
 }
 
-void spot_elevator_prepare_for_bulb(spot_elevator_t *se)
+void spot_elevator_prepare_bulb(spot_elevator_t *se)
 {
   se->tm_state = SESM_TM_S(BUSY);
   se->sm_state = SESM_PREPARE_CLAW_FOR_BULB_INIT;
@@ -538,10 +538,7 @@ void spot_elevator_discharge_spot_stack(spot_elevator_t *se)
 void spot_elevator_release_spot_stack(spot_elevator_t *se)
 {
   se->tm_state = SESM_TM_S(BUSY);
-  if(se->nb_spots > 0)
-    se->sm_state = SESM_DISCHARGE_INIT;
-  else
-    se->sm_state = SESM_DISCHARGE_RELEASE_PILE;
+  se->sm_state = SESM_DISCHARGE_RELEASE_PILE;
 }
 
 void spot_elevator_move_middle_arm(uint16_t position){
@@ -556,12 +553,12 @@ void spot_elevator_move_middle_arm(uint16_t position){
   ax12_write_word(&ax12, SE_AX12_MIDDLE_ARM_ID, AX12_ADDR_GOAL_POSITION_L, ax12_consign);
 }
 
-void spot_elevator_prepare_unload_cup(spot_elevator_t *se, bool block){
-  if (block)
-    se->tm_state = SESM_TM_S(BUSY);
-  else 
-    se->tm_state = SESM_TM_S(GROUND_CLEAR);
-
+void spot_elevator_prepare_cup(spot_elevator_t *se){
+  se->tm_state = SESM_TM_S(GROUND_CLEAR);
+  se->sm_state = SESM_PICK_CUP_CLAW_OPEN;
+}
+void spot_elevator_unload_cup(spot_elevator_t *se){
+  se->tm_state = SESM_TM_S(BUSY);
   se->sm_state = SESM_PICK_CUP_CLAW_OPEN;
 }
 
