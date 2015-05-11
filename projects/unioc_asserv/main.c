@@ -228,11 +228,8 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 
 #if defined(GALIPEUR)
     // forward orders to R3D2 board
-    case ROME_MID_R3D2_CALIBRATE_ANGLE:
-    case ROME_MID_R3D2_CALIBRATE_DIST:
-    case ROME_MID_R3D2_CONF_LOAD:
-    case ROME_MID_R3D2_CONF_SAVE:
-    case ROME_MID_R3D2_SET_MOTOR_SPEED:
+    case ROME_MID_R3D2_SET_ROTATION:
+    case ROME_MID_R3D2_SET_BLIND_SPOT:
       rome_send(&rome_r3d2, frame);
       break;
 #endif
