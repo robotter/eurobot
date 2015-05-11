@@ -25,14 +25,14 @@ typedef enum {
 } robot_side_t;
 
 typedef enum {
-  SPOT_ELV_LEFT = 0,
-  SPOT_ELV_RIGHT = 1
+  MECA_LEFT = 0,
+  MECA_RIGHT = 1
 }spot_elevator_t;
 
 typedef enum {
-  SPOT_ELV_S_BUSY = 0,
-  SPOT_ELV_S_GROUND_CLEAR,
-  SPOT_ELV_S_READY,
+  SPOT_ELEV_S_BUSY = 0,
+  SPOT_ELEV_S_GROUND_CLEAR,
+  SPOT_ELEV_S_READY,
 }spot_elevator_state_t;
 
 // Return true if an opponent is detected
@@ -85,8 +85,8 @@ void ext_arm_galipette(void)  { ext_arm_set(180); }
 
 void _wait_meca_ready(void){
   for (;;){
-    if((robot_state.left_elev.state == SPOT_ELV_S_READY)&&
-       (robot_state.right_elev.state == SPOT_ELV_S_READY))
+    if((robot_state.left_elev.state == SPOT_ELEV_S_READY)&&
+       (robot_state.right_elev.state == SPOT_ELEV_S_READY))
       return;
     idle();
   }
@@ -94,8 +94,8 @@ void _wait_meca_ready(void){
 
 void _wait_meca_ground_clear(void){
   for (;;){
-    if((robot_state.left_elev.state != SPOT_ELV_S_BUSY)&&
-       (robot_state.right_elev.state != SPOT_ELV_S_BUSY))
+    if((robot_state.left_elev.state != SPOT_ELEV_S_BUSY)&&
+       (robot_state.right_elev.state != SPOT_ELEV_S_BUSY))
       return;
     idle();
   }
@@ -106,12 +106,12 @@ static void _meca_order_blocking_left_right(uint8_t cmd_left, uint8_t cmd_right)
   _wait_meca_ready();
   //send orders
   if (cmd_left){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_left, SPOT_ELV_LEFT);
-    robot_state.right_elev.state = SPOT_ELV_S_BUSY;
+    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_left, MECA_LEFT);
+    robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
   }
   if (cmd_right){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_right, SPOT_ELV_RIGHT);
-    robot_state.right_elev.state = SPOT_ELV_S_BUSY;
+    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_right, MECA_RIGHT);
+    robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
   }
   //wait for meca to compute orders...
   idle();
@@ -398,8 +398,8 @@ void strat_init_galipeur(void)
 
   ext_arm_lower(); 
 
-  ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, SPOT_ELV_RIGHT);
-  ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, SPOT_ELV_LEFT);
+  ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
+  ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_LEFT);
   _meca_order_blocking_both(PREPARE_BULB);
   for(;;) {
     update_rome_interfaces();
@@ -407,8 +407,8 @@ void strat_init_galipeur(void)
       break;
     }
   _meca_order_blocking_both(PICK_BULB);
-  ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, SPOT_ELV_RIGHT);
-  ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, SPOT_ELV_LEFT);
+  ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, MECA_RIGHT);
+  ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, MECA_LEFT);
 }
 
 void strat_prepare_galipeur(team_t team)
@@ -539,7 +539,8 @@ void strat_run_galipeur(team_t team)
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_LEFT, 1500-967-100, 0);
   goto_xya_rel(100, 0,0);
   goto_xya(1500-950, 1600, M_PI - M_PI/6);
-  ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, SPOT_ELV_RIGHT);
+  ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
+  ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_LEFT);
 
   goto_xya(1500-880, 1800, -M_PI/2);
   ext_arm_clap();
