@@ -19,6 +19,9 @@ register_messages(
       # order robot to go directly to point (x,y) then turn to heading a
       (Order, 'asserv_goto_xya_panning', [('x','dist'), ('y','dist'), ('pan_angle', 'angle')]),
 
+      # order to run along a trajectory (xy array size must be even)
+      (Order, 'asserv_run_traj', [('a','angle'),('xy','dist[]')]),
+
       # autoset robot, sides are (from 0 to 4): none, left, right, up, down
       (Order, 'asserv_autoset', [('robot_side','uint8'), ('table_side','uint8'), ('x','float'), ('y','float')]),
 

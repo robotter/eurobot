@@ -143,6 +143,22 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       htrajectory_gotoXY_panning( &trajectory, x,y,pan_angle, NULL);
       rome_reply_ack(intf, frame);
     } break;
+    case ROME_MID_ASSERV_RUN_TRAJ: {
+      uint8_t nxy = ROME_FRAME_VARARRAY_SIZE(frame, asserv_run_traj, xy);
+      if(nxy % 2 != 0) {
+        ROME_LOGF(&rome, ERROR, "asserv_run_traj order ignored: odd number of coordinates (%u)", nxy);
+      } else {
+        vect_xy_t xy[nxy/2];
+        for(uint8_t i=0; i<nxy; i+=2) {
+          xy[i/2].x = frame->asserv_run_traj.xy[i];
+          xy[i/2].y = frame->asserv_run_traj.xy[i+1];
+        }
+        htrajectory_run(&trajectory, xy, sizeof(xy));
+        float a = frame->asserv_run_traj.a/1000.0;
+        htrajectory_gotoA(&trajectory, a);
+      }
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_XYA: {
       int16_t x = frame->asserv_set_xya.x;
       int16_t y = frame->asserv_set_xya.y;
