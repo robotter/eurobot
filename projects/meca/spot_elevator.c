@@ -175,7 +175,7 @@ void spot_elevator_set_elevator_ax12_addr(spot_elevator_t *elevator, ax12_addr_t
 }
 
 void spot_elevator_init_spipe_servo(spot_elevator_t *elevator, char channel, int16_t open_pwm_us, int16_t close_pwm_us){
-  pwm_servo_init(&elevator->spipe_servo, &TCD0, channel);
+  pwm_servo_init(&elevator->spipe_servo, SE_SERVO_TUBE_PORT, channel);
   elevator->spipe_open  = open_pwm_us;
   elevator->spipe_close = close_pwm_us;
   _spipe_open(elevator);
@@ -202,11 +202,11 @@ void spot_elevator_manage(spot_elevator_t *elevator)
   if ((elevator != NULL) && 
       (elevator->is_active))
   {
-    static int lstate = INT16_MAX;
-    if(lstate != elevator->sm_state) {
-      ROME_LOGF(&rome_strat, DEBUG,"state %u", elevator->sm_state);
-    }
-    lstate = elevator->sm_state;
+    //static int lstate = INT16_MAX;
+    //if(lstate != elevator->sm_state) {
+    //  ROME_LOGF(&rome_strat, DEBUG,"state %u", elevator->sm_state);
+    //}
+    //lstate = elevator->sm_state;
     // each state uses a non blocking function that returns the next state of the state machine
     switch(elevator->sm_state)
     {
@@ -230,23 +230,26 @@ void spot_elevator_manage(spot_elevator_t *elevator)
         //waiting state, do noting
         break;
 
-      case SESM_PREPARE_CLAW_FOR_ONBOARD_BULB_CLAW:
-        elevator->tm_state = SESM_TM_S(GROUND_CLEAR);
-        if(_set_claw_ax12(elevator, CLAW_CLOSED_FOR_BULB))
-          elevator->sm_state = SESM_PREPARE_CLAW_FOR_ONBOARD_BULB_ELEV;
+      case SESM_PREPARE_CLAW_FOR_BULB_INIT:
+      case SESM_PREPARE_CLAW_FOR_BULB_CLAW:
+        _spipe_close(elevator);
+        if(_set_claw_ax12(elevator, CLAW_OPENED))
+          elevator->sm_state = SESM_PREPARE_CLAW_FOR_BULB_CLAW_WAIT;
         break;
 
-      case SESM_PREPARE_CLAW_FOR_ONBOARD_BULB_ELEV:
-        elevator->tm_state = SESM_TM_S(GROUND_CLEAR);
-        if(_set_elevator_ax12(elevator, ELEVATOR_UP, ELEVATOR_FAST))
+      case SESM_PREPARE_CLAW_FOR_BULB_CLAW_WAIT:
+        if(_is_claw_ax12_in_position(elevator, CLAW_OPENED))
+          elevator->sm_state = SESM_PREPARE_CLAW_FOR_BULB_ELEV;
+        break;
+
+      case SESM_PREPARE_CLAW_FOR_BULB_ELEV:
+        if(_set_elevator_ax12(elevator, ELEVATOR_DOWN_WAITING_BULB, ELEVATOR_FAST))
+          elevator->sm_state = SESM_PREPARE_CLAW_FOR_BULB_ELEV_WAIT;
+        break;
+
+      case SESM_PREPARE_CLAW_FOR_BULB_ELEV_WAIT:
+        if(_is_elevator_ax12_in_position(elevator, ELEVATOR_DOWN_WAITING_BULB))
           elevator->sm_state = SESM_INACTIVE;
-        break;
-
-      case SESM_OPEN_CLAW_FOR_BULB:
-        elevator->tm_state = SESM_TM_S(GROUND_CLEAR);
-        if (_set_claw_ax12(elevator, CLAW_OPENED) &&
-            _set_elevator_ax12(elevator, ELEVATOR_DOWN_WAITING_SPOT, ELEVATOR_FAST))
-          elevator->sm_state = SESM_INACTIVE; 
         break;
 
       case SESM_PREPARE_SPOT_INIT:
@@ -287,7 +290,22 @@ void spot_elevator_manage(spot_elevator_t *elevator)
           elevator->sm_state = SESM_INACTIVE; 
           break;
         }
-        if (elevator->get_spot_color())
+        if(elevator->get_spot_color()){
+          //for first spot, gently put the bulb on it
+          if(elevator->nb_spots == 0)
+            elevator->sm_state = SESM_PICK_SPOT_LIFT_DOWN_ELEVATOR_PUT_BULB;
+          else
+            elevator->sm_state = SESM_PICK_SPOT_OPEN_CLAW;
+        }
+        break;
+
+      case SESM_PICK_SPOT_LIFT_DOWN_ELEVATOR_PUT_BULB:
+        if(_set_elevator_ax12(elevator, ELEVATOR_DOWN_PUT_BULB, ELEVATOR_FAST))
+          elevator->sm_state = SESM_PICK_SPOT_LIFT_DOWN_ELEVATOR_PUT_BULB_WAIT;
+        break;
+
+      case SESM_PICK_SPOT_LIFT_DOWN_ELEVATOR_PUT_BULB_WAIT:
+        if(_is_elevator_ax12_in_position(elevator, ELEVATOR_DOWN_PUT_BULB))
           elevator->sm_state = SESM_PICK_SPOT_OPEN_CLAW;
         break;
 
@@ -338,12 +356,14 @@ void spot_elevator_manage(spot_elevator_t *elevator)
         }
         break;
 
+      case SESM_PICK_BULB_INIT:
       case SESM_CLOSE_CLAW_FOR_BULB:
         if(_set_claw_ax12(elevator, CLAW_CLOSED_FOR_BULB))
           elevator->sm_state = SESM_WAIT_CLAW_CLOSED_FOR_BULB;
         break;
 
       case SESM_WAIT_CLAW_CLOSED_FOR_BULB:
+        _spipe_open(elevator);
         if(_is_claw_ax12_in_position(elevator, CLAW_CLOSED_FOR_BULB))
           elevator->sm_state = SESM_LIFT_UP_ELEVATOR_FOR_BULB;
         break;
@@ -354,8 +374,10 @@ void spot_elevator_manage(spot_elevator_t *elevator)
         break;
 
       case SESM_WAIT_ELEVATOR_UP_FOR_BULB:
-        if(_is_elevator_ax12_in_position(elevator, ELEVATOR_UP))
+        if(_is_elevator_ax12_in_position(elevator, ELEVATOR_UP)){
           elevator->sm_state = SESM_INACTIVE;
+          _spipe_close(elevator);
+        }
         break;
 
       case SESM_DISCHARGE_INIT:
@@ -483,22 +505,16 @@ void spot_elevator_set_enable(spot_elevator_t *se, bool enable)
   se->is_active = enable;
 }
 
-void spot_elevator_prepare_for_bulb_picking(spot_elevator_t *se)
+void spot_elevator_prepare_for_bulb(spot_elevator_t *se)
 {
   se->tm_state = SESM_TM_S(BUSY);
-  se->sm_state = SESM_OPEN_CLAW_FOR_BULB;
-}
-
-void spot_elevator_prepare_for_onboard_bulb(spot_elevator_t *se)
-{
-  se->tm_state = SESM_TM_S(BUSY);
-  se->sm_state = SESM_PREPARE_CLAW_FOR_ONBOARD_BULB_CLAW;
+  se->sm_state = SESM_PREPARE_CLAW_FOR_BULB_INIT;
 }
 
 void spot_elevator_pick_bulb(spot_elevator_t *se)
 {
   se->tm_state = SESM_TM_S(BUSY);
-  se->sm_state = SESM_CLOSE_CLAW_FOR_BULB;
+  se->sm_state = SESM_PICK_BULB_INIT;
 }
 
 void spot_elevator_automatic_spot_stacking(spot_elevator_t *se)

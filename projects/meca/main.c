@@ -36,7 +36,7 @@ spot_elevator_t l_spot_elevator =
   .claw_ax12_addr = SE_LEFT_AX12_CLAW_ID,
   .elevator_ax12_addr = SE_LEFT_AX12_ELEVATOR_ID,
   .claw_ax12_positions = {SE_LEFT_CLAW_OPENED, SE_LEFT_CLAW_CLOSED_FOR_SPOT, SE_LEFT_CLAW_CLOSED_FOR_BULB},
-  .elevator_ax12_positions = {SE_LEFT_ELEVATOR_UP, SE_LEFT_ELEVATOR_DOWN_WAIT_SPOT, SE_LEFT_ELEVATOR_DOWN_WAIT_BULB, SE_LEFT_ELEVATOR_UP_MOVE_SPOT},
+  .elevator_ax12_positions = {SE_LEFT_ELEVATOR_UP, SE_LEFT_ELEVATOR_DOWN_WAIT_SPOT, SE_LEFT_ELEVATOR_DOWN_WAIT_BULB, SE_LEFT_ELEVATOR_DOWN_PUT_BULB, SE_LEFT_ELEVATOR_UP_MOVE_SPOT},
 };
 
 // right spot elevator
@@ -45,7 +45,7 @@ spot_elevator_t r_spot_elevator =
   .claw_ax12_addr = SE_RIGHT_AX12_CLAW_ID,
   .elevator_ax12_addr = SE_RIGHT_AX12_ELEVATOR_ID,
   .claw_ax12_positions = {SE_RIGHT_CLAW_OPENED, SE_RIGHT_CLAW_CLOSED_FOR_SPOT, SE_RIGHT_CLAW_CLOSED_FOR_BULB},
-  .elevator_ax12_positions = {SE_RIGHT_ELEVATOR_UP, SE_RIGHT_ELEVATOR_DOWN_WAIT_SPOT, SE_RIGHT_ELEVATOR_DOWN_WAIT_BULB, SE_RIGHT_ELEVATOR_UP_MOVE_SPOT},
+  .elevator_ax12_positions = {SE_RIGHT_ELEVATOR_UP, SE_RIGHT_ELEVATOR_DOWN_WAIT_SPOT, SE_RIGHT_ELEVATOR_DOWN_WAIT_BULB, SE_RIGHT_ELEVATOR_DOWN_PUT_BULB, SE_RIGHT_ELEVATOR_UP_MOVE_SPOT},
 };
 
 // color sensor structure
@@ -58,6 +58,13 @@ struct {
   .left =  {.color = COLOR_UNDEFINED, .detected = false},
   .right = {.color = COLOR_UNDEFINED, .detected = false},
 };
+
+// CARPETS
+pwm_motor_t carpet_r_servo,carpet_l_servo;
+void carpet_unlock_r  (void){pwm_motor_set(&carpet_r_servo, SE_RIGHT_CARPET_UNLOCK);}
+void carpet_lock_r(void){pwm_motor_set(&carpet_r_servo, SE_RIGHT_CARPET_LOCK);}
+void carpet_unlock_l  (void){pwm_motor_set(&carpet_l_servo, SE_LEFT_CARPET_UNLOCK);}
+void carpet_lock_l(void){pwm_motor_set(&carpet_l_servo, SE_LEFT_CARPET_LOCK);}
 
 // ROME messages handler
 void rome_color_sensor_handler(rome_intf_t *intf, const rome_frame_t *frame)
@@ -253,14 +260,14 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
 
-    case ROME_MID_MECA_PREPARE_FOR_ONBOARD_BULB: {
-      switch(frame->meca_prepare_for_onboard_bulb.n)
+    case ROME_MID_MECA_PREPARE_FOR_BULB: {
+      switch(frame->meca_prepare_for_bulb.n)
       {
         case 0:
-          spot_elevator_prepare_for_onboard_bulb(&l_spot_elevator);
+          spot_elevator_prepare_for_bulb(&l_spot_elevator);
           break;
         case 1:
-          spot_elevator_prepare_for_onboard_bulb(&r_spot_elevator);
+          spot_elevator_prepare_for_bulb(&r_spot_elevator);
           break;
         default :
           break;
@@ -278,8 +285,37 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
 
     } break;
 
+    case ROME_MID_MECA_CARPET_LOCK: {
+       switch(frame->meca_carpet_lock.n)
+      {
+        case 0:
+          carpet_lock_l();
+          break;
+        case 1:
+          carpet_lock_r();
+          break;
+        default :
+          break;
+      }
+      rome_reply_ack(intf, frame);
+    } break;
+
+    case ROME_MID_MECA_CARPET_UNLOCK: {
+       switch(frame->meca_carpet_unlock.n)
+      {
+        case 0:
+          carpet_unlock_l();
+          break;
+        case 1:
+          carpet_unlock_r();
+          break;
+        default :
+          break;
+      }
+      rome_reply_ack(intf, frame);
+    } break;
+
     default:
-      ROME_LOG(&rome_strat, DEBUG, "DEFAULT REACHED");
       break;
   }
 } 
@@ -372,7 +408,8 @@ void update_match_timer(void)
 
 bool is_spot_present_l(void)
 {
-  return color_sensor.left.detected;
+  return true;
+  //return color_sensor.left.detected;
 }
 
 bool is_spot_present_r(void)
@@ -427,14 +464,14 @@ int main(void)
   spot_elevator_set_elevator_ax12_addr(&l_spot_elevator, SE_LEFT_AX12_ELEVATOR_ID);
   spot_elevator_set_is_spot_present_fn(&l_spot_elevator, is_spot_present_l);
   spot_elevator_set_get_spot_color_fn(&l_spot_elevator, get_spot_color_l);
-  spot_elevator_init_spipe_servo(&l_spot_elevator, SE_SERVO_LEFT_TUBE, SE_LEFT_TUBE_OPEN_PWM_US, SE_LEFT_TUBE_CLOSE_PWM_US);
+  spot_elevator_init_spipe_servo(&l_spot_elevator, SE_SERVO_LEFT_TUBE_PIN, SE_LEFT_TUBE_OPEN_PWM_US, SE_LEFT_TUBE_CLOSE_PWM_US);
 
   spot_elevator_init(&r_spot_elevator);
   spot_elevator_set_claw_ax12_addr(&r_spot_elevator, SE_RIGHT_AX12_CLAW_ID);
   spot_elevator_set_elevator_ax12_addr(&r_spot_elevator, SE_RIGHT_AX12_ELEVATOR_ID);
   spot_elevator_set_is_spot_present_fn(&r_spot_elevator, is_spot_present_r);
   spot_elevator_set_get_spot_color_fn(&r_spot_elevator, get_spot_color_r);
-  spot_elevator_init_spipe_servo(&r_spot_elevator, SE_SERVO_RIGHT_TUBE, SE_RIGHT_TUBE_OPEN_PWM_US, SE_RIGHT_TUBE_CLOSE_PWM_US);
+  spot_elevator_init_spipe_servo(&r_spot_elevator, SE_SERVO_RIGHT_TUBE_PIN, SE_RIGHT_TUBE_OPEN_PWM_US, SE_RIGHT_TUBE_CLOSE_PWM_US);
   
   INTLVL_ENABLE_ALL();
   __asm__("sei");
@@ -461,9 +498,16 @@ int main(void)
 
   uint32_t t = 0;
 
-  //spot_elevator_set_enable(&l_spot_elevator, true);
+  //intialize capet servos
+  pwm_servo_init(&carpet_r_servo, SE_SERVO_RIGHT_CARPET_PORT, SE_SERVO_RIGHT_CARPET_PIN);
+  carpet_lock_r();
+  pwm_servo_init(&carpet_l_servo, (TC0_t*) SE_SERVO_LEFT_CARPET_PORT, SE_SERVO_LEFT_CARPET_PIN);
+  carpet_lock_l();
+
+  spot_elevator_set_enable(&l_spot_elevator, true);
   spot_elevator_set_enable(&r_spot_elevator, true);
 
+  bool update_left = false;
   // main loop
   for(;;) {
     
@@ -481,14 +525,20 @@ int main(void)
       rome_handle_input(&rome_color_sensor.right);
     }
     
-    // update spot elevator every 10 ms
+    // update each spot elevator every 10 ms
     uptime = uptime_us();
-    if(uptime - spot_elevator_uptime > 10000) {
+    if(uptime - spot_elevator_uptime > 5000) {
       spot_elevator_uptime = uptime;
-      //spot_elevator_manage(&l_spot_elevator);
-      //ROME_SEND_MECA_TM_LEFT_ELEVATOR(&rome_strat,l_spot_elevator.tm_state,l_spot_elevator.nb_spots);
-      spot_elevator_manage(&r_spot_elevator);
-      ROME_SEND_MECA_TM_RIGHT_ELEVATOR(&rome_strat,r_spot_elevator.tm_state,r_spot_elevator.nb_spots);
+      if (update_left){
+        spot_elevator_manage(&l_spot_elevator);
+        ROME_SEND_MECA_TM_LEFT_ELEVATOR(&rome_strat,l_spot_elevator.tm_state,l_spot_elevator.nb_spots);
+        update_left = false;
+      }
+      else{
+        spot_elevator_manage(&r_spot_elevator);
+        ROME_SEND_MECA_TM_RIGHT_ELEVATOR(&rome_strat,r_spot_elevator.tm_state,r_spot_elevator.nb_spots);
+        update_left = true;
+      }
     }
   }
 }

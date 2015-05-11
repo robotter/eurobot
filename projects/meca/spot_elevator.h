@@ -22,6 +22,7 @@ typedef enum{
   ELEVATOR_UP = 0,
   ELEVATOR_DOWN_WAITING_SPOT,
   ELEVATOR_DOWN_WAITING_BULB,
+  ELEVATOR_DOWN_PUT_BULB,
   ELEVATOR_UP_MOVE_SPOT,
 
   // ELEVATOR_AX12_POSITIONS_LENGTH must be the last element of this enum
@@ -44,13 +45,10 @@ typedef enum{
 typedef enum{
   SESM_INIT = 0,
   SESM_INACTIVE,
-  // prepare claw to retain bulb boarded during preparation of match
-  SESM_PREPARE_CLAW_FOR_ONBOARD_BULB_CLAW,
-  SESM_PREPARE_CLAW_FOR_ONBOARD_BULB_ELEV,
   // second init loop : bulb picking (tennis ball)
   SESM_OPEN_CLAW_FOR_BULB,
   
-  // first main loop : spot handling
+  // pick spot
   SESM_PREPARE_SPOT_INIT = 10,
   SESM_PREPARE_SPOT_LIFT_UP_ELEVATOR,
   SESM_PREPARE_SPOT_WAIT_ELEVATOR_UP,
@@ -59,7 +57,8 @@ typedef enum{
   SESM_PICK_SPOT_PRE_WAIT_ELEVATOR_UP,
   SESM_PICK_SPOT_CHECK_SPOT_PRESENCE,
   SESM_PICK_SPOT_CHECK_SPOT_COLOR, 
-  SESM_PICK_SPOT_CHECK_CLAW_OPENED,
+  SESM_PICK_SPOT_LIFT_DOWN_ELEVATOR_PUT_BULB, 
+  SESM_PICK_SPOT_LIFT_DOWN_ELEVATOR_PUT_BULB_WAIT,
   SESM_PICK_SPOT_OPEN_CLAW,
   SESM_PICK_SPOT_WAIT_CLAW_OPENED, 
   SESM_PICK_SPOT_LIFT_DOWN_ELEVATOR, 
@@ -68,21 +67,27 @@ typedef enum{
   SESM_PICK_SPOT_WAIT_CLAW_CLOSED, 
   SESM_PICK_SPOT_POST_LIFT_UP_ELEVATOR,
   SESM_PICK_SPOT_POST_WAIT_ELEVATOR_UP,
-  // second main loop : prepare claw for bulb picking
-  SESM_CLOSE_CLAW_FOR_BULB = 30,
-  SESM_WAIT_CLAW_CLOSED_FOR_BULB,
-  SESM_LIFT_UP_ELEVATOR_FOR_BULB,
-  SESM_WAIT_ELEVATOR_UP_FOR_BULB,
-  // third main loop : discharge spots pile
-  SESM_DISCHARGE_INIT,
-  SESM_DISCHARGE_ELEVATOR_DOWN = 50,
+  // discharge spot pile
+  SESM_DISCHARGE_INIT = 30,
+  SESM_DISCHARGE_ELEVATOR_DOWN,
   SESM_DISCHARGE_ELEVATOR_DOWN_WAIT,
   SESM_DISCHARGE_CLAW_OPEN,
   SESM_DISCHARGE_CLAW_OPEN_WAIT,
   SESM_DISCHARGE_RELEASE_PILE,
   SESM_DISCHARGE_ELEVATOR_UP,
   SESM_DISCHARGE_ELEVATOR_UP_WAIT,
-  //MOVE main loop : pick cup
+  // bulbs
+  SESM_PICK_BULB_INIT = 50,
+  SESM_CLOSE_CLAW_FOR_BULB,
+  SESM_WAIT_CLAW_CLOSED_FOR_BULB,
+  SESM_LIFT_UP_ELEVATOR_FOR_BULB,
+  SESM_WAIT_ELEVATOR_UP_FOR_BULB,
+  SESM_PREPARE_CLAW_FOR_BULB_INIT,
+  SESM_PREPARE_CLAW_FOR_BULB_CLAW,
+  SESM_PREPARE_CLAW_FOR_BULB_CLAW_WAIT,
+  SESM_PREPARE_CLAW_FOR_BULB_ELEV,
+  SESM_PREPARE_CLAW_FOR_BULB_ELEV_WAIT,
+  // cups
   SESM_PICK_CUP_CLAW_OPEN = 70,
   SESM_PICK_CUP_CLAW_OPEN_WAIT,
   SESM_PICK_CUP_ELEVATOR_DOWN,
@@ -92,7 +97,7 @@ typedef enum{
   SESM_PICK_CUP_CLAW_CLOSE_WAIT,
   SESM_PICK_CUP_ELEVATOR_UP,
   SESM_PICK_CUP_ELEVATOR_UP_WAIT, //35
-  //last loop : end of match
+  // end of match
   SESM_ENDOFMATCH_CLAW_OPEN = 250,
   SESM_ENDOFMATCH_CLAW_OPEN_WAIT,
   SESM_ENDOFMATCH_SPIPE_OPEN,
@@ -161,7 +166,7 @@ void spot_elevator_set_enable(spot_elevator_t *se, bool enable);
 
 void spot_elevator_prepare_for_bulb_picking(spot_elevator_t *se);
 
-void spot_elevator_prepare_for_onboard_bulb(spot_elevator_t *se);
+void spot_elevator_prepare_for_bulb(spot_elevator_t *se);
 
 void spot_elevator_pick_bulb(spot_elevator_t *se);
 
