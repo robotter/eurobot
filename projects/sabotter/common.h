@@ -20,8 +20,17 @@ typedef struct {
   bool detected;
 } r3d2_object_t;
 
+/// Team color (or side)
+typedef enum {
+  TEAM_NONE,
+  TEAM_GREEN,
+  TEAM_YELLOW,
+} team_t;
+
 // Robot state
 typedef struct {
+  team_t team;
+  int8_t kx;
   // asserv, "in position" flags
   struct {
     bool xy:1;

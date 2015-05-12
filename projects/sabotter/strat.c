@@ -7,7 +7,6 @@
 #include <timer/uptime.h>
 #include <idle/idle.h>
 #include "strat.h"
-#include "common.h"
 #include "config.h"
 
 #define SPOT_ELEVATOR_LENGTH 83
@@ -18,11 +17,17 @@ extern rome_intf_t rome_paddock;
 
 robot_state_t robot_state;
 
+
 typedef enum {
   ROBOT_SIDE_LEFT = 0,
   ROBOT_SIDE_RIGHT,
   ROBOT_SIDE_BACK,
 } robot_side_t;
+
+#define ROBOT_SIDE_MAIN (robot_state.team == TEAM_GREEN ? ROBOT_SIDE_RIGHT : ROBOT_SIDE_LEFT)
+#define ROBOT_SIDE_AUX (robot_state.team == TEAM_GREEN ? ROBOT_SIDE_LEFT : ROBOT_SIDE_RIGHT)
+#define KX(x) (robot_state.kx*(x)) 
+#define KA(a) (robot_state.kx*(a)) 
 
 typedef enum {
   MECA_LEFT = 0,
@@ -118,8 +123,15 @@ static void _meca_order_blocking_left_right(uint8_t cmd_left, uint8_t cmd_right)
   _wait_meca_ground_clear();
 }
 
-#define _meca_order_blocking_lr(l,r) _meca_order_blocking_left_right(ROME_ENUM_MECA_COMMAND_##l,ROME_ENUM_MECA_COMMAND_##r)
-#define _meca_order_blocking_both(cmd) _meca_order_blocking_lr(cmd,cmd)
+static void _meca_order_blocking_main_aux(uint8_t cmd_main, uint8_t cmd_aux){
+  if(robot_state.team == TEAM_GREEN)
+    _meca_order_blocking_left_right(cmd_aux,cmd_main);
+  else if(robot_state.team == TEAM_YELLOW)
+    _meca_order_blocking_left_right(cmd_main,cmd_aux);
+}
+
+#define _meca_order_blocking_ma(m,a) _meca_order_blocking_main_aux(ROME_ENUM_MECA_COMMAND_##m,ROME_ENUM_MECA_COMMAND_##a)
+#define _meca_order_blocking_both(cmd) _meca_order_blocking_left_right(ROME_ENUM_MECA_COMMAND_##cmd,ROME_ENUM_MECA_COMMAND_##cmd)
 
 /// Go to given position, avoid opponents
 void goto_xya(int16_t x, int16_t y, float a)
@@ -270,17 +282,17 @@ void goto_xy_rel_align_course(int16_t x, int16_t y, bool claws_first){
 #define CLAW_PUSH_SPOT 150
 
 void go_pick_spot(int16_t x, int16_t y){
-  _meca_order_blocking_lr(NONE,PREPARE_PICK_SPOT);
+  _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
   int16_t spot_rel_x = x - robot_state.current_pos.x ;
   int16_t spot_rel_y = x - robot_state.current_pos.y ;
   float angle = atan2(y,x)-M_PI/2;
 
   int16_t cx = spot_rel_x - CLAW_X * sin(angle) - (CLAW_Y+CLAW_APPROACH) * cos(angle);
   int16_t cy = spot_rel_y + CLAW_X * cos(angle) - (CLAW_Y+CLAW_APPROACH) * sin(angle);
-  goto_xya(cx,cy,angle+M_PI);
+  goto_xya(KX(cx),cy,KA(angle+M_PI));
   _wait_meca_ready();
-  goto_xya_rel(CLAW_PUSH_SPOT*cos(angle),CLAW_PUSH_SPOT*sin(angle),0);
-  _meca_order_blocking_lr(NONE,PICK_SPOT);
+  goto_xya_rel(KX(CLAW_PUSH_SPOT*cos(angle)),CLAW_PUSH_SPOT*sin(angle),KA(0));
+  _meca_order_blocking_ma(PICK_SPOT,NONE);
 
 }
 
@@ -409,6 +421,7 @@ void strat_wait_start(team_t team)
 
 void strat_init_galipeur(void)
 {
+  ROME_LOG(&rome_paddock,INFO,"Strat init");
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
 
@@ -428,11 +441,14 @@ void strat_init_galipeur(void)
   _meca_order_blocking_both(PICK_BULB);
   ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, MECA_RIGHT);
   ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, MECA_LEFT);
+
+  robot_state.team = strat_select_team();
+  robot_state.kx = robot_state.team == TEAM_GREEN ? 1 : -1;
 }
 
 void strat_prepare_galipeur(team_t team)
 {
-  
+  ROME_LOG(&rome_paddock,DEBUG,"Strat prepare");
 #if 1
   // initialize asserv
   ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 0, 0, 0);
@@ -441,17 +457,17 @@ void strat_prepare_galipeur(team_t team)
 
   // autoset robot
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_RIGHT, 1500-100, 0);
-  goto_xya_rel(-500, 0, 0);
-  goto_xya_rel(0, -350, -M_PI/4);
+  goto_xya_rel(KX(-500), 0, KA(0));
+  goto_xya_rel(KX(0), -350, KA(-M_PI/4));
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_DOWN, 0, 100);
 
   // move out (in relative coordinates)
-  goto_xya_rel(0, 200, 0);
+  goto_xya_rel(KX(0), 200, KA(0));
   // approach front of start area
-  goto_xya(1500-700, 1040, 0);
+  goto_xya(KX(1500-700), 1100, KA(0));
 
   // stack in start area
-  goto_xya(1500-400,1040,0);
+  goto_xya(KX(1500-400),1100,KA(0));
 #else
   ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 1220, 1040, 0);
   ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 1220, 1040, 0);
@@ -464,132 +480,141 @@ void strat_prepare_galipeur(team_t team)
 }
 
 void galipeur_se_spots(void) {
+  ROME_LOG(&rome_paddock,DEBUG,"SE spots");
   // front of start area
-  goto_xya(1500-700, 650, 0);
-  goto_xya(1500-200, 650, 0);
+  goto_xya(KX(1500-700), 650, KA(0));
+  goto_xya(KX(1500-200), 650, KA(0));
   
   // autoset against right side
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_RIGHT, 1500-100, 0);
-  _meca_order_blocking_lr(PREPARE_CUP,PREPARE_PICK_SPOT);
-  goto_xya_rel(-100,0,0);
+  _meca_order_blocking_ma(PREPARE_PICK_SPOT,PREPARE_CUP);
+  goto_xya_rel(KX(-100),0,KA(0));
 
   // -- SE SPOTS --
   // approach SE spots
-  goto_xya(1500-160, 470, 0);
+  goto_xya(KX(1500-160), 470, KA(0));
   // pick one spot
   _wait_meca_ready();
-  goto_xya(1500-160, 450, 0);
-  _meca_order_blocking_lr(PICK_CUP,PICK_SPOT);
-  _meca_order_blocking_lr(NONE,PREPARE_PICK_SPOT);
+  goto_xya(KX(1500-160), 450, KA(0));
+  _meca_order_blocking_ma(PICK_SPOT,PICK_CUP);
+  _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
   
-  goto_xya(1500-160, 450, 0);
+  goto_xya(KX(1500-160), 450, KA(0));
   // pick one spot
   _wait_meca_ready();
-  goto_xya(1500-160, 340, 0);
-  _meca_order_blocking_lr(NONE,PICK_SPOT);
+  goto_xya(KX(1500-160), 340, KA(0));
+  _meca_order_blocking_ma(PICK_SPOT,NONE);
 }
 
 void galipeur_do_claps(void) {
+  ROME_LOG(&rome_paddock,DEBUG,"Claps");
   // -- SE CLAPS -- 
-  goto_xya(1500-160, 340, 0);
+  goto_xya(KX(1500-160), 340, KA(0));
   // translate along SE bordea
   ext_arm_clap();
-  goto_xya(1500-300, 340, 0);
+  goto_xya(KX(1500-300), 340, KA(0));
   ext_arm_raise();
-  goto_xya(1500-700, 340, 0);
+  goto_xya(KX(1500-700), 340, KA(0));
   ext_arm_clap();
-  goto_xya(1500-880, 340, 0);
-  goto_xya_rel(+100,0,0);
+  goto_xya(KX(1500-880), 340, KA(0));
+  goto_xya_rel(KX(+100),0,KA(0));
   ext_arm_lower();
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_DOWN, 0, 100);
-  goto_xya_rel(0,100,0);
+  goto_xya_rel(KX(0),100,KA(0));
 }
 
 void galipeur_pick_south_spot(void) {
-  _meca_order_blocking_lr(NONE,PREPARE_PICK_SPOT);
-  goto_xya(1500-880, 440, 0);
+  ROME_LOG(&rome_paddock,DEBUG,"South spot");
+  _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
+  goto_xya(KX(1500-880), 200, KA(-2*M_PI/3));
   _wait_meca_ready();
-  goto_xya_rel(-100, 0, 0);
-  _meca_order_blocking_lr(NONE,PICK_SPOT);
+  goto_xya_rel(KX(-100), 0, KA(0));
+  _meca_order_blocking_ma(PICK_SPOT,NONE);
 }
 
 void galipeur_pick_start_spot(void){
-  _meca_order_blocking_lr(NONE,PREPARE_PICK_SPOT);
-  goto_xya(1500-830, 350, -M_PI); 
+  ROME_LOG(&rome_paddock,DEBUG,"Start spot");
+  _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
+  goto_xya(KX(1500-830), 350, KA(-M_PI)); 
   _wait_meca_ready();
-  goto_xya_rel(0, 200, 0);
-  _meca_order_blocking_lr(NONE,PICK_SPOT);
+  goto_xya_rel(KX(0), 200, KA(0));
+  _meca_order_blocking_ma(PICK_SPOT,NONE);
 }
 
 void galipeur_pick_middle_spot(void) {
+  ROME_LOG(&rome_paddock,DEBUG,"Middle spot");
   // -- MIDDLE SPOT --
-  _meca_order_blocking_lr(NONE,PREPARE_PICK_SPOT);
-  goto_xya(1500-1270, 350, -M_PI);
+  _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
+  goto_xya(KX(1500-1270), 350, KA(-M_PI));
   _wait_meca_ready();
-  goto_xya(1500-1270, 550, -M_PI);
-  _meca_order_blocking_lr(NONE,PICK_SPOT);
+  goto_xya(KX(1500-1270), 550, KA(-M_PI));
+  _meca_order_blocking_ma(PICK_SPOT,NONE);
 }
 
 void galipeur_discharge_pile_red(void) {
+  ROME_LOG(&rome_paddock,DEBUG,"Discharge pile in red area");
   // -- DISCHARGE ON THE RED AREA --
-  goto_xya(1500-1050, 300, -M_PI/4);
-  _meca_order_blocking_lr(NONE,DISCHARGE_SPOT_STACK);
-  goto_xy_rel_align_course(-65, -75, true);
-  _meca_order_blocking_lr(UNLOAD_CUP,RELEASE_SPOT_STACK);
-  goto_xy_rel_align_course(65*1.2, 75*1.2, false);
-  goto_xya_rel(200,0,0);
+  goto_xya(KX(1500-1050), 300, KA(-M_PI/4));
+  _meca_order_blocking_ma(DISCHARGE_SPOT_STACK,NONE);
+  goto_xy_rel_align_course(KX(-65), -75, true);
+  _meca_order_blocking_ma(RELEASE_SPOT_STACK,UNLOAD_CUP);
+  goto_xy_rel_align_course(KX(65*1.2), 75*1.2, false);
+  goto_xya_rel(KX(200),0,KA(0));
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_DOWN, 0, 100);
-  goto_xya_rel(0,50,0);
-  goto_xya(1500-700, 600, M_PI/2);
+  goto_xya_rel(KX(0),50,KA(0));
+  goto_xya(KX(1500-700), 600, KA(M_PI/2));
 }
 
 void galipeur_take_galipette_and_bulb(void) {
+  ROME_LOG(&rome_paddock,DEBUG,"Galipette and bulb");
   // -- BACK TO START AREA --
-  _meca_order_blocking_lr(NONE,PREPARE_BULB);
-  goto_xya(1500-700, 1030, M_PI/2);
+  _meca_order_blocking_ma(PREPARE_BULB,NONE);
+  goto_xya(KX(1500-700), 1030, KA(M_PI/2));
   // -- TAKE GALIPETTE --
-  goto_xya(1500-420, 1040, M_PI/2);
+  goto_xya(KX(1500-420), 1040, KA(M_PI/2));
   ext_arm_galipette();
   _delay_ms(500);
-  goto_xya(1500-420, 1040, M_PI/2+M_PI/4);
+  goto_xya(KX(1500-420), 1040, KA(M_PI/2+M_PI/4));
   ext_arm_raise();
   _delay_ms(500);
 
   // -- TAKE BULB --
-  goto_xya(1500-350, 1000, M_PI/2);
+  goto_xya(KX(1500-350), 1000, KA(M_PI/2));
   autoset(ROBOT_SIDE_BACK,AUTOSET_RIGHT, 1500-227, 0);
-  _meca_order_blocking_lr(NONE,PICK_BULB);
-  goto_xya(1500-700, 1030, M_PI/2);
+  _meca_order_blocking_ma(PICK_BULB,NONE);
+  goto_xya(KX(1500-700), 1030, KA(M_PI/2));
 }
 
 void galipeur_go_to_stairs(void) {
+  ROME_LOG(&rome_paddock,DEBUG,"Stairs");
   // -- GO TO STAIRS ! --
-  goto_xya(1500-800, 1600, M_PI);
-  goto_xya(1500-830, 1700, M_PI);
-  _meca_order_blocking_lr(NONE,PICK_SPOT);
-  _meca_order_blocking_lr(NONE,PREPARE_PICK_SPOT);
+  goto_xya(KX(1500-800), 1600, KA(M_PI));
+  goto_xya(KX(1500-830), 1700, KA(M_PI));
+  _meca_order_blocking_ma(PICK_SPOT,NONE);
+  _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
   _wait_meca_ready();
-  goto_xya(1500-830, 1800, M_PI);
-  _meca_order_blocking_lr(NONE,PICK_SPOT);
+  goto_xya(KX(1500-830), 1800, KA(M_PI));
+  _meca_order_blocking_ma(PICK_SPOT,NONE);
   
-  goto_xya_rel(0,-160,0);
+  goto_xya_rel(KX(0),-160,KA(0));
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_LEFT, 1500-967-100, 0);
-  goto_xya_rel(100, 0,0);
-  goto_xya(1500-950, 1600, M_PI - M_PI/6);
+  goto_xya_rel(KX(100), 0,KA(0));
+  goto_xya(KX(1500-950), 1600, KA(M_PI - M_PI/6));
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_LEFT);
 
   // -- PUT GALIPETTE ON THE PODIUM --
-  goto_xya(1500-880, 1800, -M_PI/2);
+  goto_xya(KX(1500-880), 1800, KA(-M_PI/2));
   ext_arm_clap();
   _delay_ms(500);
-  goto_xya_rel(200, 0, 0);
+  goto_xya_rel(KX(200), 0, KA(0));
 }
 
 void strat_run_galipeur(team_t team)
 {
+  ROME_LOG(&rome_paddock,DEBUG,"Go !!!");
   //first, get out of starting area
-  goto_xya(1500-700, 1030, 0);
+  goto_xya(KX(1500-700), 1030, KA(0));
 
   galipeur_se_spots();
   galipeur_do_claps();
@@ -603,7 +628,7 @@ void strat_run_galipeur(team_t team)
 
   //back to prog !
   _delay_ms(10000);
-  goto_xya(1500-900,1500,M_PI/2);
+  goto_xya(KX(1500-900),1500,KA(M_PI/2));
 
   _delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
@@ -612,22 +637,12 @@ void strat_run_galipeur(team_t team)
 
 void strat_test_galipeur(team_t team)
 {
-  int8_t kx = team == TEAM_YELLOW ? 1 : -1;
-  (void)kx;
+  (void) team;
 }
 
 void strat_homologation_galipeur(team_t team)
 {
-  int8_t kx = team == TEAM_YELLOW ? 1 : -1;
-
-  // exit starting area
-  goto_xya(kx*1160, 534, 0);
-  // turn
-  goto_xya_rel(0, 0, M_PI/3);
-  // push fire
-  goto_xya_rel(0, 600, 0);
-
-  //end
+  (void) team;
 }
 
 /****************************************************************************/

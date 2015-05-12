@@ -2,14 +2,8 @@
 #define STRAT_H__
 
 #include <stdbool.h>
+#include "common.h"
 
-
-/// Team color (or side)
-typedef enum {
-  TEAM_NONE,
-  TEAM_GREEN,
-  TEAM_YELLOW,
-} team_t;
 
 /// Side for autoset
 typedef enum {
@@ -19,8 +13,6 @@ typedef enum {
   AUTOSET_UP,
   AUTOSET_DOWN,
 } autoset_side_t;
-
-
 
 bool starting_cord_plugged(void);
 
