@@ -18,9 +18,9 @@ bool starting_cord_plugged(void);
 
 void strat_init(void);
 team_t strat_select_team(void);
-void strat_prepare(team_t team);
-void strat_wait_start(team_t team);
-void strat_run(team_t team);
-void strat_test(team_t team);
+void strat_prepare(void);
+void strat_wait_start(void);
+void strat_run(void);
+void strat_test(void);
 
 #endif

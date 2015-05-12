@@ -246,13 +246,13 @@ int main(void)
   portpin_outset(&LED_R_PP);
   strat_init();
   portpin_outclr(&LED_R_PP);
-  team_t team = strat_select_team();
-  strat_prepare(team);
-  strat_wait_start(team);
+  robot_state.team = strat_select_team();
+  strat_prepare();
+  strat_wait_start();
 
   TIMER_SET_CALLBACK_US(F0, 'A', 1e6, ROME_SEND_INTLVL, match_end);
 
-  strat_run(team);
+  strat_run();
 
   for(;;) {
     idle();
