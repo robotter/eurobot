@@ -17,6 +17,7 @@
  */
 
 #include <avarix.h>
+#include <avarix/intlvl.h>
 #include <clock/clock.h>
 #include <util/delay.h>
 
@@ -58,6 +59,17 @@ extern avoidance_t avoidance;
 // match timer
 bool match_timer_counting = false;
 int32_t match_timer_ms = -1;
+
+#if defined(GALIPEUR)
+#define ZGYRO_SCALE 2*1.1214e-6
+#elif defined(GALIPETTE)
+#define ZGYRO_SCALE -2.1964e-6//1.335e-6//1.0*BASE_ZGYRO_SCALE
+#else
+# error "Please define either GALIPEUR or GALIPETTE"
+#endif
+
+// zgyro scale
+float zgyro_scale = ZGYRO_SCALE;
 
 // ROME interfaces
 rome_intf_t rome;
@@ -224,7 +236,11 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       htrajectory_setStopWindows(&trajectory, xy, angle);
       rome_reply_ack(intf, frame);
     } break;
-
+    case ROME_MID_ASSERV_SET_ZGYRO_SCALE: {
+      INTLVL_DISABLE_ALL_BLOCK() {
+        zgyro_scale = frame->asserv_set_zgyro_scale.zscale;
+      }
+    } break;
 #if defined(GALIPEUR)
     // forward orders to R3D2 board
     case ROME_MID_R3D2_SET_ROTATION:
@@ -270,17 +286,8 @@ void vcs_update(void)
   TM_DL_MATCH_TIMER(match_timer_ms/1000);
 }
 
-
-#if defined(GALIPEUR)
-#define ZGYRO_SCALE 2*1.1214e-6
-#elif defined(GALIPETTE)
-#define ZGYRO_SCALE -2.1964e-6//1.335e-6//1.0*BASE_ZGYRO_SCALE
-#else
-# error "Please define either GALIPEUR or GALIPETTE"
-#endif
-
 void _adxrs_update(void) {
-  adxrs_capture_manual(ZGYRO_SCALE);
+  adxrs_capture_manual(zgyro_scale);
 }
 
 int main(void)

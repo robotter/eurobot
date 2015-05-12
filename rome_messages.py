@@ -44,6 +44,8 @@ register_messages(
       (Order, 'asserv_set_htraj_xysteering_window', [('r','float')]),
       (Order, 'asserv_set_htraj_stop_windows', [('xy','float'), ('angle','float')]),
 
+      (Order, 'asserv_set_zgyro_scale', [('zscale','float')]),
+
       # __ TELEMETRY __
       # Encoder raw data
       ('asserv_tm_encoder_raw', [('enc0','int16'), ('enc1','int16'), ('enc2','int16')]),
