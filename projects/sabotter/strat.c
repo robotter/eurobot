@@ -134,7 +134,7 @@ static void _meca_order_blocking_main_aux(uint8_t cmd_main, uint8_t cmd_aux){
 #define _meca_order_blocking_both(cmd) _meca_order_blocking_left_right(ROME_ENUM_MECA_COMMAND_##cmd,ROME_ENUM_MECA_COMMAND_##cmd)
 
 /// Go to given position, avoid opponents
-void goto_xya(int16_t x, int16_t y, float a)
+static void goto_xya(int16_t x, int16_t y, float a)
 {
   for(;;) {
     ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, x, y, 1000*a);
@@ -237,7 +237,7 @@ void goto_xya_painting(int16_t x, int16_t y, float a)
 
 
 /// Go to given relative position, avoid opponents
-void goto_xya_rel(int16_t x, int16_t y, float a)
+static void goto_xya_rel(int16_t x, int16_t y, float a)
 {
   for(;;) {
     ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, x, y, 1000*a);
