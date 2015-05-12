@@ -225,6 +225,7 @@ void spot_elevator_manage(spot_elevator_t *elevator)
         elevator->sm_state = SESM_INACTIVE;
         break;
 
+      case SESM_DISCHARGE_RELEASE_PILE:
       case SESM_INACTIVE:
         elevator->tm_state = SESM_TM_S(READY);
         //waiting state, do noting
@@ -254,14 +255,16 @@ void spot_elevator_manage(spot_elevator_t *elevator)
 
       case SESM_PREPARE_SPOT_INIT:
       case SESM_PREPARE_SPOT_LIFT_UP_ELEVATOR:
-        _spipe_close(elevator);
+        _spipe_open(elevator);
         if(_set_elevator_ax12(elevator, ELEVATOR_UP, ELEVATOR_FAST))
           elevator->sm_state = SESM_PREPARE_SPOT_WAIT_ELEVATOR_UP;
         break;
 
       case SESM_PREPARE_SPOT_WAIT_ELEVATOR_UP:
-        if(_is_elevator_ax12_in_position(elevator, ELEVATOR_UP))
+        if(_is_elevator_ax12_in_position(elevator, ELEVATOR_UP)){
+          _spipe_close(elevator);
           elevator->sm_state = SESM_INACTIVE;
+        }
         break;
 
       case SESM_PICK_SPOT_INIT:
@@ -399,7 +402,6 @@ void spot_elevator_manage(spot_elevator_t *elevator)
           elevator->sm_state = SESM_INACTIVE;
         break;
 
-      case SESM_DISCHARGE_RELEASE_PILE:
       case SESM_DISCHARGE_ELEVATOR_UP:
         if(_set_elevator_ax12(elevator, ELEVATOR_UP, ELEVATOR_FAST))
           elevator->sm_state = SESM_DISCHARGE_ELEVATOR_UP_WAIT;
@@ -407,7 +409,6 @@ void spot_elevator_manage(spot_elevator_t *elevator)
 
       case SESM_DISCHARGE_ELEVATOR_UP_WAIT:
         elevator->tm_state = SESM_TM_S(GROUND_CLEAR);
-        _spipe_open(elevator);
         if(_is_elevator_ax12_in_position(elevator, ELEVATOR_UP))
           elevator->sm_state = SESM_INACTIVE;
         break;
@@ -535,6 +536,7 @@ void spot_elevator_discharge_spot_stack(spot_elevator_t *se)
 void spot_elevator_release_spot_stack(spot_elevator_t *se)
 {
   se->tm_state = SESM_TM_S(BUSY);
+  _spipe_open(se);
   se->sm_state = SESM_DISCHARGE_RELEASE_PILE;
 }
 

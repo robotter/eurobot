@@ -102,7 +102,6 @@ void rome_color_sensor_handler(rome_intf_t *intf, const rome_frame_t *frame)
 void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
 
-  ROME_LOGF(&rome_strat, DEBUG, "RCVD MID %d", frame->mid);
   switch(frame->mid) {
     case ROME_MID_START_TIMER: {
       match_timer_counting = true;
@@ -110,6 +109,7 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
     } break;
 
     case ROME_MID_MECA_CMD: {
+      ROME_LOGF(&rome_strat, DEBUG, "MECA: cmd %d arm %d",frame->meca_cmd.cmd,frame->meca_cmd.side);
       void (*func)(spot_elevator_t*);
       switch(frame->meca_cmd.cmd) {
         case ROME_ENUM_MECA_COMMAND_RESET_ELEVATOR:
