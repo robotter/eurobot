@@ -318,31 +318,6 @@ void go_pick_spot(int16_t x, int16_t y){
   _wait_meca_ready();
   goto_xya(x-tdx,y-tdy,beta+M_PI/2);
   _meca_order_blocking_ma(PICK_SPOT,NONE);
-
-
-#if 0
-  //robot to spot vector
-  int16_t rs_x = x - robot_state.current_pos.x ;
-  int16_t rs_y = y - robot_state.current_pos.y ;
-  double alpha = atan2(rs_y,rs_x) - 3*M_PI/2;
-  ROME_LOGF(&rome_paddock,DEBUG,"rsxrsyalpha :%d,%d,%f",rs_x,rs_y,alpha);
-
-  //claw vector in robot reference
-  int16_t dx = -KX(CLAW_X);
-  int16_t dy = (CLAW_Y - CLAW_APPROACH);
-  ROME_LOGF(&rome_paddock,DEBUG,"dxdy :%d,%d",dx,dy);
-  
-  //claw vector in table reference
-  int16_t tdx =  dx*cos(alpha) + dy*sin(alpha);
-  int16_t tdy = -dx*sin(alpha) + dy*cos(alpha);
-  ROME_LOGF(&rome_paddock,DEBUG,"tdxtdy :%d,%d",tdx,tdy);
-
-  goto_xya(x-tdx,y-tdy, alpha); 
-  _wait_meca_ready();
-  _delay_ms(2000);
-  goto_xya_rel(CLAW_PUSH_SPOT*sin(alpha),CLAW_PUSH_SPOT*cos(alpha),0);
-  _meca_order_blocking_ma(PICK_SPOT,NONE);
-#endif
 }
 
 /// Do an autoset
@@ -463,6 +438,8 @@ void strat_init_galipeur(void)
   ROME_LOG(&rome_paddock,INFO,"Strat init");
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
 
   // initialize meca
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
@@ -501,7 +478,7 @@ void strat_prepare_galipeur(void)
   goto_xya_rel(KX(0), -400, KA(-M_PI/4));
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_DOWN, 0, 100);
   // move out (in relative coordinates)
-  //goto_xya_rel(KX(0), 200, KA(0));
+  goto_xya_rel(KX(0), 200, KA(0));
 
   // approach front of start area
   goto_xya(KX(1500-700), 1000, KA(0));
@@ -521,11 +498,7 @@ void strat_prepare_galipeur(void)
 
 void galipeur_se_spots(void) {
   ROME_LOG(&rome_paddock,DEBUG,"SE spots");
-  // front of start area
-  goto_xya(KX(1500-600), 650, KA(0));
-  goto_xya(KX(1500-200), 650, KA(0));
-  
-  // autoset against right side
+    // autoset against right side
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_MAIN, KX(1500-100), 0);
   _meca_order_blocking_ma(PREPARE_PICK_SPOT,PREPARE_CUP);
   goto_xya_rel(KX(-100),0,KA(0));
@@ -536,8 +509,7 @@ void galipeur_se_spots(void) {
   goto_xya(KX(1500-160), 450, KA(0));
   _meca_order_blocking_ma(PICK_SPOT,PICK_CUP);
   _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
-  
-  goto_xya(KX(1500-160), 430, KA(0));
+  _wait_meca_ready();
   // pick one spot
   _wait_meca_ready();
   goto_xya(KX(1500-160), 300, KA(0));
@@ -562,7 +534,7 @@ void galipeur_do_claps(void) {
 void galipeur_pick_south_spot(void) {
   ROME_LOG(&rome_paddock,DEBUG,"South spot");
   _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
-  goto_xya(KX(1500-880), 250, KA(-2*M_PI/3));
+  goto_xya(KX(1500-820), 230, KA(-2*M_PI/3));
   _wait_meca_ready();
   goto_xya_rel(KX(-100), 0, KA(0));
   _meca_order_blocking_ma(PICK_SPOT,NONE);
@@ -590,13 +562,15 @@ void galipeur_pick_middle_spot(void) {
 void galipeur_discharge_pile_red(void) {
   ROME_LOG(&rome_paddock,DEBUG,"Discharge pile in red area");
   // -- DISCHARGE ON THE RED AREA --
-  goto_xya(KX(1500-1110), 300, KA(-M_PI/4));
+  goto_xya(KX(1500-1000), 300, KA(-M_PI/4));
+  ROME_LOG(&rome_paddock,DEBUG,"Discharge");
   _meca_order_blocking_ma(DISCHARGE_SPOT_STACK,NONE);
   goto_xy_rel_align_course(KX(-60), -60, true);
+  ROME_LOG(&rome_paddock,DEBUG,"Release");
   _meca_order_blocking_ma(RELEASE_SPOT_STACK,UNLOAD_CUP);
-  _meca_order_blocking_ma(NONE,PREPARE_PICK_SPOT);
+  _meca_order_blocking_both(PREPARE_PICK_SPOT);
   goto_xy_rel_align_course(KX(60*1.2), 60*1.2, false);
-  goto_xya(KX(1500-880), 200, KA(-M_PI/4));
+  goto_xya(KX(1500-880), 250, KA(-M_PI/4));
   autoset(ROBOT_SIDE_RIGHT,AUTOSET_DOWN, 0, 100);
   goto_xya_rel(KX(0),50,KA(0));
   goto_xya(KX(1500-700), 600, KA(M_PI/2));
@@ -651,17 +625,33 @@ void strat_run_galipeur(void)
 {
   ROME_LOG(&rome_paddock,DEBUG,"Go !!!");
   //first, get out of starting area
-  goto_xya(KX(1500-600), 1030, KA(0));
-
+  int16_t traj[] = {
+    KX(1500-600), 1030,
+    KX(1500-700), 930,
+    KX(1500-700), 750,
+    KX(1500-600), 650,
+    KX(1500-200), 650,
+    };
+  ROME_SENDWAIT_ASSERV_RUN_TRAJ(&rome_asserv,M_PI/3,traj,sizeof(traj)/sizeof(*traj));
+  robot_state.asserv.xy = 0;
+  robot_state.asserv.a = 0;
+  for(;;) {
+    if(robot_state.asserv.xy && robot_state.asserv.a) {
+      break;
+    }
+    idle();
+  }
+  
 
   galipeur_se_spots();
   galipeur_do_claps();
-  go_pick_spot(1500-1110,230);
-  go_pick_spot(1500-1310,650);
+  galipeur_pick_south_spot();
+  //go_pick_spot(KX(1500-1110),230);
+  go_pick_spot(KX(1500-1310),650);
   if (robot_state.right_elev.nb_spots == 4)
     galipeur_discharge_pile_red();
 
-  go_pick_spot(1500-870,645);
+  go_pick_spot(KX(1500-870),645);
   //galipeur_take_galipette_and_bulb();
   //galipeur_go_to_stairs();
 

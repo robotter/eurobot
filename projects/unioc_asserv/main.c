@@ -114,8 +114,8 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_ASSERV_AUTOSET: {
       uint8_t table_side = frame->asserv_autoset.table_side;
       uint8_t robot_side = frame->asserv_autoset.robot_side;
-      float x = frame->asserv_autoset.x;
-      float y = frame->asserv_autoset.y;
+      double x = frame->asserv_autoset.x;
+      double y = frame->asserv_autoset.y;
       ROME_LOGF(&rome, DEBUG, "ASSERV AUTOSET %1.1f %1.1f %d %d", x,y,table_side,robot_side);
       htrajectory_autoset(&trajectory, robot_side, table_side, x, y);
       rome_reply_ack(intf, frame);
@@ -152,8 +152,9 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
         for(uint8_t i=0; i<nxy; i+=2) {
           xy[i/2].x = frame->asserv_run_traj.xy[i];
           xy[i/2].y = frame->asserv_run_traj.xy[i+1];
+          ROME_LOGF(&rome, DEBUG, "run_traj[%i] %f %f", i, xy[i/2].x, xy[i/2].y);
         }
-        htrajectory_run(&trajectory, xy, sizeof(xy));
+        htrajectory_run(&trajectory, xy, sizeof(xy)/sizeof(*xy));
         float a = frame->asserv_run_traj.a/1000.0;
         htrajectory_gotoA(&trajectory, a);
       }
@@ -256,7 +257,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_ASSERV_SET_ZGYRO_SCALE: {
       INTLVL_DISABLE_ALL_BLOCK() {
         zgyro_scale = frame->asserv_set_zgyro_scale.zscale;
-        ROME_LOGF(&rome, DEBUG, "new gyro scale is %e", zgyro_scale);
+        ROME_LOGF(&rome, DEBUG, "new gyro scale is %e", (double)zgyro_scale);
         rome_reply_ack(intf, frame);
       }
     } break;
