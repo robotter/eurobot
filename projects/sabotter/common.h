@@ -35,6 +35,8 @@ typedef struct {
     bool xy:1;
     bool a:1;
     bool autoset:1;
+    uint8_t path_i;
+    uint8_t path_n;
   } asserv;
   bool gyro_calibration;
   struct {
@@ -42,17 +44,6 @@ typedef struct {
     int16_t y;
     float a;
   }current_pos;
-  // arm
-  struct {
-    int16_t shoulder;
-    int16_t elbow;
-    int16_t wrist;
-  } arm;
-  // suckers
-  struct {
-    bool a:1;
-    bool b:1;
-  } suckers;
   // R3D2
   struct {
     r3d2_object_t objects[2];

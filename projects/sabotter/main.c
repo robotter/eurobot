@@ -78,6 +78,10 @@ static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
       robot_state.current_pos.y = frame->asserv_tm_xya.y;
       robot_state.current_pos.a = frame->asserv_tm_xya.a/1000.;
     } break;
+    case ROME_MID_ASSERV_TM_HTRAJ_PATH_INDEX:{
+      robot_state.asserv.path_i = frame->asserv_tm_htraj_path_index.i;
+      robot_state.asserv.path_n = frame->asserv_tm_htraj_path_index.size;
+    } break;
     default:
       break;
   }
