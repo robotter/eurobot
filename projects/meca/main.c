@@ -86,7 +86,7 @@ void rome_color_sensor_handler(rome_intf_t *intf, const rome_frame_t *frame)
       }
       else {
         // XXX
-        ROME_LOGF(&rome_strat, DEBUG, "Invalid interface %p", intf);
+        ROME_LOGF(&rome_strat, ERROR, "Invalid interface %p", intf);
       }
 
     } break;
