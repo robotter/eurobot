@@ -342,11 +342,8 @@ void spot_elevator_manage(spot_elevator_t *elevator)
       case SESM_PICK_SPOT_POST_LIFT_UP_ELEVATOR:
         _spipe_open(elevator);
         elevator->nb_spots ++;
-        if(elevator->nb_spots < 4)
-            spot_elevator_prepare_spot_stacking(elevator);
-        else
-          if(_set_elevator_ax12(elevator, ELEVATOR_UP_MOVE_SPOT, ELEVATOR_FAST))
-            elevator->sm_state = SESM_PICK_SPOT_POST_WAIT_ELEVATOR_UP;
+        if(_set_elevator_ax12(elevator, ELEVATOR_UP_MOVE_SPOT, ELEVATOR_FAST))
+          elevator->sm_state = SESM_PICK_SPOT_POST_WAIT_ELEVATOR_UP;
         break;
 
       case SESM_PICK_SPOT_POST_WAIT_ELEVATOR_UP:
