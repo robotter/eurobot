@@ -477,6 +477,19 @@ static void _htrajectory_update( htrajectory_t *htj )
     // wait for robot heading OK
     if( htrajectory_doneA(htj) )
     {
+      // wait some time
+      htj->state = STATE_AUTOSET_HEADING_WAIT;
+      // reste heading wait count
+      htj->autosetHeadingWaitCount = 0;
+    }
+  }
+
+  if( htj->state == STATE_AUTOSET_HEADING_WAIT ) {
+
+    htj->autosetHeadingWaitCount++;
+
+    if(htj->autosetHeadingWaitCount > 50) {
+
       // set autoset to next step
       htj->state = STATE_AUTOSET_MOVE;
 
