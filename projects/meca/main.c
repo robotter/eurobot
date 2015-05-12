@@ -392,9 +392,9 @@ int main(void)
 
   //intialize capet servos
   pwm_servo_init(&carpet_r_servo, SE_SERVO_RIGHT_CARPET_PORT, SE_SERVO_RIGHT_CARPET_PIN);
-  carpet_lock_r();
+  carpet_unlock_r();
   pwm_servo_init(&carpet_l_servo, (TC0_t*) SE_SERVO_LEFT_CARPET_PORT, SE_SERVO_LEFT_CARPET_PIN);
-  carpet_lock_l();
+  carpet_unlock_l();
 
   spot_elevator_set_enable(&l_spot_elevator, true);
   spot_elevator_set_enable(&r_spot_elevator, true);

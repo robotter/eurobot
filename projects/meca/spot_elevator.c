@@ -178,7 +178,7 @@ void spot_elevator_init_spipe_servo(spot_elevator_t *elevator, char channel, int
   pwm_servo_init(&elevator->spipe_servo, SE_SERVO_TUBE_PORT, channel);
   elevator->spipe_open  = open_pwm_us;
   elevator->spipe_close = close_pwm_us;
-  _spipe_open(elevator);
+  _spipe_close(elevator);
 }
 
 void spot_elevator_set_is_spot_present_fn(spot_elevator_t *elevator, bool (*is_spot_present)(void))
