@@ -37,7 +37,6 @@
 #include "settings.h"
 
 #include "adxrs/adxrs.h"
-#include "katioucha.h"
 
 
 #include "telemetry.h"
@@ -321,8 +320,6 @@ int main(void)
 #endif
   
   PORTQ.OUT = 4;
-  // initialize katioucha
-  katioucha_init();
 
   //--------------------------------------------------------
   // CS
