@@ -445,6 +445,7 @@ uint8_t htrajectory_blocked( htrajectory_t *htj )
 uint8_t htrajectory_doneAutoset( htrajectory_t *htj )
 {
   if( (htj->state == STATE_AUTOSET_HEADING)
+      || (htj->state == STATE_AUTOSET_HEADING_WAIT)
       || (htj->state == STATE_AUTOSET_MOVE) )
     return 0;
   else
@@ -482,6 +483,7 @@ static void _htrajectory_update( htrajectory_t *htj )
       // reste heading wait count
       htj->autosetHeadingWaitCount = 0;
     }
+    return;
   }
 
   if( htj->state == STATE_AUTOSET_HEADING_WAIT ) {

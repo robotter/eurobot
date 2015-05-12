@@ -61,7 +61,7 @@ bool match_timer_counting = false;
 int32_t match_timer_ms = -1;
 
 #if defined(GALIPEUR)
-#define ZGYRO_SCALE 2*1.1214e-6
+#define ZGYRO_SCALE 2.185e-6
 #elif defined(GALIPETTE)
 #define ZGYRO_SCALE -2.1964e-6//1.335e-6//1.0*BASE_ZGYRO_SCALE
 #else
@@ -116,6 +116,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       uint8_t robot_side = frame->asserv_autoset.robot_side;
       float x = frame->asserv_autoset.x;
       float y = frame->asserv_autoset.y;
+      ROME_LOGF(&rome, DEBUG, "ASSERV AUTOSET %1.1f %1.1f %d %d", x,y,table_side,robot_side);
       htrajectory_autoset(&trajectory, robot_side, table_side, x, y);
       rome_reply_ack(intf, frame);
     } break;
@@ -239,6 +240,8 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_ASSERV_SET_ZGYRO_SCALE: {
       INTLVL_DISABLE_ALL_BLOCK() {
         zgyro_scale = frame->asserv_set_zgyro_scale.zscale;
+        ROME_LOGF(&rome, DEBUG, "new gyro scale is %e", zgyro_scale);
+        rome_reply_ack(intf, frame);
       }
     } break;
 #if defined(GALIPEUR)
