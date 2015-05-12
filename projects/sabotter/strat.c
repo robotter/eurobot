@@ -16,6 +16,9 @@ extern rome_intf_t rome_meca;
 extern rome_intf_t rome_paddock;
 
 robot_state_t robot_state;
+// we don't put 'kx' on robot_state to allow it to be static
+// this avoids optimization errors
+static int16_t robot_kx;
 
 
 typedef enum {
@@ -26,8 +29,8 @@ typedef enum {
 
 #define ROBOT_SIDE_MAIN (robot_state.team == TEAM_GREEN ? ROBOT_SIDE_RIGHT : ROBOT_SIDE_LEFT)
 #define ROBOT_SIDE_AUX (robot_state.team == TEAM_GREEN ? ROBOT_SIDE_LEFT : ROBOT_SIDE_RIGHT)
-#define KX(x) (robot_state.kx*(x)) 
-#define KA(a) (robot_state.kx*(a)) 
+#define KX(x) (robot_kx*(x))
+#define KA(a) (robot_kx*(a))
 
 typedef enum {
   MECA_LEFT = 0,
@@ -443,7 +446,7 @@ void strat_init_galipeur(void)
   ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, MECA_LEFT);
 
   robot_state.team = strat_select_team();
-  robot_state.kx = robot_state.team == TEAM_GREEN ? 1 : -1;
+  robot_kx = robot_state.team == TEAM_GREEN ? 1 : -1;
 }
 
 void strat_prepare_galipeur(team_t team)

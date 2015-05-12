@@ -30,7 +30,6 @@ typedef enum {
 // Robot state
 typedef struct {
   team_t team;
-  int8_t kx;
   // asserv, "in position" flags
   struct {
     bool xy:1;
