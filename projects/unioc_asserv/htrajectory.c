@@ -498,16 +498,8 @@ static void _htrajectory_update( htrajectory_t *htj )
       // shutdown robot CSs
       robot_cs_activate(htj->rcs, 0);
 
-      const autoset_configuration_t autoconf =
-        AUTOSET_CONFIGURATIONS[htj->autosetRobotSide];
-      dx = SETTING_AUTOSET_SPEED*cos(autoconf.base);
-      dy = SETTING_AUTOSET_SPEED*sin(autoconf.base);
-
       // store current robot position
       hposition_get(htj->hrp, &(htj->autosetInitPos));
-
-      // set course
-      hrobot_set_motors(dx, dy, 0.0);
 
       // reset autoset count
       htj->autosetCount = 0;
@@ -522,6 +514,16 @@ static void _htrajectory_update( htrajectory_t *htj )
     if(true)
     {
       htj->autosetCount++;
+
+      const autoset_configuration_t autoconf =
+        AUTOSET_CONFIGURATIONS[htj->autosetRobotSide];
+      dx = SETTING_AUTOSET_SPEED*cos(autoconf.base);
+      dy = SETTING_AUTOSET_SPEED*sin(autoconf.base);
+
+      float alpha = MIN(1.0, 2.0*htj->autosetCount/SETTING_AUTOSET_ZEROCOUNT);
+
+      // set course
+      hrobot_set_motors(dx*alpha, dy*alpha, 0.0);
 
       if( htj->autosetCount > SETTING_AUTOSET_ZEROCOUNT )
       {
