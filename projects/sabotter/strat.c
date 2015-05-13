@@ -91,7 +91,9 @@ void ext_arm_set(int16_t pos)
 void ext_arm_raise(void) { ext_arm_set(430); }
 void ext_arm_lower(void) { ext_arm_set(100); }
 void ext_arm_clap(void)  { ext_arm_set(300); }
-void ext_arm_galipette(void)  { ext_arm_set(180); }
+void ext_arm_galette_prepare(void)  { ext_arm_set(250); }
+void ext_arm_galette_lift(void)  { ext_arm_set(460); }
+void ext_arm_galette_release(void)  { ext_arm_set(350); }
 
 void _wait_meca_ready(void){
   for (;;){
@@ -483,24 +485,8 @@ void strat_prepare_galipeur(void)
   //prepare meca
   _meca_order_blocking_both(RESET_ELEVATOR);
   _meca_order_blocking_both(PICK_BULB);
+  ext_arm_galette_prepare();
 }
-
-void strat_homologation_galipeur(void)
-{
-  //get out of start area
-  int16_t traj[] = {KX(1500-600), 1030};
-  goto_traj(traj,0);
-  //pick some spots
-  go_pick_spot(KX(1500-870),645);
-  go_pick_spot(KX(1500-1300),600);
-  //unload them in start area
-  goto_xya(KX(1500-600), 1030, KA(M_PI/2));
-  _meca_order_blocking_ma(DISCHARGE_SPOT_STACK,NONE);
-  goto_xya_rel(KX(200),0,KA(0));
-  _meca_order_blocking_ma(RELEASE_SPOT_STACK,NONE);
-  goto_xya_rel(KX(-500),0,KA(0));
-}
-
 
 void galipeur_se_spots(void) {
   ROME_LOG(&rome_paddock,DEBUG,"SE spots");
@@ -562,18 +548,11 @@ void galipeur_discharge_pile_red(void) {
   goto_xya_rel(KX(0),100,KA(0));
 }
 
-void galipeur_take_galipette_and_bulb(void) {
-  ROME_LOG(&rome_paddock,DEBUG,"Galipette and bulb");
+void galipeur_take_start_area_bulb(void) {
+  ROME_LOG(&rome_paddock,DEBUG,"start area bulb");
   // -- BACK TO START AREA --
   goto_xya(KX(1500-700), 1000, KA(M_PI/2));
-  // -- TAKE GALIPETTE --
   _meca_order_blocking_ma(PREPARE_BULB,NONE);
-  ext_arm_galipette();
-  goto_xya(KX(1500-420), 1010, KA(M_PI/2));
-  goto_xya(KX(1500-420), 970, KA(M_PI/2+M_PI/4));
-  ext_arm_raise();
-  _delay_ms(500);
-
   // -- TAKE BULB --
   goto_xya(KX(1500-350), 1000, KA(M_PI/2));
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-227), 0);
@@ -593,26 +572,47 @@ void galipeur_go_to_stairs(void) {
   _meca_order_blocking_ma(PICK_SPOT,NONE);
   
   goto_xya_rel(KX(0),-160,KA(0));
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_AUX, KX(1500-967-100), 0);
+  autoset(ROBOT_SIDE_AUX,AUTOSET_AUX, KX(1500-970-100), 0);
   goto_xya_rel(KX(100), 0,KA(0));
   goto_xya(KX(1500-950), 1600, KA(M_PI - M_PI/6));
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_LEFT);
 }
 
-void galipeur_put_galipette_on_podium(void){
-  // -- PUT GALIPETTE ON THE PODIUM --
-  goto_xya(KX(1500-880), 1800, KA(-M_PI/2));
-  ext_arm_clap();
+void galipeur_put_galette_on_podium(void){
+  ROME_LOG(&rome_paddock,DEBUG,"put galette on the podium");
+  // -- PUT GALETTE ON THE PODIUM --
+  goto_xya(KX(1500-880), 1700, KA(-M_PI/2));
+  ext_arm_galette_release();
   _delay_ms(500);
   goto_xya_rel(KX(200), 0, KA(0));
+}
+
+void galipeur_unload_spots_start_area(void){
+  //unload them in start area
+  goto_xya(KX(1500-600), 1030, KA(M_PI/2));
+  _meca_order_blocking_ma(DISCHARGE_SPOT_STACK,NONE);
+  goto_xya_rel(KX(200),0,KA(0));
+  _meca_order_blocking_ma(RELEASE_SPOT_STACK,NONE);
+  goto_xya_rel(KX(-500),0,KA(0));
 }
 
 void strat_run_galipeur(void)
 {
   ROME_LOG(&rome_paddock,DEBUG,"Go !!!");
+  
+  //lift galette
+  ext_arm_galette_lift();
 
-  strat_homologation_galipeur();
+  //get out of start area
+  int16_t traj[] = {KX(1500-600), 1030};
+  goto_traj(traj,0);
+
+  galipeur_go_to_stairs();
+  galipeur_put_galette_on_podium();
+  //pick some spots
+  go_pick_spot(KX(1500-870),645);
+  go_pick_spot(KX(1500-1300),600);
 #if 0
   //first, get out of starting area
   int16_t traj[] = {
@@ -634,9 +634,6 @@ void strat_run_galipeur(void)
     galipeur_discharge_pile_red();
 
   go_pick_spot(KX(1500-870),645);
-  //galipeur_take_galipette_and_bulb();
-  //galipeur_go_to_stairs();
-  //galipeur_put_galipette_on_podium();
 #endif
 
   _delay_ms(3000);
