@@ -427,7 +427,9 @@ void strat_init_galipeur(void)
 
   // initialize meca
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
-
+  // set R3D2 parameters
+  ext_arm_raise();
+  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,300,25);
   ext_arm_lower(); 
 
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
@@ -455,8 +457,8 @@ void strat_prepare_galipeur(void)
   ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 0, 0, 0);
   ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, 0);
 
-#if 1
-  // autoset robot
+#if 0
+  // autoset robot, Y on claps
   autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-100), 0);
   goto_xya_rel(KX(-500), 0, KA(0));
   goto_xya_rel(KX(0), -400, KA(-M_PI/4));
@@ -465,12 +467,18 @@ void strat_prepare_galipeur(void)
   goto_xya_rel(KX(0), 200, KA(0));
 
 #else
+  // autoset robot, Y on starting zone
+  autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-100), 0);
+  goto_xya_rel(KX(-100), -100, KA(0));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 775-160);
+  goto_xya_rel(KX(-100), -100, KA(0));
+  goto_xya(KX(1500-600), 500, KA(-M_PI/2));
 #endif
- // approach front of start area
-  goto_xya(KX(1500-600), 1000, KA(0));
+  // approach front of start area
+  goto_xya(KX(1500-600), 1000, KA(-M_PI/2));
 
   // stack in start area
-  goto_xya(KX(1500-400),1050,KA(0));
+  goto_xya(KX(1500-300), 1000, KA(-M_PI/2));
 
   //prepare meca
   _meca_order_blocking_both(RESET_ELEVATOR);
@@ -479,10 +487,13 @@ void strat_prepare_galipeur(void)
 
 void strat_homologation_galipeur(void)
 {
+  //get out of start area
   int16_t traj[] = {KX(1500-600), 1030};
   goto_traj(traj,0);
+  //pick some spots
   go_pick_spot(KX(1500-870),645);
   go_pick_spot(KX(1500-1300),600);
+  //unload them in start area
   goto_xya(KX(1500-600), 1030, KA(M_PI/2));
   _meca_order_blocking_ma(DISCHARGE_SPOT_STACK,NONE);
   goto_xya_rel(KX(200),0,KA(0));
