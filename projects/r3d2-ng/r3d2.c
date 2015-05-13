@@ -3,16 +3,14 @@
 #include <util/delay.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <timer/timer.h>
 #include <pwm/motor.h>
-
+#include <rome/rome.h>
 #include "r3d2.h"
 #include "leds.h"
 #include "pid.h"
 
-#include <rome/rome.h>
 extern rome_intf_t rome_intf;
 
 #define R3D2_MOTOR_PWM_TC TCD0
@@ -38,7 +36,7 @@ extern rome_intf_t rome_intf;
 /// Port pin of sensor control (on/off)
 #define R3D2_SENSOR_CTRL_PP  PORTPIN(D,3)
 
-#define R2D2_OBJECT_WIDTH_CM 8.0
+#define R3D2_OBJECT_WIDTH_CM 8.0
 
 #define TC_CLKSEL_DIVn_gc_(n)  TC_CLKSEL_DIV ## n ## _gc
 #define TC_CLKSEL_DIVn_gc(n)  TC_CLKSEL_DIVn_gc_(n)
@@ -71,8 +69,6 @@ typedef struct {
   int32_t motor_consign_threshold_pc;
   // if true next motor tick will be invalidated
   bool invalidate_next_tick;
-  // counter
-  uint32_t counter;
   // true if motor rpm is stable
   bool motor_rpm_stable;
   // blind spot
@@ -96,14 +92,14 @@ r3d2_t r3d2 = {
 };
 
 static inline distance_angle_t _compute_distance_angle(measure_t *m) {
-  const double w = R2D2_OBJECT_WIDTH_CM;
-  
+  const double w = R3D2_OBJECT_WIDTH_CM;
+
   int32_t delta_us = m->end_tick_us - m->start_tick_us;
   int32_t angle_us = (m->end_tick_us + m->start_tick_us)/2;
 
   // compute view angle
   double delta = (2*M_PI*delta_us)/r3d2.motor_period_us;
-  double angle = -(2*M_PI*angle_us)/r3d2.motor_period_us; 
+  double angle = -(2*M_PI*angle_us)/r3d2.motor_period_us;
   double distance = w/(2*tan(.5*delta));
 
   return (distance_angle_t){.angle = angle, .distance=distance};
@@ -125,7 +121,7 @@ static inline bool _in_blind_spot(double x) {
 }
 
 /// register a new measure
-void _new_measure(measure_t *m) {
+static void _new_measure(measure_t *m) {
   // if motor speed is not stable, reject
   if(!r3d2.motor_rpm_stable)
     return;
@@ -139,13 +135,13 @@ void _new_measure(measure_t *m) {
   // check if angle is contained within blind spot
   double start_tick_angle = -2*M_PI*m->start_tick_us/r3d2.motor_period_us;
   double end_tick_angle = -2*M_PI*m->end_tick_us/r3d2.motor_period_us;
-  
+
   int32_t distance;
   if(_in_blind_spot(start_tick_angle)||_in_blind_spot(end_tick_angle)) {
     ROME_LOGF(&rome_intf, INFO, "In blind spot !");
-    // when object is within blind spot detected angle 
+    // when object is within blind spot detected angle
     // will be roughtly okay but distance totaly wrong
-    // detection will be sent but with distance set to -1 
+    // detection will be sent but with distance set to -1
     distance = -1;
   }
   else {
@@ -209,7 +205,6 @@ ISR(R3D2_MOTOR_INT_VECT) {
 
   r3d2.measure.count = 0;
   r3d2.invalidate_next_tick = false;
-  r3d2.counter++;
 }
 
 /// Motor revolution counter overflow
@@ -228,9 +223,6 @@ static void _update_motor(void) {
   output = MAX(output, 0);
   pwm_motor_set(&r3d2.pwm, output);
 
-}
-
-static void _update_positions(void) {
 }
 
 void r3d2_init() {
@@ -259,16 +251,13 @@ void r3d2_init() {
 }
 
 void r3d2_update() {
-  
   _update_motor();
-  _update_positions();
   _delay_ms(200);
-
 }
 
 // Set rotation parameters
 void r3d2_set_rotation(uint16_t speed, uint8_t threshold) {
-  ROME_LOGF(&rome_intf, INFO, 
+  ROME_LOGF(&rome_intf, INFO,
     "Motor rotation parameters set to %d rpm / %d%%",
     speed, threshold);
   r3d2.motor_consign_rpm = speed;
@@ -279,7 +268,7 @@ void r3d2_set_rotation(uint16_t speed, uint8_t threshold) {
 void r3d2_set_blind_spot(float begin, float end) {
   int _begin = 180*begin/M_PI;
   int _end = 180*end/M_PI;
-  ROME_LOGF(&rome_intf, INFO, 
+  ROME_LOGF(&rome_intf, INFO,
     "R3D2 blind spot set from %d to %d",
     _begin, _end);
   r3d2.blind_spot_arc.begin = begin;

@@ -3,11 +3,8 @@
 #include <avarix/portpin.h>
 #include <uart/uart.h>
 #include <clock/clock.h>
-#include <util/delay.h>
-#include <math.h>
-#include "leds.h"
 #include <rome/rome.h>
-
+#include "leds.h"
 #include "r3d2.h"
 
 rome_intf_t rome_intf;
