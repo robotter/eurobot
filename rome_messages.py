@@ -85,6 +85,9 @@ register_messages(
 
       # turn on/off avoidance
       (Order, 'asserv_avoidance', [('b','bool')]),
+        
+      # turn on/off gyro integration
+      (Order, 'asserv_gyro_integration', [('b','bool')]),
 
       ]),
 

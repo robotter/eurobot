@@ -261,6 +261,14 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
         rome_reply_ack(intf, frame);
       }
     } break;
+    case ROME_MID_ASSERV_GYRO_INTEGRATION: {
+      INTLVL_DISABLE_ALL_BLOCK() {
+        bool b = frame->asserv_gyro_integration.b;
+        adxrs_integrate(b);
+        ROME_LOGF(&rome, DEBUG, "gyro integration is %s", b ? "active":"inactive");
+        rome_reply_ack(intf, frame); 
+      }
+    }
 #if defined(GALIPEUR)
     // forward orders to R3D2 board
     case ROME_MID_R3D2_SET_ROTATION:
