@@ -37,11 +37,11 @@ extern rome_intf_t rome_intf;
 #define R3D2_SENSOR_CTRL_PP  PORTPIN(D,3)
 
 #define R3D2_OBJECT_WIDTH_CM 8.0
+#define R3D2_MAX_OBJECTS  2
 
 #define TC_CLKSEL_DIVn_gc_(n)  TC_CLKSEL_DIV ## n ## _gc
 #define TC_CLKSEL_DIVn_gc(n)  TC_CLKSEL_DIVn_gc_(n)
 
-#define N_MEASURES 5
 
 typedef struct {
   int32_t start_tick_us;
@@ -203,7 +203,9 @@ ISR(R3D2_MOTOR_INT_VECT) {
   }
   pstable = r3d2.motor_rpm_stable;
 
-  r3d2.measure.count = 0;
+  for(uint8_t i=r3d2.measure.count; i<R3D2_MAX_OBJECTS; i++) {
+    ROME_SEND_R3D2_TM_DETECTION(&rome_intf, i, false, 0, 0);
+  }
   r3d2.invalidate_next_tick = false;
 }
 
