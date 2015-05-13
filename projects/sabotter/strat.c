@@ -450,12 +450,12 @@ void strat_prepare_galipeur(void)
   robot_kx = robot_state.team == TEAM_GREEN ? 1 : -1;
 
   ROME_LOG(&rome_paddock,DEBUG,"Strat prepare");
-#if 1
   // initialize asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 0, 0, 0);
   ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, 0);
 
+#if 1
   // autoset robot
   autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-100), 0);
   goto_xya_rel(KX(-500), 0, KA(0));
@@ -467,7 +467,7 @@ void strat_prepare_galipeur(void)
 #else
 #endif
  // approach front of start area
-  goto_xya(KX(1500-700), 1000, KA(0));
+  goto_xya(KX(1500-600), 1000, KA(0));
 
   // stack in start area
   goto_xya(KX(1500-400),1050,KA(0));
@@ -476,6 +476,20 @@ void strat_prepare_galipeur(void)
   _meca_order_blocking_both(RESET_ELEVATOR);
   _meca_order_blocking_both(PICK_BULB);
 }
+
+void strat_homologation_galipeur(void)
+{
+  int16_t traj[] = {KX(1500-600), 1030};
+  goto_traj(traj,0);
+  go_pick_spot(KX(1500-870),645);
+  go_pick_spot(KX(1500-1300),600);
+  goto_xya(KX(1500-600), 1030, KA(M_PI/2));
+  _meca_order_blocking_ma(DISCHARGE_SPOT_STACK,NONE);
+  goto_xya_rel(KX(200),0,KA(0));
+  _meca_order_blocking_ma(RELEASE_SPOT_STACK,NONE);
+  goto_xya_rel(KX(-500),0,KA(0));
+}
+
 
 void galipeur_se_spots(void) {
   ROME_LOG(&rome_paddock,DEBUG,"SE spots");
@@ -586,6 +600,9 @@ void galipeur_put_galipette_on_podium(void){
 void strat_run_galipeur(void)
 {
   ROME_LOG(&rome_paddock,DEBUG,"Go !!!");
+
+  strat_homologation_galipeur();
+#if 0
   //first, get out of starting area
   int16_t traj[] = {
     KX(1500-600), 1030,
@@ -609,7 +626,7 @@ void strat_run_galipeur(void)
   //galipeur_take_galipette_and_bulb();
   //galipeur_go_to_stairs();
   //galipeur_put_galipette_on_podium();
-
+#endif
 
   _delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
@@ -617,10 +634,6 @@ void strat_run_galipeur(void)
 }
 
 void strat_test_galipeur(void)
-{
-}
-
-void strat_homologation_galipeur(void)
 {
 }
 
