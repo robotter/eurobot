@@ -100,8 +100,8 @@ register_messages(
       ('r3d2_tm_detection', [('i','uint8'), ('detected','bool'), ('a','angle'), ('r','dist')]),
       ('r3d2_tm_arcs', [('i','uint8'), ('a1','angle'), ('a2','angle')]),
 
-      ('r3d2_set_rotation', [('speed_rpm','uint16'),('threshold_percent','uint8')]),
-      ('r3d2_set_blind_spot', [('begin','angle'),('end','angle')])
+      (Order,'r3d2_set_rotation', [('speed_rpm','uint16'),('threshold_percent','uint8')]),
+      (Order,'r3d2_set_blind_spot', [('begin','angle'),('end','angle')])
       ]),
 
     # color_sensor
