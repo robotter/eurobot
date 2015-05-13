@@ -206,6 +206,7 @@ ISR(R3D2_MOTOR_INT_VECT) {
   for(uint8_t i=r3d2.measure.count; i<R3D2_MAX_OBJECTS; i++) {
     ROME_SEND_R3D2_TM_DETECTION(&rome_intf, i, false, 0, 0);
   }
+  r3d2.measure.count = 0;
   r3d2.invalidate_next_tick = false;
 }
 
