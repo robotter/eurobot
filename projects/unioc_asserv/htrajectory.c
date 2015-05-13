@@ -120,7 +120,7 @@ const autoset_configuration_t AUTOSET_CONFIGURATIONS[] = {
     .right = -5*M_PI/6.0,
     .up = -2*M_PI/6.0,
     .down = 4*M_PI/6.0,
-    .base = -2*M_PI/6.0,
+    .base = 5*M_PI/6.0,
   },
 };
 
