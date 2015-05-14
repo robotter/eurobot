@@ -721,14 +721,52 @@ void strat_run_galipeur(void)
   ext_arm_lower();
   goto_xya(KX(1500-800), 1030, KA(-M_PI/2));
 
-  go_pick_spot(KC(1500-880 ,870 -1500) ,645, MECA_RIGHT);
-  goto_xya_rel(KX(100),50,0);
-  go_pick_spot(KC(1500-1110,1100-1500),230, MECA_RIGHT);
-  go_pick_spot(KC(1500-1310,1300-1500),600, MECA_RIGHT);
+  struct {
+    int16_t x;
+    int16_t y;
+  } spots_mid[] = {
+    { KC(1500-880 ,870 -1500), 645 },
+    { KC(1500-1110,1100-1500), 230 },
+    { KC(1500-1310,1300-1500), 600 },
+  };
+  bool carpet_done = false;
+  uint8_t spot_i = 0;
+
+  while(spot_i < sizeof(spots_mid)/sizeof(*spots_mid)) {
+    order_result_t or = go_pick_spot(spots_mid[spot_i].x, spots_mid[spot_i].y, MECA_RIGHT);
+    if(or == ORDER_SUCCESS) {
+      spot_i++;
+      // special case: relative move needed between spots 0 and 1
+      if(!carpet_done && spot_i == 1) {
+        or = goto_xya_rel(KX(100),50,0);
+        if(or == ORDER_SUCCESS) {
+          // ready for spot 1
+          continue;
+        } else if(!carpet_done) {
+          // get carpet
+        } else {
+          //TODO what should we do?
+          // relative move incomplete but carpet already put
+        }
+      } else {
+        continue;
+      }
+    }
+
+    // robot interrupted: put carpet (if not already done)
+    if(!carpet_done) {
+      //TODO move to a suitable position
+      galipeur_put_carpet();
+      carpet_done = true;
+    }
+    // fallback: retry
+  }
   galipeur_unload_spots_start_area();
 
   galipeur_do_claps();
-  galipeur_put_carpet();
+  if(!carpet_done) {
+    galipeur_put_carpet();
+  }
 
 #endif
 
