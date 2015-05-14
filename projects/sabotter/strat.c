@@ -112,8 +112,7 @@ bool opponent_detected_carrot(void)
 bool wait_detected_opponent(uint16_t ms)
 {
   uint32_t tend = uptime_us() + ms * 1000;
-  //TODO use opponent_detected_arc()
-  while(opponent_detected()) {
+  while(opponent_detected_carrot()) {
     if(uptime_us() >= tend) {
       return false;
     }
