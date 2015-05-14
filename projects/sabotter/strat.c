@@ -9,6 +9,10 @@
 #include "strat.h"
 #include "config.h"
 
+#define ANGLE_TYPE__ float
+#include "modulo.inc.h"
+#undef ANGLE_TYPE__
+
 #define SPOT_ELEVATOR_LENGTH 83
 #define DEFAULT_WAIT_MS  2000
 #define DEFAULT_FOV  (M_PI/3)
@@ -83,15 +87,22 @@ bool opponent_detected(void)
   return false;
 }
 
+#define IN_RANGE(x,min,max) ((x) >= (min) && (x) <= (max))
+#define DEFAULT_DETECTION_FOV M_PI/3
 // Return true if an opponent is detected within an arc
-// We assume 0 <= a1 < a2 < 2Pi
-bool opponent_detected_arc(float a1, float a2)
+bool opponent_detected_in_arc(float angle, float fov)
 {
+  float d_a,min,max;
+  min = float_modulo__(angle - fov/2, 0, 2*M_PI);
+  max = float_modulo__(angle + fov/2, 0, 2*M_PI);
+  if(min > max)
+    max += 2*M_PI;
   for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
     r3d2_object_t *object = &robot_state.r3d2.objects[i];
-    // note: object->a is already in [0;2Pi[
-    if(object->detected && object->r < R3D2_AVOID_DISTANCE &&
-       object->a >= a1 && object->a >= a2) {
+    d_a = float_modulo__(object->a-M_PI/6+robot_state.current_pos.a, 0, 2*M_PI);
+    bool in_range = IN_RANGE(d_a,min,max)||IN_RANGE(d_a+2*M_PI,min,max);
+    // note: object->a is in ]-2*Pi;0]
+    if(object->detected && object->r < R3D2_AVOID_DISTANCE && in_range) {
       return true;
     }
   }
@@ -209,6 +220,7 @@ static void _meca_order_blocking_main_aux(uint8_t cmd_main, uint8_t cmd_aux){
 /// Go to given position, avoid opponents
 static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t wait_ms)
 {
+  float angle = atan2(y-robot_state.current_pos.y,x-robot_state.current_pos.x)+M_PI/2;
   for(;;) {
     ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
@@ -217,7 +229,7 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t wait
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return ORDER_SUCCESS;
       }
-      if(opponent_detected()) {
+      if(opponent_detected_in_arc(angle,DEFAULT_DETECTION_FOV)) {
         ROME_LOG(&rome_paddock,INFO,"goto_xya : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
@@ -276,12 +288,12 @@ void goto_xya_panning(int16_t x, int16_t y, float pan_angle)
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return;
       }
-      if(opponent_detected()) {
+      if(opponent_detected_in_arc(angle,DEFAULT_DETECTION_FOV)) {
         ROME_LOG(&rome_paddock,INFO,"goto_xya_panning : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         //TODO use opponent_detected_arc()
-        while(opponent_detected()) {
+        while(opponent_detected_in_arc(angle,DEFAULT_DETECTION_FOV)) {
           idle();
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
@@ -303,7 +315,7 @@ static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t 
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return ORDER_SUCCESS;
       }
-      if(opponent_detected()) {
+      if(opponent_detected_in_arc(angle,DEFAULT_DETECTION_FOV)) {
         ROME_LOG(&rome_paddock,INFO,"goto_xya_rel : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
