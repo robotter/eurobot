@@ -105,6 +105,7 @@ void _wait_meca_ground_clear(void){
 }
 
 void _meca_discharge_spots(void){
+  _wait_meca_ready();
   if(robot_state.left_elev.nb_spots > 0){
     ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_DISCHARGE_SPOT_STACK, MECA_LEFT);
     robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
@@ -114,9 +115,11 @@ void _meca_discharge_spots(void){
     ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_DISCHARGE_SPOT_STACK, MECA_RIGHT);
     robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
   }
+  _wait_meca_ground_clear();
 }
 
 void _meca_release_spots(void){
+  _wait_meca_ready();
   if(robot_state.left_elev.nb_spots > 0){
     ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_RELEASE_SPOT_STACK, MECA_LEFT);
     robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
@@ -126,6 +129,7 @@ void _meca_release_spots(void){
     ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_RELEASE_SPOT_STACK, MECA_RIGHT);
     robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
   }
+  _wait_meca_ground_clear();
 }
 
 static void _meca_order_blocking_left_right(uint8_t cmd_left, uint8_t cmd_right){
@@ -140,7 +144,6 @@ static void _meca_order_blocking_left_right(uint8_t cmd_left, uint8_t cmd_right)
     robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
   }
   //wait for meca to compute orders...
-  idle();
   _wait_meca_ground_clear();
 }
 
@@ -637,8 +640,9 @@ void galipeur_unload_spots_start_area(void){
   //unload them in start area
   goto_xya(KX(1500-600), 1030, KA(M_PI/2));
   _meca_discharge_spots();
+  _meca_order_blocking_both(RELEASE_SPOT_STACK);
   goto_xya_rel(KX(200),0,KA(0));
-  _meca_release_spots();
+  _wait_meca_ready();
   goto_xya_rel(KX(-500),0,KA(0));
   _meca_order_blocking_both(PREPARE_PICK_SPOT);
 }
@@ -680,7 +684,7 @@ void strat_run_galipeur(void)
   goto_xya(KX(1500-800), 1030, KA(-M_PI/2));
 
   go_pick_spot(KC(1500-880 ,870 -1500) ,645, MECA_RIGHT);
-  goto_xya_rel(KX(200),100,0);
+  goto_xya_rel(KX(100),50,0);
   go_pick_spot(KC(1500-1110,1100-1500),230, MECA_RIGHT);
   go_pick_spot(KC(1500-1310,1300-1500),600, MECA_RIGHT);
   galipeur_unload_spots_start_area();
