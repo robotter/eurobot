@@ -44,6 +44,10 @@ typedef struct {
     int16_t y;
     float a;
   }current_pos;
+  struct {
+    int16_t x;
+    int16_t y;
+  } carrot;
   // R3D2
   struct {
     r3d2_object_t objects[2];
