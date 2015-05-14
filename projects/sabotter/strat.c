@@ -10,6 +10,7 @@
 #include "config.h"
 
 #define SPOT_ELEVATOR_LENGTH 83
+#define DEFAULT_WAIT_MS  2000
 
 extern rome_intf_t rome_asserv;
 extern rome_intf_t rome_meca;
@@ -46,6 +47,29 @@ typedef enum {
   SPOT_ELEV_S_READY,
 }spot_elevator_state_t;
 
+typedef enum {
+  ORDER_SUCCESS = 0,
+  ORDER_DETECTION,
+  ORDER_FAILURE,
+} order_result_t;
+
+/// Check an order_result_t, return it if not success
+#define ORDER_CHECK(expr)  do { \
+    order_result_t or = (expr); \
+    if(or != ORDER_SUCCESS) { \
+      return or; \
+    } \
+  } while(0)
+
+// Aliases using default waiting time
+#define goto_xya(x,y,a)  goto_xya_wait((x),(y),(a),DEFAULT_WAIT_MS)
+#define goto_xya_rel(x,y,a)  goto_xya_rel_wait((x),(y),(a),DEFAULT_WAIT_MS)
+#define goto_traj(xy,a)  goto_traj_wait((xy),(a),DEFAULT_WAIT_MS)
+#define goto_traj_n(xy,n,a)  goto_traj_n_wait((xy),(n),(a),DEFAULT_WAIT_MS)
+#define goto_xy_rel_align_course(x,y,c)  goto_xy_rel_align_course_wait((x),(y),(c),DEFAULT_WAIT_MS)
+#define go_pick_spot(x,y,s)  go_pick_spot_wait((x),(y),(s),DEFAULT_WAIT_MS)
+
+
 // Return true if an opponent is detected
 bool opponent_detected(void)
 {
@@ -72,6 +96,22 @@ bool opponent_detected_arc(float a1, float a2)
   }
   return false;
 }
+
+// Wait while opponent is detected
+// Return true if opponent is not detected anymore, false on timeout
+bool wait_detected_opponent(uint16_t ms)
+{
+  uint32_t tend = uptime_us() + ms * 1000;
+  //TODO use opponent_detected_arc()
+  while(opponent_detected()) {
+    if(uptime_us() >= tend) {
+      return false;
+    }
+    idle();
+  }
+  return true;
+}
+
 
 void ext_arm_set(int16_t pos)
 {
@@ -158,7 +198,7 @@ static void _meca_order_blocking_main_aux(uint8_t cmd_main, uint8_t cmd_aux){
 #define _meca_order_blocking_both(cmd) _meca_order_blocking_left_right(ROME_ENUM_MECA_COMMAND_##cmd,ROME_ENUM_MECA_COMMAND_##cmd)
 
 /// Go to given position, avoid opponents
-static void goto_xya(int16_t x, int16_t y, float a)
+static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t wait_ms)
 {
   for(;;) {
     ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, x, y, 1000*a);
@@ -166,15 +206,14 @@ static void goto_xya(int16_t x, int16_t y, float a)
     robot_state.asserv.a = 0;
     for(;;) {
       if(robot_state.asserv.xy && robot_state.asserv.a) {
-        return;
+        return ORDER_SUCCESS;
       }
       if(opponent_detected()) {
         ROME_LOG(&rome_paddock,INFO,"goto_xya : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-        //TODO use opponent_detected_arc()
-        while(opponent_detected()) {
-          idle();
+        if(!wait_detected_opponent(wait_ms)) {
+          return ORDER_DETECTION;
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
@@ -186,8 +225,8 @@ static void goto_xya(int16_t x, int16_t y, float a)
 
 /// Execute trajectory, avoid opponents
 #if 1
-#define goto_traj(xy,a) goto_traj_n((xy), sizeof(xy)/sizeof(int16_t), (a))
-static void goto_traj_n(int16_t* xy, uint8_t n, float a)
+#define goto_traj_wait(xy,a,w) goto_traj_n_wait((xy), sizeof(xy)/sizeof(int16_t), (a), (w))
+static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t wait_ms)
 {
   uint8_t path_i = 0;
   for(;;) {
@@ -198,16 +237,15 @@ static void goto_traj_n(int16_t* xy, uint8_t n, float a)
     robot_state.asserv.path_n = n/2;
     for(;;) {
       if(robot_state.asserv.xy && robot_state.asserv.a) {
-        return;
+        return ORDER_SUCCESS;
       }
       if(opponent_detected()) {
         ROME_LOG(&rome_paddock,INFO,"goto_traj : opponent detected");
         path_i = robot_state.asserv.path_i;
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-        //TODO use opponent_detected_arc()
-        while(opponent_detected()) {
-          idle();
+        if(!wait_detected_opponent(wait_ms)) {
+          return ORDER_DETECTION;
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
@@ -246,7 +284,7 @@ void goto_xya_panning(int16_t x, int16_t y, float pan_angle)
 }
 
 /// Go to given relative position, avoid opponents
-static void goto_xya_rel(int16_t x, int16_t y, float a)
+static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t wait_ms)
 {
   for(;;) {
     ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, x, y, 1000*a);
@@ -254,15 +292,14 @@ static void goto_xya_rel(int16_t x, int16_t y, float a)
     robot_state.asserv.a = 0;
     for(;;) {
       if(robot_state.asserv.xy && robot_state.asserv.a) {
-        return;
+        return ORDER_SUCCESS;
       }
       if(opponent_detected()) {
         ROME_LOG(&rome_paddock,INFO,"goto_xya_rel : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-        //TODO use opponent_detected_arc()
-        while(opponent_detected()) {
-          idle();
+        if(!wait_detected_opponent(wait_ms)) {
+          return ORDER_DETECTION;
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
@@ -272,7 +309,7 @@ static void goto_xya_rel(int16_t x, int16_t y, float a)
   }
 }
 
-void goto_xy_rel_align_course(int16_t x, int16_t y, bool claws_first){
+order_result_t goto_xy_rel_align_course_wait(int16_t x, int16_t y, bool claws_first, uint16_t wait_ms){
 
   float angle;
   //get angle of movement
@@ -283,7 +320,7 @@ void goto_xy_rel_align_course(int16_t x, int16_t y, bool claws_first){
   //compute relative angle consign
   angle -= robot_state.current_pos.a;
 
-  goto_xya_rel(x,y,angle);
+  return goto_xya_rel_wait(x,y,angle,wait_ms);
 }
 
 #define CLAW_X 70
@@ -291,7 +328,7 @@ void goto_xy_rel_align_course(int16_t x, int16_t y, bool claws_first){
 #define CLAW_APPROACH 50
 #define CLAW_PUSH_SPOT -100
 
-void go_pick_spot(int16_t x, int16_t y, spot_elevator_t side){
+order_result_t go_pick_spot_wait(int16_t x, int16_t y, spot_elevator_t side, uint16_t wait_ms){
   ROME_LOGF(&rome_paddock,DEBUG,"spot :%d,%d",x,y);
 
   int16_t dx; 
@@ -319,8 +356,8 @@ void go_pick_spot(int16_t x, int16_t y, spot_elevator_t side){
   // spot position in table frame
   int16_t tdx = dx*cos(alpha) - dy*sin(alpha);
   int16_t tdy = dx*sin(alpha) + dy*cos(alpha);
-  goto_xya(rx,ry,beta+M_PI/2);
-  goto_xya(x-tdx,y-tdy,beta+M_PI/2);
+  ORDER_CHECK(goto_xya(rx,ry,beta+M_PI/2));
+  ORDER_CHECK(goto_xya(x-tdx,y-tdy,beta+M_PI/2));
 
   // spot position in robot frame
   dy = CLAW_Y - CLAW_PUSH_SPOT;
@@ -329,7 +366,7 @@ void go_pick_spot(int16_t x, int16_t y, spot_elevator_t side){
   tdx = dx*cos(alpha) - dy*sin(alpha);
   tdy = dx*sin(alpha) + dy*cos(alpha);
   _wait_meca_ready();
-  goto_xya(x-tdx,y-tdy,beta+M_PI/2);
+  ORDER_CHECK(goto_xya(x-tdx,y-tdy,beta+M_PI/2));
   if ((side == MECA_RIGHT && robot_state.team == TEAM_GREEN)
     ||(side == MECA_LEFT && robot_state.team == TEAM_YELLOW)){
     _meca_order_blocking_ma(PICK_SPOT,NONE);
@@ -337,6 +374,7 @@ void go_pick_spot(int16_t x, int16_t y, spot_elevator_t side){
   else{
     _meca_order_blocking_ma(NONE,PICK_SPOT);
     }
+  return ORDER_SUCCESS;
 }
 
 /// Do an autoset
