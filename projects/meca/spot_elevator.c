@@ -275,12 +275,16 @@ void spot_elevator_manage(spot_elevator_t *elevator)
         break;
 
       case SESM_PICK_SPOT_PRE_WAIT_ELEVATOR_UP:
-        if(_is_elevator_ax12_in_position(elevator, ELEVATOR_UP))
+        if(_is_elevator_ax12_in_position(elevator, ELEVATOR_UP)){
+          elevator->check_presence_ticks = 0;
           elevator->sm_state = SESM_PICK_SPOT_CHECK_SPOT_PRESENCE;
+          }
         break;
 
       case SESM_PICK_SPOT_CHECK_SPOT_PRESENCE:
-        if (elevator->is_spot_present == NULL){
+        elevator->check_presence_ticks ++;
+        if (elevator->check_presence_ticks > 50
+          ||elevator->is_spot_present == NULL){
           elevator->sm_state = SESM_INACTIVE; 
           break;
         }
@@ -303,6 +307,7 @@ void spot_elevator_manage(spot_elevator_t *elevator)
         break;
 
       case SESM_PICK_SPOT_LIFT_DOWN_ELEVATOR_PUT_BULB:
+        elevator->check_presence_ticks = 0;
         if(_set_elevator_ax12(elevator, ELEVATOR_DOWN_PUT_BULB, ELEVATOR_FAST))
           elevator->sm_state = SESM_PICK_SPOT_LIFT_DOWN_ELEVATOR_PUT_BULB_WAIT;
         break;

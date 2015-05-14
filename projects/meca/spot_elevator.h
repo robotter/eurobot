@@ -143,6 +143,7 @@ typedef struct{
   
   uint8_t claw_blocked_cnt;
   uint8_t elev_blocked_cnt;
+  uint8_t check_presence_ticks;
 
 }spot_elevator_t;
 
