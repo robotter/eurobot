@@ -35,6 +35,8 @@ typedef enum {
 
 #define ROBOT_SIDE_MAIN (robot_state.team == TEAM_GREEN ? ROBOT_SIDE_RIGHT : ROBOT_SIDE_LEFT)
 #define ROBOT_SIDE_AUX  (robot_state.team == TEAM_GREEN ? ROBOT_SIDE_LEFT : ROBOT_SIDE_RIGHT)
+#define MECA_MAIN (robot_state.team == TEAM_GREEN ? MECA_RIGHT : MECA_LEFT)
+#define MECA_AUX  (robot_state.team == TEAM_GREEN ? MECA_LEFT : MECA_RIGHT)
 #define AUTOSET_MAIN (robot_state.team == TEAM_GREEN ? AUTOSET_RIGHT : AUTOSET_LEFT)
 #define AUTOSET_AUX  (robot_state.team == TEAM_GREEN ? AUTOSET_LEFT : AUTOSET_RIGHT)
 #define KX(x) (robot_kx*(x))
@@ -523,7 +525,7 @@ void strat_init_galipeur(void)
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
   // set R3D2 parameters
   ext_arm_raise();
-  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,300,25);
+  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
   ext_arm_lower(); 
 
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
@@ -661,19 +663,28 @@ void galipeur_take_start_area_bulb(void) {
 void galipeur_go_to_stairs(void) {
   ROME_LOG(&rome_paddock,DEBUG,"Stairs");
   // -- GO TO STAIRS ! --
-  goto_xya(KC(1500-820,790-1500), 1600, KA(M_PI));
-  goto_xya(KC(1500-820,790-1500), 1650, KA(M_PI));
+  int16_t traj[] = {
+    KX(1500-550), 1000,
+    KX(1500-600), 1300,
+    KC(1500-850,790-1500), 1400,
+    KC(1500-850,790-1500), 1650,
+  };
+  goto_traj(traj,KA(M_PI));
   _meca_order_blocking_ma(PICK_SPOT,NONE);
   _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
   _wait_meca_ready();
-  goto_xya(KC(1500-820,790-1500), 1750, KA(M_PI));
+  goto_xya(KC(1500-850,790-1500), 1750, KA(M_PI));
   _meca_order_blocking_ma(PICK_SPOT,NONE);
   
   ROME_LOG(&rome_paddock,DEBUG,"put galette on the podium");
   // -- PUT GALETTE ON THE PODIUM --
-  goto_xya(KC(1500-790,760-1500), 1700, KA(M_PI));
-  goto_xya(KC(1500-790,760-1500), 1700, KA(-M_PI/2));
-  goto_xya(KC(1500-790,770-1500), 1700, KA(-M_PI/2));
+  goto_xya(KC(1500-770,760-1500), 1600, KA(M_PI));
+  goto_xya(KC(1500-790,760-1500), 1800, KA(-M_PI/2));
+  goto_xya(KC(1500-810,770-1500), 1800, KA(-M_PI/2));
+  for(int i=0;i<200;i++){
+    _delay_ms(10);
+    idle();
+    }
   ext_arm_galette_release();
   for(int i=0;i<50;i++){
     _delay_ms(10);
@@ -685,7 +696,6 @@ void galipeur_go_to_stairs(void) {
 
 void galipeur_put_carpet(void){
   int16_t traj[] = {
-  KX(1500-600), 1000,
   KC(1500-790,770-1500), 1700,
   };
   goto_traj(traj,KA(M_PI - M_PI/6));
@@ -723,18 +733,24 @@ void strat_run_galipeur(void)
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
-#if 0
+#if 1
   //lift galette
   ext_arm_galette_lift();
+  //change asserv for galette transporting
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
 
   //get out of start area
-  goto_xya(KX(1500-800), 1030, KA(-M_PI/2));
+  goto_xya(KX(1500-600), 1000, KA(-M_PI/2));
 
   galipeur_go_to_stairs();
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
+  galipeur_put_carpet();
   //pick some spots
   //go_pick_spot(KX(1500-100),1800);
-  go_pick_spot(KX(1500-870),645);
-  go_pick_spot(KX(1500-1300),600);
+  go_pick_spot(KC(1500-880 ,870 -1500),645,MECA_RIGHT);
+  go_pick_spot(KC(1500-1310,1300-1500),600,MECA_RIGHT);
 
   galipeur_unload_spots_start_area();
 #else
@@ -785,6 +801,7 @@ void strat_run_galipeur(void)
   galipeur_unload_spots_start_area();
 
   galipeur_do_claps();
+  //goto_xya(KX(1500-600), 1000, KA(M_PI - M_PI/6));
   if(!carpet_done) {
     galipeur_put_carpet();
   }
