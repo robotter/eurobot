@@ -11,6 +11,7 @@
 
 #define SPOT_ELEVATOR_LENGTH 83
 #define DEFAULT_WAIT_MS  2000
+#define DEFAULT_FOV  (M_PI/3)
 
 extern rome_intf_t rome_asserv;
 extern rome_intf_t rome_meca;
@@ -95,6 +96,15 @@ bool opponent_detected_arc(float a1, float a2)
     }
   }
   return false;
+}
+
+// Same as opponent_detected_arc(), based on carrot and using a default fov
+bool opponent_detected_carrot(void)
+{
+  int16_t dx = robot_state.carrot.x - robot_state.current_pos.x;
+  int16_t dy = robot_state.carrot.y - robot_state.current_pos.y;
+  double angle = atan2(dy,dx);
+  return opponent_detected_arc(atan2(dy,dx), DEFAULT_FOV);
 }
 
 // Wait while opponent is detected
