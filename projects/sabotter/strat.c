@@ -116,19 +116,19 @@ bool opponent_detected_carrot(void)
 {
   int16_t dx = robot_state.carrot.x - robot_state.current_pos.x;
   int16_t dy = robot_state.carrot.y - robot_state.current_pos.y;
-  double angle = atan2(dy,dx);
-  return opponent_detected_arc(atan2(dy,dx), DEFAULT_FOV);
+  float angle = atan2(dy,dx);
+  return opponent_detected_in_arc(angle, DEFAULT_FOV);
 }
 
 // Wait while opponent is detected
 // Return true if opponent is not detected anymore, false on timeout
 bool wait_detected_opponent(uint16_t ms)
 {
-  uint32_t tend = uptime_us() + ms * 1000;
+  //uint32_t tend = uptime_us() + ms * 1000;
   while(opponent_detected_carrot()) {
-    if(uptime_us() >= tend) {
-      return false;
-    }
+    //if(uptime_us() >= tend) {
+    //  return false;
+    //}
     idle();
   }
   return true;
@@ -221,8 +221,11 @@ static void _meca_order_blocking_main_aux(uint8_t cmd_main, uint8_t cmd_aux){
 
 /// Go to given position, avoid opponents
 static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t wait_ms)
-{
-  float angle = atan2(y-robot_state.current_pos.y,x-robot_state.current_pos.x)+M_PI/2;
+{ 
+  int16_t dx = x - robot_state.current_pos.x;
+  int16_t dy = y - robot_state.current_pos.y;
+  float angle = atan2(dy,dx);
+
   for(;;) {
     ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
@@ -231,12 +234,14 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t wait
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return ORDER_SUCCESS;
       }
-      if(opponent_detected_in_arc(angle,DEFAULT_DETECTION_FOV)) {
+      if(opponent_detected()) {
         ROME_LOG(&rome_paddock,INFO,"goto_xya : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-        if(!wait_detected_opponent(wait_ms)) {
-          return ORDER_DETECTION;
+        for(;;){
+          if(opponent_detected())
+            break;
+          idle();
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
@@ -267,8 +272,10 @@ static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t
         path_i = robot_state.asserv.path_i;
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-        if(!wait_detected_opponent(wait_ms)) {
-          return ORDER_DETECTION;
+        for(;;){
+          if(opponent_detected())
+            break;
+          idle();
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
@@ -290,12 +297,11 @@ void goto_xya_panning(int16_t x, int16_t y, float pan_angle)
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return;
       }
-      if(opponent_detected_in_arc(angle,DEFAULT_DETECTION_FOV)) {
+      if(opponent_detected_carrot()) {
         ROME_LOG(&rome_paddock,INFO,"goto_xya_panning : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-        //TODO use opponent_detected_arc()
-        while(opponent_detected_in_arc(angle,DEFAULT_DETECTION_FOV)) {
+        while(opponent_detected_carrot()) {
           idle();
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
@@ -309,6 +315,7 @@ void goto_xya_panning(int16_t x, int16_t y, float pan_angle)
 /// Go to given relative position, avoid opponents
 static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t wait_ms)
 {
+  float angle = atan2(y,x);
   for(;;) {
     ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
@@ -317,12 +324,14 @@ static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t 
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return ORDER_SUCCESS;
       }
-      if(opponent_detected_in_arc(angle,DEFAULT_DETECTION_FOV)) {
+      if(opponent_detected()) {
         ROME_LOG(&rome_paddock,INFO,"goto_xya_rel : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-        if(!wait_detected_opponent(wait_ms)) {
-          return ORDER_DETECTION;
+        for(;;){
+          if(opponent_detected())
+            break;
+          idle();
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
         break; // to resend goto order
@@ -555,16 +564,16 @@ void strat_prepare_galipeur(void)
 
 #if 0
   // autoset robot, Y on claps
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-100), 0);
+  autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-110), 0);
   goto_xya_rel(KX(-500), 0, KA(0));
   goto_xya_rel(KX(0), -400, KA(-M_PI/4));
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_DOWN, 0, 100);
+  autoset(ROBOT_SIDE_MAIN,AUTOSET_DOWN, 0, 110);
   // move out (in relative coordinates)
   goto_xya_rel(KX(0), 200, KA(0));
 
 #else
   // autoset robot, Y on starting zone
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-100), 0);
+  autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-110), 0);
   goto_xya_rel(KX(-100), -100, KA(0));
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 775-160);
   goto_xya_rel(KX(-100), -100, KA(0));
@@ -590,7 +599,7 @@ void strat_prepare_galipeur(void)
 void galipeur_se_spots(void) {
   ROME_LOG(&rome_paddock,DEBUG,"SE spots");
     // autoset against right side
-  //autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-100), 0);
+  //autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-110), 0);
   _meca_order_blocking_ma(PREPARE_PICK_SPOT,PREPARE_CUP);
   //goto_xya_rel(KX(-100),0,KA(0));
 
@@ -611,14 +620,14 @@ void galipeur_do_claps(void) {
   ROME_LOG(&rome_paddock,DEBUG,"Claps");
   // -- SE CLAPS -- 
   goto_xya(KX(1500-500), 330, KA(0));
-  goto_xya(KX(1500-190), 330, KA(0));
+  goto_xya(KX(1500-190), 280, KA(0));
   // translate along SE border
   ext_arm_clap();
-  goto_xya(KX(1500-300), 300, KA(0));
+  goto_xya(KX(1500-300), 280, KA(0));
   ext_arm_raise();
-  goto_xya(KX(1500-700), 300, KA(0));
+  goto_xya(KX(1500-700), 280, KA(0));
   ext_arm_clap();
-  goto_xya(KX(1500-950), 300, KA(0));
+  goto_xya(KX(1500-950), 280, KA(0));
   goto_xya_rel(KX(+100), 100,KA(0));
   ext_arm_lower();
 }
@@ -644,7 +653,7 @@ void galipeur_unload_spots_red(void) {
   goto_xy_rel_align_course(KX(60*1.2), 60*1.2, false);
   _meca_order_blocking_both(PREPARE_PICK_SPOT);
   goto_xya(KX(1500-880), 250, KA(-M_PI/4));
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_DOWN, 0, 100);
+  autoset(ROBOT_SIDE_MAIN,AUTOSET_DOWN, 0, 110);
   goto_xya_rel(KX(0),100,KA(0));
 }
 
@@ -660,12 +669,19 @@ void galipeur_take_start_area_bulb(void) {
   goto_xya(KX(1500-700), 1030, KA(M_PI/2));
 }
 
+//void idle_delay_ms()
+//  for(int i=0;i<50;i++){
+//    _delay_ms(10);
+//    idle();
+//    }
+
 void galipeur_go_to_stairs(void) {
   ROME_LOG(&rome_paddock,DEBUG,"Stairs");
   // -- GO TO STAIRS ! --
   int16_t traj[] = {
-    KX(1500-550), 1000,
-    KX(1500-600), 1300,
+    KX(1500-600), 900,
+    KX(1500-600), 1000,
+    KX(1500-570), 1300,
     KC(1500-850,790-1500), 1400,
     KC(1500-850,790-1500), 1650,
   };
@@ -679,9 +695,9 @@ void galipeur_go_to_stairs(void) {
   ROME_LOG(&rome_paddock,DEBUG,"put galette on the podium");
   // -- PUT GALETTE ON THE PODIUM --
   goto_xya(KC(1500-770,760-1500), 1600, KA(M_PI));
-  goto_xya(KC(1500-790,760-1500), 1800, KA(-M_PI/2));
-  goto_xya(KC(1500-810,770-1500), 1800, KA(-M_PI/2));
-  for(int i=0;i<200;i++){
+  goto_xya(KC(1500-790,760-1500), 1700, KA(-M_PI/2));
+  goto_xya(KC(1500-800,770-1500), 1700, KA(-M_PI/2));
+  for(int i=0;i<50;i++){
     _delay_ms(10);
     idle();
     }
@@ -696,18 +712,19 @@ void galipeur_go_to_stairs(void) {
 
 void galipeur_put_carpet(void){
   int16_t traj[] = {
-  KC(1500-790,770-1500), 1700,
+  KC(1500-790,770-1500), 1650,
   };
   goto_traj(traj,KA(M_PI - M_PI/6));
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_AUX, KX(1500-970-100), 0);
+  autoset(ROBOT_SIDE_MAIN,AUTOSET_AUX, KX(1500-970+110), 0);
   goto_xya_rel(KX(30), -100,KA(0));
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_LEFT);
+  _delay_ms(50); 
 }
 
 void galipeur_unload_spots_start_area(void){
   //unload them in start area
-  goto_xya(KX(1500-600), 1030, KA(M_PI/2));
+  goto_xya(KX(1500-600), 1000, KA(M_PI/2));
   _meca_discharge_spots();
   _meca_order_blocking_both(RELEASE_SPOT_STACK);
   goto_xya_rel(KX(200),0,KA(0));
@@ -748,11 +765,15 @@ void strat_run_galipeur(void)
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
   galipeur_put_carpet();
   //pick some spots
-  //go_pick_spot(KX(1500-100),1800);
+  goto_xya(KX(1500-600), 1000, KA(M_PI));
   go_pick_spot(KC(1500-880 ,870 -1500),645,MECA_RIGHT);
-  go_pick_spot(KC(1500-1310,1300-1500),600,MECA_RIGHT);
+  galipeur_do_claps();
+  go_pick_spot(KC(1500-1110,1100-1500),230,MECA_RIGHT);
+  go_pick_spot(KC(1500-1310,1300-1500),600,MECA_LEFT);
 
-  galipeur_unload_spots_start_area();
+  if(robot_state.left_elev.nb_spots != 0 ||
+     robot_state.right_elev.nb_spots != 0)
+    galipeur_unload_spots_start_area();
 #else
   //get out of start area
   ext_arm_lower();
