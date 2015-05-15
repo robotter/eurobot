@@ -149,19 +149,24 @@ void ext_arm_galette_lift(void)  { ext_arm_set(460); }
 void ext_arm_galette_release(void)  { ext_arm_set(350); }
 
 void _wait_meca_ready(void){
+  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ready");
   for (;;){
     if((robot_state.left_elev.state == SPOT_ELEV_S_READY)&&
-       (robot_state.right_elev.state == SPOT_ELEV_S_READY))
+       (robot_state.right_elev.state == SPOT_ELEV_S_READY)){
+      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ready");
       return;
+    }
     idle();
   }
 }
 
 void _wait_meca_ground_clear(void){
+  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ground clear");
   for (;;){
     if((robot_state.left_elev.state != SPOT_ELEV_S_BUSY)&&
-       (robot_state.right_elev.state != SPOT_ELEV_S_BUSY))
-      return;
+       (robot_state.right_elev.state != SPOT_ELEV_S_BUSY)){
+      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ground clear");
+      return;}
     idle();
   }
 }
