@@ -277,7 +277,6 @@ void spot_elevator_manage(spot_elevator_t *elevator)
       case SESM_PREPARE_SPOT_INIT:
       case SESM_PREPARE_SPOT_LIFT_UP_ELEVATOR:
         _spipe_open(elevator);
-        _delay_ms(300);
         if(_set_elevator_ax12(elevator, ELEVATOR_UP, ELEVATOR_FAST))
           elevator->sm_state = SESM_PREPARE_SPOT_WAIT_ELEVATOR_UP;
         break;
@@ -378,9 +377,9 @@ void spot_elevator_manage(spot_elevator_t *elevator)
         break;
 
       case SESM_PICK_SPOT_POST_WAIT_ELEVATOR_UP:
-        _spipe_close(elevator);
         if(_is_elevator_ax12_in_position(elevator, ELEVATOR_UP_MOVE_SPOT)){
             elevator->sm_state = SESM_INACTIVE;
+            _spipe_close(elevator);
         }
         break;
 
