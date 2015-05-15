@@ -222,9 +222,9 @@ static void _meca_order_blocking_main_aux(uint8_t cmd_main, uint8_t cmd_aux){
 /// Go to given position, avoid opponents
 static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t wait_ms)
 { 
-  int16_t dx = x - robot_state.current_pos.x;
-  int16_t dy = y - robot_state.current_pos.y;
-  float angle = atan2(dy,dx);
+  //int16_t dx = x - robot_state.current_pos.x;
+  //int16_t dy = y - robot_state.current_pos.y;
+  //float angle = atan2(dy,dx);
 
   for(;;) {
     ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, x, y, 1000*a);
@@ -315,7 +315,7 @@ void goto_xya_panning(int16_t x, int16_t y, float pan_angle)
 /// Go to given relative position, avoid opponents
 static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t wait_ms)
 {
-  float angle = atan2(y,x);
+  //float angle = atan2(y,x);
   for(;;) {
     ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
@@ -623,10 +623,12 @@ void galipeur_do_claps(void) {
   goto_xya(KX(1500-190), 280, KA(0));
   // translate along SE border
   ext_arm_clap();
+  /* kindness for match 2
   goto_xya(KX(1500-300), 280, KA(0));
   ext_arm_raise();
   goto_xya(KX(1500-700), 280, KA(0));
   ext_arm_clap();
+  */
   goto_xya(KX(1500-950), 280, KA(0));
   goto_xya_rel(KX(+100), 100,KA(0));
   ext_arm_lower();
@@ -679,24 +681,24 @@ void galipeur_go_to_stairs(void) {
   ROME_LOG(&rome_paddock,DEBUG,"Stairs");
   // -- GO TO STAIRS ! --
   int16_t traj[] = {
-    KX(1500-600), 900,
+    KX(1500-600), 800,
     KX(1500-600), 1000,
     KX(1500-570), 1300,
-    KC(1500-850,790-1500), 1400,
-    KC(1500-850,790-1500), 1650,
+    KC(1500-850,820-1500), 1400,
+    KC(1500-850,820-1500), 1650,
   };
   goto_traj(traj,KA(M_PI));
   _meca_order_blocking_ma(PICK_SPOT,NONE);
   _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
   _wait_meca_ready();
-  goto_xya(KC(1500-850,790-1500), 1750, KA(M_PI));
+  goto_xya(KC(1500-850,820-1500), 1750, KA(M_PI));
   _meca_order_blocking_ma(PICK_SPOT,NONE);
   
   ROME_LOG(&rome_paddock,DEBUG,"put galette on the podium");
   // -- PUT GALETTE ON THE PODIUM --
-  goto_xya(KC(1500-770,760-1500), 1600, KA(M_PI));
-  goto_xya(KC(1500-790,760-1500), 1700, KA(-M_PI/2));
-  goto_xya(KC(1500-800,770-1500), 1700, KA(-M_PI/2));
+  goto_xya(KC(1500-770,730-1500), 1600, KA(M_PI));
+  goto_xya(KC(1500-790,750-1500), 1700, KA(-M_PI/2));
+  goto_xya(KC(1500-800,760-1500), 1700, KA(-M_PI/2));
   for(int i=0;i<50;i++){
     _delay_ms(10);
     idle();
@@ -766,7 +768,7 @@ void strat_run_galipeur(void)
   galipeur_put_carpet();
   //pick some spots
   goto_xya(KX(1500-600), 1000, KA(M_PI));
-  go_pick_spot(KC(1500-880 ,870 -1500),645,MECA_RIGHT);
+  go_pick_spot(KC(1500-880 ,870 -1500),645,MECA_MAIN);
   galipeur_do_claps();
   go_pick_spot(KC(1500-1110,1100-1500),230,MECA_RIGHT);
   go_pick_spot(KC(1500-1310,1300-1500),600,MECA_LEFT);
