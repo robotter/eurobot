@@ -143,7 +143,8 @@ typedef struct{
   
   uint8_t claw_blocked_cnt;
   uint8_t elev_blocked_cnt;
-  uint8_t check_presence_ticks;
+  uint16_t check_presence_ticks;
+  uint16_t order_timeout_ticks;
 
 }spot_elevator_t;
 
@@ -183,4 +184,5 @@ void spot_elevator_pick_cup(spot_elevator_t *se);
 
 void spot_elevator_end_of_match(spot_elevator_t *se);
 void spot_elevator_reset(spot_elevator_t *se);
+void spot_elevator_reset_order_timeout(spot_elevator_t *se);
 #endif //SPOT_ELEVATOR_H

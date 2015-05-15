@@ -8,6 +8,9 @@
 
 
 #define MATCH_DURATION_SECS (89)
+#define SPOT_ELEVATOR_PERIOD_MS (10)
+#define SPOT_ELEVATOR_ORDER_TIMEOUT_MS (5000)
+#define SPOT_ELEVATOR_CHECK_PRESENCE_TIMEOUT_MS (500)
 
 /// Perlimpinpin node address
 #define PPP_ADDR  0x12

@@ -147,9 +147,11 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
           func = NULL;
           break;
       }
+      spot_elevator_t * se = frame->meca_cmd.side ? &r_spot_elevator : &l_spot_elevator;
       if(func)
-        func(frame->meca_cmd.side ? &r_spot_elevator : &l_spot_elevator);
+        func(se);
       rome_reply_ack(intf, frame);
+      spot_elevator_reset_order_timeout(se);
     } break;
 
     case ROME_MID_MECA_SET_POWER: {
@@ -417,9 +419,8 @@ int main(void)
       rome_handle_input(&rome_color_sensor.right);
     }
     
-    // update each spot elevator every 10 ms
     uptime = uptime_us();
-    if(uptime - spot_elevator_uptime > 5000) {
+    if(uptime - spot_elevator_uptime > (SPOT_ELEVATOR_PERIOD_MS*1000/2)) {
       spot_elevator_uptime = uptime;
       if (update_left){
         spot_elevator_manage(&l_spot_elevator);

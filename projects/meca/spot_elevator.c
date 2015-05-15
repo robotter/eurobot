@@ -1,5 +1,7 @@
 #include "spot_elevator.h"
 #include <ax12/ax12.h>
+#include <clock/clock.h>
+#include <util/delay.h>
 #include <pwm/motor.h>
 #include "color_defs.h"
 #include <avarix.h>
@@ -15,6 +17,8 @@ extern rome_intf_t rome_strat;
 
 #define AX12_ELEVATOR_POS_ERROR 50
 #define AX12_CLAW_POS_ERROR 10
+#define CHECK_PRESENCE_MAX_TICKS (SPOT_ELEVATOR_CHECK_PRESENCE_TIMEOUT_MS/SPOT_ELEVATOR_PERIOD_MS)
+#define ORDER_TIMEOUT_MAX_TICKS (SPOT_ELEVATOR_ORDER_TIMEOUT_MS/SPOT_ELEVATOR_PERIOD_MS)
 
 // return ax12 load ranging from 0 to 1023, or -1 on error
 static int16_t _get_ax12_load(ax12_addr_t address) {
@@ -202,6 +206,23 @@ void spot_elevator_manage(spot_elevator_t *elevator)
   if ((elevator != NULL) && 
       (elevator->is_active))
   {
+    bool is_inactive = elevator->sm_state == SESM_INACTIVE ||
+                       elevator->sm_state == SESM_ENDOFMATCH;
+    if(!is_inactive){
+      elevator->order_timeout_ticks ++;
+      if (elevator->order_timeout_ticks > ORDER_TIMEOUT_MAX_TICKS){
+        elevator->sm_state = SESM_INACTIVE;
+        elevator->order_timeout_ticks = 0;
+        ROME_LOG(&rome_strat, DEBUG,"mecatimeout");
+        ROME_LOG(&rome_strat, DEBUG,"mecatimeout");
+        ROME_LOG(&rome_strat, DEBUG,"mecatimeout");
+        ROME_LOG(&rome_strat, DEBUG,"mecatimeout");
+        ROME_LOG(&rome_strat, DEBUG,"mecatimeout");
+      }
+    }
+    else
+      elevator->order_timeout_ticks = 0;
+
     //static int lstate = INT16_MAX;
     //if(lstate != elevator->sm_state) {
     //  ROME_LOGF(&rome_strat, DEBUG,"state %u", elevator->sm_state);
@@ -256,6 +277,7 @@ void spot_elevator_manage(spot_elevator_t *elevator)
       case SESM_PREPARE_SPOT_INIT:
       case SESM_PREPARE_SPOT_LIFT_UP_ELEVATOR:
         _spipe_open(elevator);
+        _delay_ms(300);
         if(_set_elevator_ax12(elevator, ELEVATOR_UP, ELEVATOR_FAST))
           elevator->sm_state = SESM_PREPARE_SPOT_WAIT_ELEVATOR_UP;
         break;
@@ -283,9 +305,10 @@ void spot_elevator_manage(spot_elevator_t *elevator)
 
       case SESM_PICK_SPOT_CHECK_SPOT_PRESENCE:
         elevator->check_presence_ticks ++;
-        if (elevator->check_presence_ticks > 50
+        if (elevator->check_presence_ticks > CHECK_PRESENCE_MAX_TICKS
           ||elevator->is_spot_present == NULL){
           elevator->sm_state = SESM_INACTIVE; 
+          ROME_LOG(&rome_strat, DEBUG,"meca: no spot present");
           break;
         }
         if (elevator->is_spot_present())
@@ -582,4 +605,8 @@ void spot_elevator_end_of_match(spot_elevator_t *se){
 void spot_elevator_reset(spot_elevator_t *se){
   se->tm_state = SESM_TM_S(BUSY);
   se->sm_state = SESM_INIT;
+}
+
+void spot_elevator_reset_order_timeout(spot_elevator_t *se){
+  se->order_timeout_ticks = 0;
 }
