@@ -62,6 +62,13 @@ typedef enum {
   ORDER_FAILURE,
 } order_result_t;
 
+void idle_delay_ms(uint32_t time_ms){
+  uint32_t start_time_us = uptime_us();
+  while((uptime_us() - start_time_us) < (time_ms*1000))
+    idle();
+}
+
+
 /// Check an order_result_t, return it if not success
 #define ORDER_CHECK(expr)  do { \
     order_result_t or = (expr); \
@@ -146,7 +153,7 @@ void ext_arm_set(int16_t pos)
 void ext_arm_raise(void) { ext_arm_set(430); }
 void ext_arm_lower(void) { ext_arm_set(100); }
 void ext_arm_clap(void)  { ext_arm_set(300); }
-void ext_arm_galette_prepare(void)  { ext_arm_set(280); }
+void ext_arm_galette_prepare(void)  { ext_arm_set(270); }
 void ext_arm_galette_lift(void)  { ext_arm_set(460); }
 void ext_arm_galette_release(void)  { ext_arm_set(350); }
 
@@ -611,7 +618,7 @@ void strat_prepare_galipeur(void)
   goto_xya(KX(1500-600), 1000, KA(-M_PI/2));
 
   // stack in start area
-  goto_xya(KX(1500-280), 1000, KA(-M_PI/2));
+  goto_xya(KX(1500-250), 940, KA(-M_PI/2-M_PI/6));
 
  
   //autoset(ROBOT_SIDE_MAIN,AUTOSET_DOWN,0,775+22+100);
@@ -619,6 +626,7 @@ void strat_prepare_galipeur(void)
   _meca_order_blocking_both(RESET_ELEVATOR);
   _meca_order_blocking_both(PICK_BULB);
   ext_arm_galette_prepare();
+  idle_delay_ms(2000);
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
@@ -651,7 +659,7 @@ void galipeur_do_claps(void) {
   goto_xya(KX(1500-190), 280, KA(0));
   // translate along SE border
   ext_arm_clap();
-  #if 1
+  #if 0
   // fuck the rules !!!!
   goto_xya(KX(1500-300), 280, KA(0));
   ext_arm_raise();
@@ -700,19 +708,13 @@ void galipeur_take_start_area_bulb(void) {
   goto_xya(KX(1500-700), 1030, KA(M_PI/2));
 }
 
-//void idle_delay_ms()
-//  for(int i=0;i<50;i++){
-//    _delay_ms(10);
-//    idle();
-//    }
-
 void galipeur_go_to_stairs(void) {
   ROME_LOG(&rome_paddock,DEBUG,"Stairs");
   // -- GO TO STAIRS ! --
-  goto_xya(KX(1500-600), 800, KA(-M_PI/2));
+  goto_xya(KX(1500-590), 800, KA(-M_PI/2-M_PI/6));
   int16_t traj[] = {
     KX(1500-600), 1000,
-    KX(1500-570), 1300,
+    KX(1500-600), 1300,
     KC(1500-850,820-1500), 1400,
     KC(1500-850,820-1500), 1650,
   };
@@ -727,19 +729,16 @@ void galipeur_go_to_stairs(void) {
   ROME_LOG(&rome_paddock,DEBUG,"put galette on the podium");
   // -- PUT GALETTE ON THE PODIUM --
   goto_xya(KC(1500-770,730-1500), 1600, KA(M_PI));
-  goto_xya(KC(1500-790,750-1500), 1700, KA(-M_PI/2));
-  goto_xya(KC(1500-800,760-1500), 1700, KA(-M_PI/2));
-  for(int i=0;i<50;i++){
-    _delay_ms(10);
-    idle();
-    }
+  goto_xya(KC(1500-790,750-1500), 1750, KA(-M_PI/2));
+  //push against wall
+  ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv,KX(-200),0,0);
+  idle_delay_ms(1000);
   ext_arm_galette_release();
-  for(int i=0;i<50;i++){
-    _delay_ms(10);
-    idle();
-    }
-  goto_xya_rel(KX(200), 0, KA(0));
+  idle_delay_ms(500);
+  goto_xya_rel(KX(100),0, KA(0));
   ext_arm_lower();
+  goto_xya_rel(KX(-50), -100, KA(0));
+  autoset(ROBOT_SIDE_MAIN,AUTOSET_AUX, KX(1500-970+110), 0);
 }
 
 void galipeur_put_carpet(void){
@@ -747,11 +746,9 @@ void galipeur_put_carpet(void){
   KC(1500-790,770-1500), 1650,
   };
   goto_traj(traj,KA(M_PI - M_PI/6));
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_AUX, KX(1500-970+110), 0);
-  goto_xya_rel(KX(30), -100,KA(0));
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_LEFT);
-  _delay_ms(50); 
+  idle_delay_ms(500); 
 }
 
 void galipeur_unload_spots_start_area(void){
@@ -790,7 +787,7 @@ void strat_run_galipeur(void)
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
 
   //get out of start area
-  goto_xya(KX(1500-600), 1000, KA(-M_PI/2));
+  goto_xya(KX(1500-580), 1000, KA(-M_PI/2-M_PI/6));
 
   galipeur_go_to_stairs();
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
@@ -807,6 +804,9 @@ void strat_run_galipeur(void)
      robot_state.right_elev.nb_spots != 0)
     galipeur_unload_spots_start_area();
 #else
+  //2015 1st match code modified to use advanced detection
+  //never tested
+
   //get out of start area
   ext_arm_lower();
   goto_xya(KX(1500-800), 1030, KA(-M_PI/2));
