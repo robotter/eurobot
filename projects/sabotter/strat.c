@@ -680,8 +680,8 @@ void galipeur_take_start_area_bulb(void) {
 void galipeur_go_to_stairs(void) {
   ROME_LOG(&rome_paddock,DEBUG,"Stairs");
   // -- GO TO STAIRS ! --
+  goto_xya(KX(1500-600), 800, KA(-M_PI/2));
   int16_t traj[] = {
-    KX(1500-600), 800,
     KX(1500-600), 1000,
     KX(1500-570), 1300,
     KC(1500-850,820-1500), 1400,
