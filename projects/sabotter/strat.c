@@ -110,7 +110,7 @@ bool opponent_detected_in_arc(float angle, float fov)
     max += 2*M_PI;
   for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
     r3d2_object_t *object = &robot_state.r3d2.objects[i];
-    d_a = float_modulo__(object->a-M_PI/6+robot_state.current_pos.a, 0, 2*M_PI);
+    d_a = float_modulo__(object->a+M_PI/6+robot_state.current_pos.a, 0, 2*M_PI);
     bool in_range = IN_RANGE(d_a,min,max)||IN_RANGE(d_a+2*M_PI,min,max);
     // note: object->a is in ]-2*Pi;0]
     if(object->detected && object->r < R3D2_AVOID_DISTANCE && in_range) {
@@ -254,13 +254,13 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t time
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return ORDER_SUCCESS;
       }
-      if(opponent_detected()) {
+      if(opponent_detected_carrot()) {
         ROME_LOG(&rome_paddock,INFO,"goto_xya : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
           start_time_us = uptime_us();
-          if(!opponent_detected())
+          if(!opponent_detected_carrot())
             break;
           idle();
         }
@@ -294,14 +294,14 @@ static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return ORDER_SUCCESS;
       }
-      if(opponent_detected()) {
+      if(opponent_detected_carrot()) {
         ROME_LOG(&rome_paddock,INFO,"goto_traj : opponent detected");
         path_i = robot_state.asserv.path_i;
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
           start_time_us = uptime_us();
-          if(!opponent_detected())
+          if(!opponent_detected_carrot())
             break;
           idle();
         }
@@ -344,7 +344,6 @@ void goto_xya_panning(int16_t x, int16_t y, float pan_angle)
 static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t timeout_ms)
 {
   uint32_t start_time_us = uptime_us();
-  //float angle = atan2(y,x);
   for(;;) {
     ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
@@ -358,13 +357,13 @@ static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t 
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return ORDER_SUCCESS;
       }
-      if(opponent_detected()) {
+      if(opponent_detected_carrot()) {
         ROME_LOG(&rome_paddock,INFO,"goto_xya_rel : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
           start_time_us = uptime_us();
-          if(!opponent_detected())
+          if(!opponent_detected_carrot())
             break;
           idle();
         }
