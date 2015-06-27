@@ -99,7 +99,7 @@ bool opponent_detected(void)
 }
 
 #define IN_RANGE(x,min,max) ((x) >= (min) && (x) <= (max))
-#define DEFAULT_DETECTION_FOV M_PI/3
+#define DEFAULT_DETECTION_FOV 2*M_PI/3
 // Return true if an opponent is detected within an arc
 bool opponent_detected_in_arc(float angle, float fov)
 {
@@ -567,8 +567,9 @@ void strat_init_galipeur(void)
   // initialize meca
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
   // set R3D2 parameters
-  ext_arm_raise();
-  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
+  // fuck c'est trop long ...
+  //ext_arm_raise();
+  //ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
   ext_arm_lower(); 
 
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
@@ -655,10 +656,10 @@ void galipeur_do_claps(void) {
   ROME_LOG(&rome_paddock,DEBUG,"Claps");
   // -- SE CLAPS -- 
   goto_xya(KX(1500-500), 330, KA(0));
-  goto_xya(KX(1500-190), 280, KA(0));
+  goto_xya(KX(1500-180), 280, KA(0));
   // translate along SE border
   ext_arm_clap();
-  #if 0
+  #if 1
   // fuck the rules !!!!
   goto_xya(KX(1500-300), 280, KA(0));
   ext_arm_raise();
@@ -802,6 +803,15 @@ void strat_run_galipeur(void)
   if(robot_state.left_elev.nb_spots != 0 ||
      robot_state.right_elev.nb_spots != 0)
     galipeur_unload_spots_start_area();
+
+  //oponent clap
+
+  goto_xya(KX(300-1500), 320, KA(0));
+  ext_arm_clap();
+  goto_xya(KX(800-1500), 320, KA(0));
+  ext_arm_lower();
+  goto_xya(KX(1500-700), 1000, KA(0));
+
 #else
   //2015 1st match code modified to use advanced detection
   //never tested
