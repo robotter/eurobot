@@ -41,7 +41,7 @@ typedef enum {
 #define AUTOSET_MAIN (robot_state.team == TEAM_GREEN ? AUTOSET_RIGHT : AUTOSET_LEFT)
 #define AUTOSET_AUX  (robot_state.team == TEAM_GREEN ? AUTOSET_LEFT : AUTOSET_RIGHT)
 #define KX(x) (robot_kx*(x))
-#define KC(green,yellow) (robot_state.team == TEAM_GREEN ? (green) : (yellow))
+#define KC(green,purple) (robot_state.team == TEAM_GREEN ? (green) : (purple))
 #define KA(a) (robot_kx*(a))
 
 typedef enum {
@@ -226,7 +226,7 @@ static void _meca_order_blocking_left_right(uint8_t cmd_left, uint8_t cmd_right)
 static void _meca_order_blocking_main_aux(uint8_t cmd_main, uint8_t cmd_aux){
   if(robot_state.team == TEAM_GREEN)
     _meca_order_blocking_left_right(cmd_aux,cmd_main);
-  else if(robot_state.team == TEAM_YELLOW)
+  else if(robot_state.team == TEAM_PURPLE)
     _meca_order_blocking_left_right(cmd_main,cmd_aux);
 }
 
@@ -273,7 +273,6 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t time
 }
 
 /// Execute trajectory, avoid opponents
-#if 1
 #define goto_traj_wait(xy,a,w) goto_traj_n_wait((xy), sizeof(xy)/sizeof(int16_t), (a), (w))
 static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t timeout_ms)
 {
@@ -312,7 +311,6 @@ static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t
     }
   }
 }
-#endif
 
 /// Go to given position, with robot panning and scanning, avoid opponents
 void goto_xya_panning(int16_t x, int16_t y, float pan_angle)
@@ -399,7 +397,7 @@ order_result_t go_pick_spot_wait(int16_t x, int16_t y, spot_elevator_t side, uin
 
   int16_t dx; 
   if ((side == MECA_RIGHT && robot_state.team == TEAM_GREEN)
-    ||(side == MECA_LEFT && robot_state.team == TEAM_YELLOW)){
+    ||(side == MECA_LEFT && robot_state.team == TEAM_PURPLE)){
     _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
     dx = KX(CLAW_X);
     }
@@ -434,7 +432,7 @@ order_result_t go_pick_spot_wait(int16_t x, int16_t y, spot_elevator_t side, uin
   _wait_meca_ready();
   goto_xya_wait(x-tdx,y-tdy,beta+M_PI/2,timeout_ms);
   if ((side == MECA_RIGHT && robot_state.team == TEAM_GREEN)
-    ||(side == MECA_LEFT && robot_state.team == TEAM_YELLOW)){
+    ||(side == MECA_LEFT && robot_state.team == TEAM_PURPLE)){
     _meca_order_blocking_ma(PICK_SPOT,NONE);
     }
   else{
@@ -508,7 +506,7 @@ team_t strat_select_team(void)
       portpin_outset(&LED_R_PP);
       portpin_outset(&LED_G_PP);
       portpin_outclr(&LED_B_PP);
-      team = TEAM_YELLOW;
+      team = TEAM_PURPLE;
     }
     if(starting_cord_plugged()) {
       portpin_outclr(&LED_B_PP);
@@ -531,7 +529,7 @@ void strat_wait_start(void)
 
   while(starting_cord_plugged()) {
     if((uptime_us() / 500000) % 2 == 0) {
-      if(robot_state.team == TEAM_YELLOW) {
+      if(robot_state.team == TEAM_PURPLE) {
         portpin_outset(&LED_R_PP);
         portpin_outset(&LED_G_PP);
       } else {
@@ -597,39 +595,32 @@ void strat_prepare_galipeur(void)
   ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 0, 0, 0);
   ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, 0);
 
-#if 0
-  // autoset robot, Y on claps
+  // autoset robot, Y on pond
   autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-110), 0);
-  goto_xya_rel(KX(-500), 0, KA(0));
-  goto_xya_rel(KX(0), -400, KA(-M_PI/4));
+  goto_xya_rel(KX(-500), -400, KA(0));
   autoset(ROBOT_SIDE_MAIN,AUTOSET_DOWN, 0, 110);
   // move out (in relative coordinates)
   goto_xya_rel(KX(0), 200, KA(0));
 
-#else
-  // autoset robot, Y on starting zone
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-110), 0);
-  goto_xya_rel(KX(-100), -100, KA(0));
-  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 775-160);
-  goto_xya_rel(KX(-100), -100, KA(0));
-  goto_xya(KX(1500-600), 500, KA(-M_PI/2));
-#endif
-  // approach front of start area
-  goto_xya(KX(1500-600), 1000, KA(-M_PI/2));
+  // go to start area
+  int16_t traj[] = {
+    KX(1500-600), 1250,
+    KX(1500-250), 1250,
+  };
+  goto_traj(traj,KA(-M_PI/6));
 
-  // stack in start area
-  goto_xya(KX(1500-250), 940, KA(-M_PI/2-M_PI/6));
-
- 
-  //autoset(ROBOT_SIDE_MAIN,AUTOSET_DOWN,0,775+22+100);
-  //prepare meca
-  _meca_order_blocking_both(RESET_ELEVATOR);
-  _meca_order_blocking_both(PICK_BULB);
-  ext_arm_galette_prepare();
-  idle_delay_ms(2000);
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
+}
+
+void galipeur_destroy_dune(void){
+  int16_t traj[] = {
+    KX(1500-600), 1400,
+    KX(-300), 1400,
+  };
+  goto_traj(traj,KA(-M_PI/6));
+
 }
 
 void galipeur_se_spots(void) {
@@ -780,6 +771,8 @@ void strat_run_galipeur(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
 #if 1
+  galipeur_destroy_dune();
+#else
   //lift galette
   ext_arm_galette_lift();
   //change asserv for galette transporting
@@ -812,7 +805,6 @@ void strat_run_galipeur(void)
   ext_arm_lower();
   goto_xya(KX(1500-700), 1000, KA(0));
 
-#else
   //2015 1st match code modified to use advanced detection
   //never tested
 
