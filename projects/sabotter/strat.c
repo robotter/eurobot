@@ -562,6 +562,7 @@ void strat_init_galipeur(void)
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
 
+  #if 0
   // initialize meca
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
   // set R3D2 parameters
@@ -573,14 +574,17 @@ void strat_init_galipeur(void)
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
   ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_LEFT);
   _meca_order_blocking_both(PREPARE_BULB);
+  #endif
   for(;;) {
     update_rome_interfaces();
     if(!robot_state.gyro_calibration)
       break;
   }
+  #if 0
   _meca_order_blocking_both(PICK_BULB);
   ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, MECA_RIGHT);
   ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, MECA_LEFT);
+  #endif
 
 }
 
