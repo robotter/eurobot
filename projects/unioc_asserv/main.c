@@ -371,7 +371,7 @@ int main(void)
     double offset_sqsd = adxrs_get_offset_sqsd();
 
     // exit calibration if sqsd is low enough
-    if(offset_sqsd < 8.0) {
+    if(offset_sqsd < 15.0) {
       ROME_LOGF(&rome, DEBUG, "gyro cal done ! off=%d sqsd=%f", offset, offset_sqsd);
       break;
     }
