@@ -32,6 +32,7 @@
 #include "control_system_manager.h"
 #include "settings.h"
 #include "motor_encoders.h"
+#include "external_encoders.h"
 #include "robot_cs.h"
 #include "adxrs/adxrs.h"
 
@@ -121,26 +122,31 @@ void hposition_update(void *dummy)
   double _ca,_sa;
   hrobot_position_t* hpos  = dummy;
   
-  int16_t *vectors  = NULL;
-  int16_t *pvectors = NULL;
   double *matrix    = NULL;
 
   // access motor encoders values
   motor_encoders_update();
-  vectors = motor_encoders_get_value();
+  int16_t *mv  = motor_encoders_get_value();
+  int16_t *pmv = hpos->pmotor_vectors;
+
+  int32_t *ev = external_encoders_get_value();
+  int32_t *pev = hpos->pexternal_vectors;
 
   // first time update => update vector, quit
   if( hpos->firstUpdate )
   {
     for(i=0;i<3;i++)
-      hpos->pvectors[i] = vectors[i];
+      pmv[i] = mv[i];
+
+    for(i=0;i<3;i++)
+      pev[i] = ev[i];
+
     hpos->firstUpdate = 0;
     return;
   }
-  // set vectors & matrix
-  pvectors = hpos->pvectors;
-  matrix = hrobot_motors_invmatrix;
 
+  // set vectors & matrix
+  matrix = hrobot_motors_invmatrix;
   //----------------------------------------------------------
   // Transform speed in encoders coordinates to robot coordinates
   for(k=0;k<3;k++)
@@ -151,11 +157,11 @@ void hposition_update(void *dummy)
   for(i=0;i<3;i++)
   {
     // compute speed in encoder coordinates
-    v = vectors[i] - pvectors[i];
-    // update previous ADNS vectors
-    pvectors[i] = vectors[i];
+    v = mv[i] - pmv[i];
+    // update previous vectors
+    pmv[i] = mv[i];
  
-    if(v > 0)
+    if(fabs(v) > 0)
       is_moving = true;
 
     // for each robot coordinate (x,y,a) compute a dx of mouvement
@@ -192,7 +198,7 @@ void hposition_update(void *dummy)
   }
 
   // update telemetry
-  TM_DL_ENCODER_RAW(vectors[0], vectors[1], vectors[2]);
+  TM_DL_ENCODER_RAW(mv[0], mv[1], mv[2], ev[0], ev[1], ev[2]);
   TM_DL_XYA(hpos->position.x, hpos->position.y, 1000*hpos->position.alpha);
   TM_DL_GYRO_CALIBRATION(adxrs_get_calibration_mode());
   return;

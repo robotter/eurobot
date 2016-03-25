@@ -51,7 +51,10 @@ register_messages(
 
       # __ TELEMETRY __
       # Encoder raw data
-      ('asserv_tm_encoder_raw', [('enc0','int16'), ('enc1','int16'), ('enc2','int16')]),
+      ('asserv_tm_encoder_raw', [
+        ('enc0','int16'), ('enc1','int16'), ('enc2','int16'),
+        ('enc3','int32'), ('enc4','int32'), ('enc5','int32'),
+        ]),
       # XYA position
       ('asserv_tm_xya', [('x','dist'), ('y','dist'), ('a','angle')]),
       # XYA PIDs telemetry

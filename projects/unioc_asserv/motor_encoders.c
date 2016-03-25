@@ -66,10 +66,10 @@ int16_t* motor_encoders_get_value()
 #endif
 
   uint8_t it;
-  for(it=0;it<3;it++)
-    encoders.vectors[it] = sign*(int16_t)(quadra_get_value(encoders.quadras+it)*encoders_scales[it]);
-/*  for(it=3;it<6;it++)
-    encoders.vectors[it] = 0;*/
+  for(it=0;it<3;it++) {
+    float s = motor_encoders_scales[it];
+    encoders.vectors[it] = sign*(int16_t)(s*quadra_get_value(encoders.quadras+it));
+  }
   return encoders.vectors;
 }
 

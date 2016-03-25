@@ -58,7 +58,9 @@ typedef struct
   // Robot position
   hrobot_vector_t position;
   // Previous step motor encoders vectors
-  int16_t pvectors[6];
+  int16_t pmotor_vectors[3];
+  // previous step external encoders vectors
+  int32_t pexternal_vectors[3];
   // Is it first time update 
   uint8_t firstUpdate;
 

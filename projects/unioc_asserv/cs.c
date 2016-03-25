@@ -31,6 +31,7 @@
 #include "robot_cs.h"
 #include "htrajectory.h"
 #include "motor_encoders.h"
+#include "external_encoders.h"
 #include "hrobot_manager.h"
 #include "adxrs/adxrs.h"
 #include "avoidance.h"
@@ -57,6 +58,9 @@ void cs_initialize(void)
   // Initilialize motor encoders
   motor_encoders_init();
 
+  // Initialize external encoders
+  external_encoders_init();
+  
   // Initialize z gyro
   adxrs_init(PORTPIN(K,0));
   adxrs_startup();

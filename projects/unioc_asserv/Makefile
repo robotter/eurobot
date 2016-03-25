@@ -5,7 +5,7 @@ include ../../config.mk
 SRCS = $(wildcard *.c)
 ASRCS =
 TARGET = main
-MODULES = uart clock pwm encoder/quadra timer rome adxrs
+MODULES = uart clock pwm encoder/quadra timer rome adxrs encoder/aeat
 R = galipeur
 
 ## Target configuration
