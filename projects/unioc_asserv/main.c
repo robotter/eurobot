@@ -39,6 +39,8 @@
 
 #include "adxrs/adxrs.h"
 
+#include "encoder/aeat/aeat.h"
+aeat_t aeat[3];
 
 #include "telemetry.h"
 
@@ -339,6 +341,16 @@ int main(void)
   PORTQ.OUT = 2;
   TIMER_SET_CALLBACK_US(E0, 'A', CONTROL_SYSTEM_PERIOD_US, CONTROL_SYSTEM_INTLVL, vcs_update);
 
+  //Initialize aeat
+  portpin_dirset(&PORTPIN(E,4));
+  portpin_outset(&PORTPIN(E,4));
+
+  aeat_spi_init();
+//  aeat_init(aeat+0, PORTPIN(E,4));
+  aeat_init(aeat+0, PORTPIN(H,0), AEAT_10_b);
+  aeat_init(aeat+1, PORTPIN(C,7), AEAT_10_b);
+  aeat_init(aeat+2, PORTPIN(C,6), AEAT_10_b);
+
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
@@ -371,7 +383,7 @@ int main(void)
     double offset_sqsd = adxrs_get_offset_sqsd();
 
     // exit calibration if sqsd is low enough
-    if(offset_sqsd < 15.0) {
+    if(offset_sqsd < 25.0) {
       ROME_LOGF(&rome, DEBUG, "gyro cal done ! off=%d sqsd=%f", offset, offset_sqsd);
       break;
     }
@@ -384,7 +396,7 @@ int main(void)
   adxrs_calibration_mode(false);
 
   // remove break
-  hrobot_break(0);
+  //hrobot_break(0);
 
   printf("-- reboot --\n");
   //----------------------------------------------------------------------
@@ -396,6 +408,15 @@ int main(void)
 #if defined(GALIPEUR)
     rome_handle_input(&rome_r3d2);
 #endif
+    
+
+    aeat_update(aeat+0);
+    aeat_update(aeat+1);
+    aeat_update(aeat+2);
+
+      ROME_LOGF(&rome, DEBUG, "aeat %ld %ld %ld", aeat_get_value(aeat+0), 
+                                               aeat_get_value(aeat+1),
+                                               aeat_get_value(aeat+2));
   }
 
 #if defined(GALIPEUR)
