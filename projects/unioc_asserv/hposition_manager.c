@@ -117,12 +117,14 @@ void hposition_update(void *dummy)
 {
   uint8_t i,k;
   int32_t v;
-  double dp[3];
+  double mdp[3];
+  double edp[3];
   hrobot_vector_t vec;
   double _ca,_sa;
   hrobot_position_t* hpos  = dummy;
   
-  double *matrix    = NULL;
+  double *m_matrix = NULL;
+  double *e_matrix = NULL;
 
   // access motor encoders values
   motor_encoders_update();
@@ -146,17 +148,21 @@ void hposition_update(void *dummy)
   }
 
   // set vectors & matrix
-  matrix = hrobot_motors_invmatrix;
+  m_matrix = hrobot_motors_invmatrix;
+  e_matrix = hrobot_encoders_invmatrix;
   //----------------------------------------------------------
   // Transform speed in encoders coordinates to robot coordinates
-  for(k=0;k<3;k++)
-    dp[k] = 0.0;
+  for(k=0;k<3;k++) {
+    mdp[k] = 0.0;
+    edp[k] = 0.0;
+  }
 
   bool is_moving = false;
   // for each encoder coordinate
   for(i=0;i<3;i++)
   {
-    // compute speed in encoder coordinates
+    // -- motor encoders --
+    // compute speed in motor encoders coordinates
     v = mv[i] - pmv[i];
     // update previous vectors
     pmv[i] = mv[i];
@@ -166,12 +172,24 @@ void hposition_update(void *dummy)
 
     // for each robot coordinate (x,y,a) compute a dx of mouvement
     for(k=0;k<3;k++)
-      dp[k] += matrix[i+k*3]*v;
+      mdp[k] += m_matrix[i+k*3]*v;
+
+    // -- external encoders --
+    // compute speed in ext. encoders coordinates
+    v = ev[i] - pev[i];
+    // update previous vectors
+    pev[i] = ev[i];
+
+    // for each robot coordinates (x,y,a) compute a dx of mouvement
+    for(k=0;k<3;k++)
+      edp[k] += e_matrix[i+k*3]*v;
   }
 
   // scale units
-  for(k=0;k<3;k++)
-    dp[k] /= 1000;
+  for(k=0;k<3;k++) {
+    mdp[k] /= 1000;
+    edp[k] /= 1000;
+  }
 
   vec.alpha = hpos->position.alpha;
 
@@ -185,8 +203,8 @@ void hposition_update(void *dummy)
 
   //--------------------------------------------------
   // Integrate speed in robot coordinates to position
-  vec.x = hpos->position.x + dp[HROBOT_DX]*_ca - dp[HROBOT_DY]*_sa;
-  vec.y = hpos->position.y + dp[HROBOT_DX]*_sa + dp[HROBOT_DY]*_ca;
+  vec.x = hpos->position.x + mdp[HROBOT_DX]*_ca - mdp[HROBOT_DY]*_sa;
+  vec.y = hpos->position.y + mdp[HROBOT_DX]*_sa + mdp[HROBOT_DY]*_ca;
 	vec.alpha = adxrs_get_angle();
 
   //------------------------------------
