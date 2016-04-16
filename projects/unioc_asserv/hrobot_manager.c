@@ -93,10 +93,15 @@ void hrobot_init()
   system.breaks[2] = PORTPIN(A,6);
   // configure sign pps
   // XXX NDJD hack 26/05/2014
-  #define HACKED_PORT PORTPIN(H,2)
-  portpin_dirclr(&HACKED_PORT);
-  system.signs[0] = PORTPIN(H,1);
-  system.signs[1] = PORTPIN(H,0);
+  #define BURNED_PIN1 PORTPIN(H,2)
+  // XXX NDOG hack 16/04/2016
+  #define BURNED_PIN2 PORTPIN(H,0)
+  #define BURNED_PIN3 PORTPIN(H,1)
+  portpin_dirclr(&BURNED_PIN1);
+  portpin_dirclr(&BURNED_PIN2);
+  portpin_dirclr(&BURNED_PIN3);
+  system.signs[0] = PORTPIN(F,5);
+  system.signs[1] = PORTPIN(F,6);
   system.signs[2] = PORTPIN(H,3);
 #elif defined(GALIPETTE)
   system.breaks[0] = PORTPIN(H,5);
