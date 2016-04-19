@@ -483,6 +483,7 @@ bool starting_cord_plugged(void)
 team_t strat_select_team(void)
 {
   // wait for starting cord to be unplugged
+  ROME_LOG(&rome_paddock,INFO,"Unplug starting cord ...");
   while(starting_cord_plugged()) {
     if((uptime_us() / 500000) % 2 == 0) {
       portpin_outset(&LED_B_PP);
@@ -494,6 +495,7 @@ team_t strat_select_team(void)
 
   // wait for color to be selected
   // color is selected when starting cord is plugged
+  ROME_LOG(&rome_paddock,INFO,"Select color ...");
   team_t team = TEAM_NONE;
   portpin_outclr(&LED_B_PP);
   for(;;) {
@@ -504,8 +506,8 @@ team_t strat_select_team(void)
       team = TEAM_GREEN;
     } else {
       portpin_outset(&LED_R_PP);
-      portpin_outset(&LED_G_PP);
-      portpin_outclr(&LED_B_PP);
+      portpin_outclr(&LED_G_PP);
+      portpin_outset(&LED_B_PP);
       team = TEAM_PURPLE;
     }
     if(starting_cord_plugged()) {
@@ -515,6 +517,11 @@ team_t strat_select_team(void)
     idle();
   }
 
+  if(team == TEAM_GREEN)
+    ROME_LOG(&rome_paddock,INFO,"Color : GREEN !");
+  else
+    ROME_LOG(&rome_paddock,INFO,"Color : PURPLE !");
+    
   // wait 2s before next step
   uint32_t tend = uptime_us() + 2e6;
   while(uptime_us() < tend) {
@@ -531,11 +538,13 @@ void strat_wait_start(void)
     if((uptime_us() / 500000) % 2 == 0) {
       if(robot_state.team == TEAM_PURPLE) {
         portpin_outset(&LED_R_PP);
-        portpin_outset(&LED_G_PP);
+        portpin_outclr(&LED_G_PP);
+        portpin_outset(&LED_B_PP);
       } else {
+        portpin_outclr(&LED_R_PP);
         portpin_outset(&LED_G_PP);
+        portpin_outclr(&LED_B_PP);
       }
-      portpin_outclr(&LED_B_PP);
     } else {
       portpin_outclr(&LED_R_PP);
       portpin_outclr(&LED_G_PP);
@@ -549,7 +558,7 @@ void strat_wait_start(void)
   portpin_outclr(&LED_B_PP);
   ROME_SENDWAIT_START_TIMER(&rome_asserv);
 #if (defined GALIPEUR)
-  ROME_SENDWAIT_START_TIMER(&rome_meca);
+  //ROME_SENDWAIT_START_TIMER(&rome_meca);
 #endif
 }
 
@@ -598,32 +607,37 @@ void strat_prepare_galipeur(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 0, 0, 0);
   ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, 0);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
 
   // autoset robot, Y on pond
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-110), 0);
-  goto_xya_rel(KX(-500), -400, KA(0));
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_DOWN, 0, 110);
-  // move out (in relative coordinates)
-  goto_xya_rel(KX(0), 200, KA(0));
-
-  // go to start area
-  int16_t traj[] = {
-    KX(1500-600), 1250,
-    KX(1500-250), 1250,
-  };
-  goto_traj(traj,KA(-M_PI/6));
-
+  autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, 103);
+  // move infront of strating area
+  goto_xya(KX(200), 1210, KA(0));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-103), 0);
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
 }
 
 void galipeur_destroy_dune(void){
-  int16_t traj[] = {
-    KX(1500-600), 1400,
-    KX(-300), 1400,
+  //mettre pleine balle !!!
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 3, 0.1);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 80, 0.1);
+  int16_t traj1[] = {
+    KX(1500-300), 1300,
+    KX(-300), 1500,
   };
-  goto_traj(traj,KA(-M_PI/6));
+  goto_traj(traj1,KA(M_PI/2));
+  //ralentir un peu
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
+  goto_xya(KX(-300), 2000-230, KA(M_PI));
+  goto_xya(KX(100),  2000-230, KA(M_PI));
+  goto_xya(KX(1500-700), 1400, KA(M_PI));
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
+
 
 }
 
@@ -776,6 +790,24 @@ void strat_run_galipeur(void)
 
 #if 1
   galipeur_destroy_dune();
+
+  /*/return to start stuff
+    uint32_t start_time_us = uptime_us();
+    for(;;) {
+      uint32_t time = uptime_us() - start_time_us;
+      if((time) > ((uint32_t) 15000000))
+        break;
+      idle();
+    }
+
+  int16_t traj[] = {
+    //KX(-300), 1500,
+    KX(1500-600), 1500,
+    KX(1500-200), 1210,
+    KX(1500-600), 600,
+  };
+  goto_traj(traj,KA(-M_PI/3)-M_PI/2);
+*/
 #else
   //lift galette
   ext_arm_galette_lift();
