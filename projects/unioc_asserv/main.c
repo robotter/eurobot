@@ -136,6 +136,14 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       htrajectory_gotoA_R(&trajectory, a);
       rome_reply_ack(intf, frame);
     } break;
+    case ROME_MID_ASSERV_GOTO_XYA_SYNCED: {
+      float x = frame->asserv_goto_xya_synced.x;
+      float y = frame->asserv_goto_xya_synced.y;
+      float a = (frame->asserv_goto_xya_synced.a)/1000.0;
+      htrajectory_gotoXY(&trajectory, x, y);
+      htrajectory_gotoXY_synced(&trajectory, x, y, a);
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_GOTO_XYA_PANNING: {
       float x = frame->asserv_goto_xya_panning.x;
       float y = frame->asserv_goto_xya_panning.y;
@@ -223,6 +231,12 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       uint16_t dotdot = frame->asserv_set_a_qramp.dotdot;
       quadramp_set_1st_order_vars(&qramp_angle, dot, dot);
       quadramp_set_2nd_order_vars(&qramp_angle, dotdot, dotdot);
+      rome_reply_ack(intf, frame);
+    } break;
+    case ROME_MID_ASSERV_SET_HTRAJ_A_SPEED: {
+      float speed = frame->asserv_set_htraj_a_speed.speed;
+      float acc   = frame->asserv_set_htraj_a_speed.acc;
+      htrajectory_setASpeed(&trajectory, speed, acc);
       rome_reply_ack(intf, frame);
     } break;
     case ROME_MID_ASSERV_SET_HTRAJ_XY_CRUISE: {

@@ -18,6 +18,7 @@ register_messages(
       
       # order robot to go directly to point (x,y) then turn to heading a
       (Order, 'asserv_goto_xya_panning', [('x','dist'), ('y','dist'), ('pan_angle', 'angle')]),
+      (Order, 'asserv_goto_xya_synced', [('x','dist'), ('y','dist'), ('a', 'angle')]),
 
       # order to run along a trajectory (xy array size must be even)
       (Order, 'asserv_run_traj', [('a','angle'),('xy','dist[]')]),
@@ -40,6 +41,7 @@ register_messages(
       # set control system Qramps
       (Order, 'asserv_set_a_qramp', [('dot','uint16'), ('dotdot','uint16')]),
       # set control system htajectory parameters
+      (Order, 'asserv_set_htraj_a_speed', [('speed','float'), ('acc','float')]),
       (Order, 'asserv_set_htraj_xy_cruise', [('speed','float'), ('acc','float')]),
       (Order, 'asserv_set_htraj_xy_steering', [('speed','float'), ('acc','float')]),
       (Order, 'asserv_set_htraj_xy_stop', [('speed','float'), ('acc','float')]),

@@ -44,7 +44,8 @@
 typedef enum
 {
   TRAJ_WITHOUT_MANAGER = 0,
-  TRAJ_PANNING
+  TRAJ_PANNING,
+  TRAJ_SYNCED,
 }htrajectory_traj_type_t;
 
 typedef enum
@@ -344,6 +345,45 @@ void htrajectory_gotoXY_R( htrajectory_t *htj, double dx, double dy)
   vect_xy_t rp;
   hposition_get_xy( htj->hrp, &rp);
   htrajectory_gotoXY( htj, rp.x + dx, rp.y + dy);
+}
+
+void htrajectory_gotoXY_synced( htrajectory_t *htj, double dx, double dy, double angle)
+{
+  // get origin position
+  vect_xy_t rp;
+  hposition_get_xy( htj->hrp, &rp);
+  htraj_man_data.htj = htj;
+  htraj_man_data.origin.x = rp.x;
+  htraj_man_data.origin.y = rp.y;
+  hposition_get_a( htj->hrp, &htraj_man_data.origin.a);
+
+  // compute destination position
+  htraj_man_data.destination.x = dx;
+  htraj_man_data.destination.y = dy;
+  htraj_man_data.destination.a = angle;
+  //htraj_man_data.destination.a = htraj_man_data.origin.a + da;
+  // TODO : do modulo or not => RTFM or ask JD !!!
+  htraj_man_data.trajectory_finished = false;
+  // set 
+  htraj_man_data.traj_type = TRAJ_SYNCED;
+}
+
+double htrajectory_get_sync_angle(htrajectory_t *htj){
+  vect_xy_t rp;
+  hposition_get_xy( htj->hrp, &rp);
+  //compute completion of trajectory
+  float d_total = sqrt(
+        (htraj_man_data.destination.x - htraj_man_data.origin.x)*
+          (htraj_man_data.destination.x - htraj_man_data.origin.x)
+        +(htraj_man_data.destination.y - htraj_man_data.origin.y)*
+          (htraj_man_data.destination.y - htraj_man_data.origin.y));
+  float d_current = sqrt(
+        (rp.x - htraj_man_data.origin.x)*
+          (rp.x - htraj_man_data.origin.x)
+        +(rp.y - htraj_man_data.origin.y)*
+          (rp.y - htraj_man_data.origin.y));
+  float completion = d_current/d_total;
+  return (htraj_man_data.origin.a+completion*(htraj_man_data.destination.a-htraj_man_data.origin.a));
 }
 
 void htrajectory_gotoXY_panning( htrajectory_t *htj, double dx, double dy, double panning_angle, void(*acq_callback)(double a))
@@ -805,9 +845,24 @@ void htrajectory_manager(void)
 
       break;
 
+    case TRAJ_SYNCED :
+      htrajectory_gotoA(htraj_man_data.htj,htrajectory_get_sync_angle(htraj_man_data.htj));
+      if ((htrajectory_doneA(htraj_man_data.htj)) && 
+          (htrajectory_doneXY(htraj_man_data.htj)) )
+      {
+        htraj_man_data.trajectory_finished = true;
+        htraj_man_data.traj_type = TRAJ_WITHOUT_MANAGER;
+      }
+      else
+      {
+        htraj_man_data.trajectory_finished = false;
+      }
+      break;
+
     case TRAJ_PANNING :
       htrajectory_panning_fsm(&htraj_man_data);
       break;
+
     default : 
       break; 
   }
