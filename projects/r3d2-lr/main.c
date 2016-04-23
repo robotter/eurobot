@@ -6,11 +6,9 @@
 #include <rome/rome.h>
 #include "leds.h"
 #include <util/delay.h>
-//#include "r3d2.h"
+#include "r3d2.h"
 
 rome_intf_t rome_intf;
-
-#if 0
 static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
   switch(frame->mid) {
@@ -31,13 +29,12 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       break;
   }
 }
-#endif
 
 int main(void)
 {
   clock_init();
 
-  //uart_init();
+  uart_init();
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
@@ -45,41 +42,24 @@ int main(void)
   portpin_dirset(&LED_RUN_PP);
   portpin_dirset(&LED_ERROR_PP);
   portpin_dirset(&LED_COM_PP);
+  
+  portpin_dirset(&LED_LR_PP);
+  portpin_dirset(&LED_SR_PP);
 
-  //r3d2_init();
+  r3d2_init();
 
-  //rome_intf_init(&rome_intf);
-  //rome_intf.uart = uartD0;
-  //rome_intf.handler = rome_handler;
+  rome_intf_init(&rome_intf);
+  rome_intf.uart = uartD0;
+  rome_intf.handler = rome_handler;
 
-  //ROME_LOGF(&rome_intf, INFO, "RST.STATUS=%x booting...\n", RST.STATUS);
-  //RST.STATUS = 0;
+  ROME_LOGF(&rome_intf, INFO, "RST.STATUS=%x booting...\n", RST.STATUS);
+  RST.STATUS = 0;
 
-  uint8_t a=0;
   while(1) {
-    switch (a){ 
-      case 0:
-        portpin_outclr(&LED_RUN_PP);
-        portpin_outclr(&LED_ERROR_PP);
-        portpin_outset(&LED_COM_PP);
-        break;
-      case 1:
-        portpin_outclr(&LED_RUN_PP);
-        portpin_outset(&LED_ERROR_PP);
-        portpin_outclr(&LED_COM_PP);
-        break;
-      case 2:
-        portpin_outset(&LED_RUN_PP);
-        portpin_outclr(&LED_ERROR_PP);
-        portpin_outclr(&LED_COM_PP);
-        break;
-    }
-    a ++;
-    a %= 3;
-    _delay_ms(200);
-    //rome_handle_input(&rome_intf);
-    //r3d2_update();
-
+    
+    rome_handle_input(&rome_intf);
+    r3d2_update();
+  
   }
 
   while(1);
