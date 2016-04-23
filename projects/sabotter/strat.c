@@ -427,6 +427,22 @@ order_result_t goto_xy_rel_align_course_wait(int16_t x, int16_t y, bool claws_fi
   return goto_xya_rel_wait(x,y,angle,timeout_ms);
 }
 
+void go_around(int16_t cx,int16_t cy, float a){
+  int16_t rx = robot_state.current_pos.x ;
+  int16_t ry = robot_state.current_pos.y ;
+  a += M_PI/6;
+  uint8_t nb_step = 6;
+  int16_t x = rx - cx;
+  int16_t y = ry - cy;
+
+  for(int i=0 ; i < nb_step ; i ++){
+    goto_xya_synced(cx+x*cos((i+1)*a/nb_step)-y*sin((i+1)*a/nb_step),
+             cy+y*cos((i+1)*a/nb_step)+x*sin((i+1)*a/nb_step),
+             i*((a-M_PI/6)/nb_step));
+  }
+}
+
+
 #define CLAW_X 70
 #define CLAW_Y -200
 #define CLAW_APPROACH 50
@@ -651,10 +667,11 @@ void strat_prepare_galipeur(void)
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
 
   // autoset robot, Y on pond
-  //autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, 103);
-  // move infront of strating area
-  //goto_xya(KX(200), 1210, KA(0));
-  //autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-103), 0);
+  autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, 103);
+  // move in front of strating area
+  goto_xya(KX(200), 1210, KA(0));
+  //and autoset X
+  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-103), 0);
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
@@ -677,7 +694,6 @@ void galipeur_destroy_dune(void){
   goto_xya(KX(1500-700), 1400, KA(M_PI));
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
-
 
 }
 
@@ -829,13 +845,7 @@ void strat_run_galipeur(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
 #if 1
-  for(;;){
-  goto_xya_synced(1000,0,M_PI);
-  strat_delay_ms(1000);
-  goto_xya(0,0,0);
-  strat_delay_ms(1000);
-  }
-  //galipeur_destroy_dune();
+  galipeur_destroy_dune();
 
   /*/return to start stuff
     uint32_t start_time_us = uptime_us();
