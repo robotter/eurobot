@@ -43,7 +43,7 @@ typedef struct
 
 }hrobot_system_t;
 // export hrobot system singleton
-extern hrobot_system_t system;
+extern hrobot_system_t hsystem;
 
 /**@brief Initialize robot hardware
   */

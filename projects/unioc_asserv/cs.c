@@ -67,7 +67,7 @@ void cs_initialize(void)
 
   // Initialize control systems for robot
   robot_cs_init(&robot_cs);
-  robot_cs_set_hrobot_manager(&robot_cs,&system);
+  robot_cs_set_hrobot_manager(&robot_cs,&hsystem);
   robot_cs_set_hposition_manager(&robot_cs,&position);
   
   // Initialize trajectory management

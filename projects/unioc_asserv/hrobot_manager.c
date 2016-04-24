@@ -40,47 +40,47 @@
 #include "telemetry.h"
 
 // hrobot system singleton
-hrobot_system_t system;
+hrobot_system_t hsystem;
 
 static void _set_motorA_sign(bool sign) {
   if(sign)
-    portpin_outset(system.signs+0);
+    portpin_outset(hsystem.signs+0);
   else
-    portpin_outclr(system.signs+0);
+    portpin_outclr(hsystem.signs+0);
 }
 
 static void _set_motorB_sign(bool sign) {
   if(sign)
-    portpin_outset(system.signs+1);
+    portpin_outset(hsystem.signs+1);
   else
-    portpin_outclr(system.signs+1);
+    portpin_outclr(hsystem.signs+1);
 }
 
 static void _set_motorC_sign(bool sign) {
   if(sign)
-    portpin_outset(system.signs+2);
+    portpin_outset(hsystem.signs+2);
   else
-    portpin_outclr(system.signs+2);
+    portpin_outclr(hsystem.signs+2);
 }
 
 void hrobot_init()
 {
   // configure PWMs
 #if defined(GALIPEUR)
-  pwm_motor_init(system.pwms+0, &TCF0, 'A',  _set_motorA_sign); 
-  pwm_motor_init(system.pwms+1, &TCF0, 'B',  _set_motorB_sign); 
-  pwm_motor_init(system.pwms+2, &TCF0, 'C',  _set_motorC_sign); 
+  pwm_motor_init(hsystem.pwms+0, &TCF0, 'A',  _set_motorA_sign); 
+  pwm_motor_init(hsystem.pwms+1, &TCF0, 'B',  _set_motorB_sign); 
+  pwm_motor_init(hsystem.pwms+2, &TCF0, 'C',  _set_motorC_sign); 
 #elif defined(GALIPETTE)
-  pwm_motor_init(system.pwms+0, &TCF0, 'B',  _set_motorA_sign); 
-  pwm_motor_init(system.pwms+1, &TCF0, 'C',  _set_motorB_sign); 
-  pwm_motor_init(system.pwms+2, &TCF0, 'A',  _set_motorC_sign); 
+  pwm_motor_init(hsystem.pwms+0, &TCF0, 'B',  _set_motorA_sign); 
+  pwm_motor_init(hsystem.pwms+1, &TCF0, 'C',  _set_motorB_sign); 
+  pwm_motor_init(hsystem.pwms+2, &TCF0, 'A',  _set_motorC_sign); 
 #else
 # error "Please define either GALIPEUR or GALIPETTE"
 #endif
   // configure frequency
   uint8_t it;
   for(it=0;it<3;it++)
-    pwm_motor_set_frequency(system.pwms+it, SETTING_PWM_FREQUENCY_KHZ*1000);
+    pwm_motor_set_frequency(hsystem.pwms+it, SETTING_PWM_FREQUENCY_KHZ*1000);
 
   //set break as output
   PORTH.DIRSET = _BV(4)|_BV(5);
@@ -88,30 +88,30 @@ void hrobot_init()
 
   // configure break pps
 #if defined(GALIPEUR)
-  system.breaks[0] = PORTPIN(H,4);
-  system.breaks[1] = PORTPIN(H,5);
-  system.breaks[2] = PORTPIN(A,6);
+  hsystem.breaks[0] = PORTPIN(H,4);
+  hsystem.breaks[1] = PORTPIN(H,5);
+  hsystem.breaks[2] = PORTPIN(A,6);
   // configure sign pps
   // XXX NDJD hack 26/05/2014
   #define HACKED_PORT PORTPIN(H,2)
   portpin_dirclr(&HACKED_PORT);
-  system.signs[0] = PORTPIN(H,1);
-  system.signs[1] = PORTPIN(H,0);
-  system.signs[2] = PORTPIN(H,3);
+  hsystem.signs[0] = PORTPIN(H,1);
+  hsystem.signs[1] = PORTPIN(H,0);
+  hsystem.signs[2] = PORTPIN(H,3);
 #elif defined(GALIPETTE)
-  system.breaks[0] = PORTPIN(H,5);
-  system.breaks[1] = PORTPIN(A,6);
-  system.breaks[2] = PORTPIN(H,4);
+  hsystem.breaks[0] = PORTPIN(H,5);
+  hsystem.breaks[1] = PORTPIN(A,6);
+  hsystem.breaks[2] = PORTPIN(H,4);
   // configure sign pps
-  system.signs[0] = PORTPIN(H,2);
-  system.signs[1] = PORTPIN(H,3);
-  system.signs[2] = PORTPIN(H,1);
+  hsystem.signs[0] = PORTPIN(H,2);
+  hsystem.signs[1] = PORTPIN(H,3);
+  hsystem.signs[2] = PORTPIN(H,1);
 #else
 # error "Please define either GALIPEUR or GALIPETTE"
 #endif
 
   for(it=0; it<3; it++)
-    portpin_dirset(system.signs+it);
+    portpin_dirset(hsystem.signs+it);
 
   return;
 }
@@ -122,9 +122,9 @@ void hrobot_break(uint8_t state)
   uint8_t it;
   for(it=0;it<3;it++) {
     if(state)
-      portpin_outset(system.breaks+it);
+      portpin_outset(hsystem.breaks+it);
     else
-      portpin_outclr(system.breaks+it);
+      portpin_outclr(hsystem.breaks+it);
   }
 }
 
@@ -155,7 +155,7 @@ void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega)
     if(v > 32767) v = 32767;
     if(v < -32768) v = -32768;
     motors[i] = (int16_t)v;
-    pwm_motor_set(system.pwms+i, (int16_t)v);
+    pwm_motor_set(hsystem.pwms+i, (int16_t)v);
   }
   
   // update telemetry
