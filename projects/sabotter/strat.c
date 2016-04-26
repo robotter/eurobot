@@ -430,15 +430,18 @@ order_result_t goto_xy_rel_align_course_wait(int16_t x, int16_t y, bool claws_fi
 void go_around(int16_t cx,int16_t cy, float a){
   int16_t rx = robot_state.current_pos.x ;
   int16_t ry = robot_state.current_pos.y ;
+  float   ra = robot_state.current_pos.a ;
   a += M_PI/6;
   uint8_t nb_step = 6;
   int16_t x = rx - cx;
   int16_t y = ry - cy;
 
   for(int i=0 ; i < nb_step ; i ++){
-    goto_xya_synced(cx+x*cos((i+1)*a/nb_step)-y*sin((i+1)*a/nb_step),
-             cy+y*cos((i+1)*a/nb_step)+x*sin((i+1)*a/nb_step),
-             i*((a-M_PI/6)/nb_step));
+    int16_t tmpx = cx+x*cos((i+1)*a/nb_step)-y*sin((i+1)*a/nb_step);
+    int16_t tmpy = cy+y*cos((i+1)*a/nb_step)+x*sin((i+1)*a/nb_step);
+    float tmpa = ra+i*((a-M_PI/6)/nb_step);
+
+    goto_xya_synced(tmpx,tmpy,tmpa);
   }
 }
 
