@@ -686,17 +686,19 @@ void galipeur_destroy_dune(void){
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 80, 0.1);
   int16_t traj1[] = {
     KX(1500-300), 1300,
-    KX(-300), 1500,
+    KX(-300), 1550,
   };
   goto_traj(traj1,KA(M_PI/2));
   //ralentir un peu
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
-  goto_xya(KX(-300), 2000-230, KA(M_PI));
-  goto_xya(KX(100),  2000-230, KA(M_PI));
+  goto_xya(KX(-300), 2000-240, KA(M_PI));
+  goto_xya(KX(100),  2000-240, KA(M_PI));
   goto_xya(KX(1500-700), 1400, KA(M_PI));
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
+
+  go_around(KX(1500-900),1230,KA(-M_PI));
 
 }
 
