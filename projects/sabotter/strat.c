@@ -692,13 +692,30 @@ void galipeur_destroy_dune(void){
   //ralentir un peu
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
+  //destroy 1st row
   goto_xya(KX(-300), 2000-240, KA(M_PI));
   goto_xya(KX(100),  2000-240, KA(M_PI));
-  goto_xya(KX(1500-700), 1400, KA(M_PI));
+  //destroy 2nd row
+  goto_xya(KX(-400), 2000-270, KA(-5*M_PI/6));
+  goto_xya(KX(-400), 2000-220, KA(-5*M_PI/6));
+  goto_xya(KX(-250), 2000-220, KA(-5*M_PI/6));
+  goto_xya(KX(-230), 2000-230, KA(-5*M_PI/6));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-103);
+  goto_xya(KX(250),  2000-120, KA(M_PI));
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
 
-  go_around(KX(1500-900),1230,KA(-M_PI));
+  //try to put sand in the building area
+  goto_xya(KX(1500-700), 1400, KA(M_PI));
+  goto_xya(KX(1500-800), 1500, KA(M_PI));
+  goto_xya_synced(KX(1500-600), 1600, KA(2*M_PI/3));
+  goto_xya_synced(KX(1500-600), 1150, KA(2*M_PI/3));
+
+  goto_xya(KX(1500-600), 1250, KA(2*M_PI/3));
+  goto_xya_synced(KX(1500-300), 950, KA(M_PI/6));
+  goto_xya_synced(KX(1500-800), 950, KA(M_PI/6));
+
+  //go_around(KX(1500-900),1230,KA(-M_PI));
 
 }
 
