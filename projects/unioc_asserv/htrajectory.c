@@ -585,9 +585,11 @@ static void _htrajectory_update( htrajectory_t *htj )
       return;
     }
 
-  // compute squared distance between carrot and target
-  dx = point->x - htj->carrot.x;
-  dy = point->y - htj->carrot.y;
+  // compute squared distance between current position and target
+  // get robot position
+  hposition_get_xy( htj->hrp, &robot);
+  dx = point->x - robot.x;
+  dy = point->y - robot.y;
   sqErrorLength = dx*dx + dy*dy;
 
   decDistance = 0.5*((htj->carrotSpeed)*(htj->carrotSpeed)
@@ -625,8 +627,8 @@ static void _htrajectory_update( htrajectory_t *htj )
   }
   else
   {
-    htj->carrot.x += (htj->carrotSpeed)*(htj->normalizedError.x);
-    htj->carrot.y += (htj->carrotSpeed)*(htj->normalizedError.y);
+    htj->carrot.x = robot.x + (htj->carrotSpeed)*(htj->normalizedError.x);
+    htj->carrot.y = robot.y + (htj->carrotSpeed)*(htj->normalizedError.y);
   }
 
   // --- update carrot position ---
