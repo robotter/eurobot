@@ -38,6 +38,8 @@
 #include "modulo.inc.h"
 #undef ANGLE_TYPE__
 
+#include <stdio.h>
+
 #define NORMALIZE_RADIANS_FLOAT_0_2PI(x) (float_modulo__(x, 0, 2*M_PI))
 #define NORMALIZE_RADIANS_FLOAT_PI_PI(x) (float_modulo__(x, -M_PI, M_PI))
 
@@ -76,40 +78,28 @@ const autoset_configuration_t AUTOSET_CONFIGURATIONS[] = {
 
 /* -- private functions -- */
 
-/** \brief Compute normalized error vector to current point */
-static inline vect_xy_t computeNormalizedError( vect_xy_t point, vect_xy_t carrot )
-{ 
-  vect_xy_t error;
-  double errorLength;
-  double dx,dy;
-
-  dx = point.x - carrot.x;
-  dy = point.y - carrot.y;
-
-  // compute error vector length
-  errorLength = sqrt( dx*dx + dy*dy );
-
-  if( errorLength == 0.0 )
-  {
-    error.x = 0.0;
-    error.y = 0.0;
-  }
-  else
-  {
-    // normalize error vector
-    error.x = dx/errorLength;
-    error.y = dy/errorLength;
-  }
-
-  return error;
+static inline double vDotProduct(vect_xy_t a, vect_xy_t b) {
+  return a.x*b.x + a.y*b.y;
 }
 
-/** \brief Prepare point */
-static inline void preparePoint( htrajectory_t *htj )
-{
-  // compute and store normalized error vector
-  htj->normalizedError = 
-    computeNormalizedError(htj->path[htj->pathIndex],htj->carrot);
+static inline vect_xy_t vSubtract(vect_xy_t a, vect_xy_t b) {
+  return (vect_xy_t){.x = a.x - b.x, .y = a.y - b.y};
+}
+
+static inline vect_xy_t vAdd(vect_xy_t a, vect_xy_t b) {
+  return (vect_xy_t){.x = a.x + b.x, .y = a.y + b.y};
+}
+
+static inline double vSqNorm(vect_xy_t a) {
+  return a.x*a.x + a.y*a.y;
+}
+
+static inline double vNorm(vect_xy_t a) {
+  return sqrtf(a.x*a.x + a.y*a.y);
+}
+
+static inline vect_xy_t vScalarProduct(vect_xy_t a, double s) {
+  return (vect_xy_t){.x = s*a.x, .y = s*a.y};
 }
 
 /** \brief Set htj->carrot angle, transfer orders to low level CSs */
@@ -123,24 +113,6 @@ static inline void setCarrotXYPosition( htrajectory_t *htj, vect_xy_t pos )
 {
   robot_cs_set_xy_consigns( htj->rcs, RCS_MM_TO_CSUNIT*pos.x,
                                       RCS_MM_TO_CSUNIT*pos.y );
-}
-
-/** \brief Copy given path into internal structure */
-static inline void copyPath( htrajectory_t *htj, vect_xy_t *path, uint8_t n)
-{
-  uint8_t it;
-
-  if( n == 0 )
-    return;
-
-  if( n > HTRAJECTORY_MAX_POINTS )
-    return;
-
-  htj->pathSize = n;
-
-  // copy points in internal structure
-  for(it=0;it<n;it++)
-    htj->path[it] = path[it];
 }
 
 /** \brief Check if robot is in window of current point
@@ -170,16 +142,48 @@ uint8_t inWindowXY( htrajectory_t *htj )
   // coarse inegality to save computing time
   if( dx > dl && dy > dl )
     inWindow = 0;
-  else
+  else {
     // (squared inegality)
     // check if robot is in window  
     if( dx*dx + dy*dy < dl*dl )
       inWindow = 1;
     else
       inWindow = 0;
+  }
 
   return inWindow;
-} 
+}
+
+static inline void computeSpeeds(htrajectory_t *htj,
+  double sqErrorLength, double nextSpeed, double currAcc) {
+
+  double decDistance = 0.5*((htj->carrotSpeed)*(htj->carrotSpeed)
+                        - nextSpeed*nextSpeed)/currAcc;
+  // * deceleration phase
+  if( sqErrorLength < decDistance*decDistance )
+  {
+    // set speed to minimum speed when acceleration will cause algorithm to overshoot
+    if( htj->carrotSpeed - nextSpeed > currAcc )
+      htj->carrotSpeed -= currAcc;
+    else
+      htj->carrotSpeed = nextSpeed;
+  } 
+  // * acceleration phase
+  else if( (htj->carrotSpeed) < htj->cruiseSpeed )
+  {
+    // set speed to maximum speed when acceleration will cause algorithm to overshoot
+    if( htj->cruiseSpeed - htj->carrotSpeed > htj->cruiseAcc )
+      htj->carrotSpeed += htj->cruiseAcc;
+    else
+      htj->carrotSpeed = htj->cruiseSpeed;
+  }
+  // * stable phase
+  else
+  {
+    /* nothing to do */
+  }
+
+}
 
 /* -- public functions -- */
 
@@ -224,10 +228,10 @@ void htrajectory_init( htrajectory_t *htj,
 
 /* -- orders -- */
 
-void htrajectory_run( htrajectory_t *htj, vect_xy_t *path, uint8_t n )
+void htrajectory_run( htrajectory_t *htj, step_t *path, uint8_t n )
 {
   // copy points to internal structure
-  copyPath( htj, path, n );
+  memcpy(htj->path, path, n*sizeof(step_t));
 
   htj->pathIndex = 0;
 
@@ -236,12 +240,8 @@ void htrajectory_run( htrajectory_t *htj, vect_xy_t *path, uint8_t n )
   else
     htj->state = STATE_PATH_MID;
 
-  preparePoint(htj);
-
   // reset carrot speed
   htj->carrotSpeed = 0;
-  // set htj->carrot to first position
-  setCarrotXYPosition( htj, htj->path[0] );
 
   return;
 }
@@ -556,9 +556,17 @@ static void _htrajectory_update( htrajectory_t *htj )
     if( htj->pathIndex >= htj->pathSize - 1 )
       htj->state = STATE_PATH_LAST;
 
-    preparePoint(htj);    
   }
-
+  
+  vect_xy_t *ppoint;
+  // set pointer on previous point in trajectory
+  if(htj->pathIndex <= 0) {
+    ppoint = NULL;
+  }
+  else {
+    ppoint = htj->path + htj->pathIndex - 1;
+  }
+  // set pointer on current point in trajectory
   point = htj->path + htj->pathIndex;
 
   // --- compute speed consign & ramp ---
@@ -574,7 +582,7 @@ static void _htrajectory_update( htrajectory_t *htj )
     nextSpeed = htj->steeringSpeed;
     currAcc = htj->steeringAcc;
   }
-  else
+  else {
     if( htj->state == STATE_PATH_LAST )
     {
       nextSpeed = htj->stopSpeed;
@@ -584,56 +592,45 @@ static void _htrajectory_update( htrajectory_t *htj )
     {
       return;
     }
+  }
 
-  // compute squared distance between current position and target
   // get robot position
   hposition_get_xy( htj->hrp, &robot);
-  dx = point->x - robot.x;
-  dy = point->y - robot.y;
-  sqErrorLength = dx*dx + dy*dy;
 
-  decDistance = 0.5*((htj->carrotSpeed)*(htj->carrotSpeed)
-                        - nextSpeed*nextSpeed)/currAcc;
-  // * deceleration phase
-  if( sqErrorLength < decDistance*decDistance )
-  {
-    // set speed to minimum speed when acceleration will cause algorithm to overshoot
-    if( htj->carrotSpeed - nextSpeed > currAcc )
-      htj->carrotSpeed -= currAcc;
-    else
-      htj->carrotSpeed = nextSpeed;
-  } 
-  // * acceleration phase
-  else if( (htj->carrotSpeed) < htj->cruiseSpeed )
-  {
-    // set speed to maximum speed when acceleration will cause algorithm to overshoot
-    if( htj->cruiseSpeed - htj->carrotSpeed > htj->cruiseAcc )
-      htj->carrotSpeed += htj->cruiseAcc;
-    else
-      htj->carrotSpeed = htj->cruiseSpeed;
-  }
-  // * stable phase
-  else
-  {
-    /* nothing to do */
-  }
+  if(ppoint != NULL) {
+    // project vector from current position to target onto desired path
+    vect_xy_t ab = vSubtract(*point, *ppoint);
+    vect_xy_t rb = vSubtract(*point, robot);
+    double dotp = vDotProduct(ab, rb);
+    double sqAlongTrackError = dotp*dotp/vSqNorm(ab);
 
-  // --- compute carrot position ---
+    // update speeds
+    computeSpeeds(htj,sqAlongTrackError,nextSpeed,currAcc);
 
-  if( (htj->carrotSpeed)*(htj->carrotSpeed) > sqErrorLength )
-  {
-    htj->carrot.x = point->x;
-    htj->carrot.y = point->y;
+    // along track carrot, carrot which is located ON the desired track
+    double alongTrackError = dotp/vNorm(ab);
+    vect_xy_t atcarrot = vAdd(*ppoint, vScalarProduct(ab, MIN(1.0-(alongTrackError/vNorm(ab))+0.1,1.0) ));
+
+    // target along track carrot using current speed
+    vect_xy_t rc = vSubtract(atcarrot, robot);
+    // limit 
+    vect_xy_t dv = vScalarProduct(rc, htj->carrotSpeed/vNorm(rc));
+    htj->carrot = vAdd(robot, dv);
   }
-  else
-  {
-    htj->carrot.x = robot.x + (htj->carrotSpeed)*(htj->normalizedError.x);
-    htj->carrot.y = robot.y + (htj->carrotSpeed)*(htj->normalizedError.y);
+  else {
+    // compute squared distance between current position and target
+    vect_xy_t rb = vSubtract(*point,robot);
+    sqErrorLength = vSqNorm(rb);
+
+    // update speeds
+    computeSpeeds(htj, sqErrorLength, nextSpeed, currAcc);
+
+    vect_xy_t dv = vScalarProduct(rb, htj->carrotSpeed/vNorm(rb));
+    htj->carrot = vAdd(robot, dv);
   }
 
   // --- update carrot position ---
   setCarrotXYPosition( htj, htj->carrot );
-
 }
 
 void htrajectory_update( htrajectory_t *htj ) {

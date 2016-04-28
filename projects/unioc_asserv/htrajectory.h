@@ -66,6 +66,20 @@ typedef enum
 
 }tableSide_t;
 
+typedef enum {
+
+  SM_STRAIGHT = 0,
+  SM_CIRCLE,
+
+} step_mode_t;
+
+typedef struct {
+  step_mode_t mode;
+  double radius;
+  vect_xy_t point;
+
+} step_t;
+
 typedef struct
 {
   hrobot_position_t *hrp;
@@ -148,7 +162,7 @@ void htrajectory_setStopWindows( htrajectory_t *htj, double xywin, double awin )
 /* -- orders -- */
 
 /**\brief Load and run path */
-void htrajectory_run( htrajectory_t *htj, vect_xy_t *hrv, uint8_t n);
+void htrajectory_run( htrajectory_t *htj, step_t *hrv, uint8_t n);
 
 /**\brief Turn robot to 'a'  */
 void htrajectory_gotoA( htrajectory_t *htj, double a);

@@ -32,16 +32,28 @@ int main(int argc, char **argv) {
   htrajectory_setStopWindows(&htj, SETTING_TRAJECTORY_STOP_XYWIN,
                                           SETTING_TRAJECTORY_STOP_AWIN);
 
-  htrajectory_gotoXY(&htj, 1000,1000);
+  //htrajectory_gotoXY(&htj, 1000,1000);
+
+  vect_xy_t positions[] = {
+    {0.0, 100.0},
+    {100.0, 100.0},
+    {100.0, 0.0},
+    {0.0, 200.0},
+    {0.0, 0.0},
+  };
+
+  htrajectory_run(&htj, positions, 5);
 
   int step;
-  for(step=0;step<1000;step++) {
+  for(step=0;step<20000;step++) {
     htrajectory_update(&htj);
 
     fprintf(stdout, "%f,%f,%f,%f,%f\n",
       output.x, output.y, output.a,
       output.x_sp/1000.0, output.y_sp/1000.0);
 
+    if(htrajectory_doneXY(&htj))
+      break;
   }
 
   return 0;

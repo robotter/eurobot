@@ -19,8 +19,8 @@ void robot_cs_set_xy_consigns(robot_cs_t* rcs, int32_t _x, int32_t _y) {
   double x = 1.0*_x/1000;
   double y = 1.0*_y/1000;
 
-  output.x += MIN(x-output.x,1);
-  output.y += MIN(y-output.y,1);
+  output.x += (x-output.x)*0.5;
+  output.y += (y-output.y)*0.5;
 
 }
 
