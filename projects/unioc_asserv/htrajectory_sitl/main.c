@@ -8,6 +8,9 @@
 #include "../htrajectory.h"
 #include "../settings.h"
 
+#include "output.h"
+extern output_t output;
+
 int main(int argc, char **argv) {
 
   htrajectory_t htj;
@@ -34,6 +37,11 @@ int main(int argc, char **argv) {
   int step;
   for(step=0;step<1000;step++) {
     htrajectory_update(&htj);
+
+    fprintf(stdout, "%f,%f,%f,%f,%f\n",
+      output.x, output.y, output.a,
+      output.x_sp/1000.0, output.y_sp/1000.0);
+
   }
 
   return 0;

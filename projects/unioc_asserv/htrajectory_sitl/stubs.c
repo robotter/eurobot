@@ -6,38 +6,46 @@
 
 avoidance_t avoidance;
 
-double robot_x,robot_y,robot_a;
+#include "output.h"
+output_t output;
 
 void robot_cs_set_a_consign(robot_cs_t* rcs, int32_t angle) {}
 
-void robot_cs_set_xy_consigns(robot_cs_t* rcs, int32_t x, int32_t y) {
+void robot_cs_set_xy_consigns(robot_cs_t* rcs, int32_t _x, int32_t _y) {
 
-  fprintf(stderr,"%d,%d\n",x,y);
+  output.x_sp = _x;
+  output.y_sp = _y;
+
+  double x = 1.0*_x/1000;
+  double y = 1.0*_y/1000;
+
+  output.x += MIN(x-output.x,1);
+  output.y += MIN(y-output.y,1);
 
 }
 
 void hposition_get_xy( hrobot_position_t *hpos, vect_xy_t *pv ) {
 
-  pv->x = robot_x;
-  pv->y = robot_y;
+  pv->x = output.x;
+  pv->y = output.y;
 }
 
 void hposition_get_a( hrobot_position_t *hpos, double *pa ) {
-  *pa = robot_a;
+  *pa = output.a;
 }
 
 void hposition_set( hrobot_position_t* hpos, double x, double y, double alpha) {
 
-  robot_x = x;
-  robot_y = y;
-  robot_a = alpha;
+  output.x = x;
+  output.y = y;
+  output.a = alpha;
 }
 
 void hposition_get( hrobot_position_t* hpos, hrobot_vector_t* vec) {
   
-  vec->x = robot_x;
-  vec->y = robot_y;
-  vec->alpha = robot_a;
+  vec->x = output.x;
+  vec->y = output.y;
+  vec->alpha = output.a;
 }
 
 void robot_cs_activate(robot_cs_t* rcs, uint8_t active) {}
