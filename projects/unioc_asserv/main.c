@@ -34,6 +34,7 @@
 #include "avoidance.h"
 #include "cli.h"
 #include "motor_encoders.h"
+#include "servos.h"
 
 #include "settings.h"
 
@@ -282,7 +283,17 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
         ROME_LOGF(&rome, DEBUG, "gyro integration is %s", b ? "active":"inactive");
         rome_reply_ack(intf, frame); 
       }
-    }
+    } break;
+
+    case ROME_MID_ASSERV_SET_SERVO: {
+      INTLVL_DISABLE_ALL_BLOCK(){
+#if defined(GALIPETTE)
+        servo_set(frame->asserv_set_servo.id,frame->asserv_set_servo.value);
+#endif
+        rome_reply_ack(intf, frame);
+      }
+    } break;
+
 #if defined(GALIPEUR)
     // forward orders to R3D2 board
     case ROME_MID_R3D2_SET_ROTATION:
@@ -367,7 +378,11 @@ int main(void)
   rome_r3d2.uart = uartE0;
   rome_r3d2.handler = rome_r3d2_handler;
 #endif
-  
+
+#if defined(GALIPETTE)
+  servos_init();
+#endif
+
   PORTQ.OUT = 4;
 
   //--------------------------------------------------------
