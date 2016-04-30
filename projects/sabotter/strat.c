@@ -989,14 +989,28 @@ void strat_test_galipeur(void)
 
 void strat_init_galipette(void)
 {
+  ROME_LOG(&rome_paddock,INFO,"Strat init");
+  // disable asserv
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  for(;;) {
+    update_rome_interfaces();
+    if(!robot_state.gyro_calibration)
+      break;
+  }
+
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, 0, 1800);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, 1, 2700);
 }
 
 void strat_prepare_galipette(void)
 {
+  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv,1290,1100,0);
 }
 
 void strat_run_galipette(void)
 {
+  goto_xya(250,1100,-M_PI/2);
+  goto_xya(800,260,0);
 }
 
 void strat_test_galipette(void)
