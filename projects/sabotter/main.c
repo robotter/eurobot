@@ -18,6 +18,7 @@
 
 #include <avarix.h>
 #include <avarix/portpin.h>
+#include <avarix/register.h>
 #include <clock/clock.h>
 #include <util/delay.h>
 
@@ -127,6 +128,9 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
       // should not happen
       rome_free_ack(frame->ack.ack);
       return;
+    case ROME_MID_RESET: {
+      software_reset();
+    } break;
     default:
       break;
   }

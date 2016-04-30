@@ -6,6 +6,7 @@
 #include <rome/rome.h>
 #include <timer/uptime.h>
 #include <idle/idle.h>
+#include <rome/rome.h>
 #include "strat.h"
 #include "config.h"
 

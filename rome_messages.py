@@ -3,6 +3,7 @@ from rome.frame import register_messages, Order, rome_types
 register_messages(
     (0x10, [
       (Order, 'start_timer', []),
+      (Order, 'reset', []),
       ]),
 
     # ASSERV
