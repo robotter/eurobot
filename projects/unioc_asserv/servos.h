@@ -21,6 +21,9 @@
 
 void servos_init (void);
 
+// servo 0 connected to connector PF3
+// servo 1 connected to connector PF6
+// servo 2 connected to connector PF7
+// servo 3 connected to connector PF4
 void servo_set(uint8_t id, uint16_t value);
-
 #endif

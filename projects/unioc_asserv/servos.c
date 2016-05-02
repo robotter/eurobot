@@ -19,14 +19,23 @@
 #include <avarix.h>
 #include <pwm/motor.h>
 #include "servos.h"
-pwm_motor_t servos[2];
+pwm_motor_t servos[4];
 
 void servos_init (void){
   pwm_servo_init(servos,   (TC0_t *) &TCF1, 'A');
   pwm_servo_init(servos+1, (TC0_t *) &TCF1, 'B');
+  pwm_servo_init(servos+2, (TC0_t *) &TCD0, 'A');
+  pwm_servo_init(servos+3, (TC0_t *) &TCD0, 'B');
 
   pwm_motor_set_frequency(servos,   50u);
   pwm_motor_set_frequency(servos+1, 50u);
+  pwm_motor_set_frequency(servos+2, 50u);
+  pwm_motor_set_frequency(servos+3, 50u);
+
+  // HACK : Pin F3 and Pin D1 shunted
+  PORTF.DIRCLR = _BV(3);
+  // HACK : Pin H4 and Pin D0 shunted
+  PORTH.DIRCLR = _BV(0);
 }
 
 void servo_set(uint8_t id, uint16_t value){
@@ -37,6 +46,12 @@ void servo_set(uint8_t id, uint16_t value){
       break;
     case 1:
       pwm_motor_set(servos+1, pwm);
+      break;
+    case 2:
+      pwm_motor_set(servos+2, pwm);
+      break;
+    case 3:
+      pwm_motor_set(servos+3, pwm);
       break;
     default:
       break;

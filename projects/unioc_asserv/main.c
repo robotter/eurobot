@@ -74,9 +74,7 @@ float zgyro_scale = ZGYRO_SCALE;
 
 // ROME interfaces
 rome_intf_t rome;
-#if defined(GALIPEUR)
 rome_intf_t rome_r3d2;
-#endif
 
 // HACK HACK HACK
 extern double hrobot_motors_invmatrix_correct[9];
@@ -110,7 +108,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       // XXX turn avoidance on at the same time XXX
       //avoidance_inhibit(&avoidance,false);
 #elif defined(GALIPETTE)
-      avoidance_inhibit(&avoidance,false);
+      //avoidance_inhibit(&avoidance,false);
 #endif
       rome_reply_ack(intf, frame);
     } break;
@@ -290,6 +288,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_ASSERV_SET_SERVO: {
       INTLVL_DISABLE_ALL_BLOCK(){
 #if defined(GALIPETTE)
+        ROME_LOGF(&rome, DEBUG, "set servo %u to %u", frame->asserv_set_servo.id, frame->asserv_set_servo.value);
         servo_set(frame->asserv_set_servo.id,frame->asserv_set_servo.value);
 #endif
         rome_reply_ack(intf, frame);
@@ -317,7 +316,6 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_R3D2_SET_BLIND_SPOT:
       rome_send(&rome_r3d2, frame);
       break;
-#endif
 
     default:
       break;
@@ -390,11 +388,9 @@ int main(void)
   rome.uart = uartD0;
   rome.handler = rome_handler;
 
-#if defined(GALIPEUR)
   rome_intf_init(&rome_r3d2);
   rome_r3d2.uart = uartE0;
   rome_r3d2.handler = rome_r3d2_handler;
-#endif
 
 #if defined(GALIPETTE)
   servos_init();
@@ -417,7 +413,11 @@ int main(void)
     double offset_sqsd = adxrs_get_offset_sqsd();
 
     // exit calibration if sqsd is low enough
+<<<<<<< HEAD
     if(offset_sqsd < 160.0) {
+=======
+    if(offset_sqsd < 150.0) {
+>>>>>>> handle galipette servo for fishrod
       ROME_LOGF(&rome, DEBUG, "gyro cal done ! off=%d sqsd=%f", offset, offset_sqsd);
       break;
     }
@@ -439,16 +439,10 @@ int main(void)
   for(;;) {
 
     PORTQ.OUT++;
+   
     _delay_ms(10);
     rome_handle_input(&rome);
-#if defined(GALIPEUR)
     rome_handle_input(&rome_r3d2);
-#endif
   }
-
-#if defined(GALIPEUR)
-#endif
-
 }
-
 
