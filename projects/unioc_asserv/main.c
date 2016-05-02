@@ -34,6 +34,7 @@
 #include "avoidance.h"
 #include "cli.h"
 #include "motor_encoders.h"
+#include "servos.h"
 
 #include "settings.h"
 
@@ -136,6 +137,14 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       htrajectory_gotoA_R(&trajectory, a);
       rome_reply_ack(intf, frame);
     } break;
+    case ROME_MID_ASSERV_GOTO_XYA_SYNCED: {
+      float x = frame->asserv_goto_xya_synced.x;
+      float y = frame->asserv_goto_xya_synced.y;
+      float a = (frame->asserv_goto_xya_synced.a)/1000.0;
+      htrajectory_gotoXY(&trajectory, x, y);
+      htrajectory_gotoXY_synced(&trajectory, x, y, a);
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_GOTO_XYA_PANNING: {
       float x = frame->asserv_goto_xya_panning.x;
       float y = frame->asserv_goto_xya_panning.y;
@@ -225,6 +234,12 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       quadramp_set_2nd_order_vars(&qramp_angle, dotdot, dotdot);
       rome_reply_ack(intf, frame);
     } break;
+    case ROME_MID_ASSERV_SET_HTRAJ_A_SPEED: {
+      float speed = frame->asserv_set_htraj_a_speed.speed;
+      float acc   = frame->asserv_set_htraj_a_speed.acc;
+      htrajectory_setASpeed(&trajectory, speed, acc);
+      rome_reply_ack(intf, frame);
+    } break;
     case ROME_MID_ASSERV_SET_HTRAJ_XY_CRUISE: {
       float speed = frame->asserv_set_htraj_xy_cruise.speed;
       float acc   = frame->asserv_set_htraj_xy_cruise.acc;
@@ -268,7 +283,17 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
         ROME_LOGF(&rome, DEBUG, "gyro integration is %s", b ? "active":"inactive");
         rome_reply_ack(intf, frame); 
       }
-    }
+    } break;
+
+    case ROME_MID_ASSERV_SET_SERVO: {
+      INTLVL_DISABLE_ALL_BLOCK(){
+#if defined(GALIPETTE)
+        servo_set(frame->asserv_set_servo.id,frame->asserv_set_servo.value);
+#endif
+        rome_reply_ack(intf, frame);
+      }
+    } break;
+
 #if defined(GALIPEUR)
     // forward orders to R3D2 board
     case ROME_MID_R3D2_SET_ROTATION:
@@ -353,7 +378,11 @@ int main(void)
   rome_r3d2.uart = uartE0;
   rome_r3d2.handler = rome_r3d2_handler;
 #endif
-  
+
+#if defined(GALIPETTE)
+  servos_init();
+#endif
+
   PORTQ.OUT = 4;
 
   //--------------------------------------------------------
@@ -371,7 +400,7 @@ int main(void)
     double offset_sqsd = adxrs_get_offset_sqsd();
 
     // exit calibration if sqsd is low enough
-    if(offset_sqsd < 15.0) {
+    if(offset_sqsd < 50.0) {
       ROME_LOGF(&rome, DEBUG, "gyro cal done ! off=%d sqsd=%f", offset, offset_sqsd);
       break;
     }

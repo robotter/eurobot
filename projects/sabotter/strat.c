@@ -80,6 +80,7 @@ void idle_delay_ms(uint32_t time_ms){
 
 // Aliases using default waiting time
 #define goto_xya(x,y,a)  goto_xya_wait((x),(y),(a),GOTO_TIMEOUT_MS)
+#define goto_xya_synced(x,y,a)  goto_xya_synced_wait((x),(y),(a),GOTO_TIMEOUT_MS)
 #define goto_xya_rel(x,y,a)  goto_xya_rel_wait((x),(y),(a),GOTO_TIMEOUT_MS)
 #define goto_traj(xy,a)  goto_traj_wait((xy),(a),GOTO_TIMEOUT_MS)
 #define goto_traj_n(xy,n,a)  goto_traj_n_wait((xy),(n),(a),GOTO_TIMEOUT_MS)
@@ -273,6 +274,45 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t time
   }
 }
 
+/// Go to given position, avoid opponents
+static order_result_t goto_xya_synced_wait(int16_t x, int16_t y, float a, uint16_t timeout_ms)
+{ 
+  //int16_t dx = x - robot_state.current_pos.x;
+  //int16_t dy = y - robot_state.current_pos.y;
+  //float angle = atan2(dy,dx);
+   
+  uint32_t start_time_us = uptime_us(); 
+  for(;;) {
+    ROME_SENDWAIT_ASSERV_GOTO_XYA_SYNCED(&rome_asserv, x, y, 1000*a);
+    robot_state.asserv.xy = 0;
+    robot_state.asserv.a = 0;
+    for(;;) {
+      uint32_t time = uptime_us() - start_time_us;
+      if((time) > ((uint32_t) timeout_ms*1000)){
+        ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
+        return ORDER_TIMEOUT;
+        }
+      if(robot_state.asserv.xy && robot_state.asserv.a) {
+        return ORDER_SUCCESS;
+      }
+      if(opponent_detected_carrot()) {
+        ROME_LOG(&rome_paddock,INFO,"goto_xya_synced : opponent detected");
+        ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
+        ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+        for(;;){
+          start_time_us = uptime_us();
+          if(!opponent_detected_carrot())
+            break;
+          idle();
+        }
+        ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+        break; // to resend goto order
+      }
+      idle();
+    }
+  }
+}
+
 /// Execute trajectory, avoid opponents
 #define goto_traj_wait(xy,a,w) goto_traj_n_wait((xy), sizeof(xy)/sizeof(int16_t), (a), (w))
 static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t timeout_ms)
@@ -388,6 +428,25 @@ order_result_t goto_xy_rel_align_course_wait(int16_t x, int16_t y, bool claws_fi
   return goto_xya_rel_wait(x,y,angle,timeout_ms);
 }
 
+void go_around(int16_t cx,int16_t cy, float a){
+  int16_t rx = robot_state.current_pos.x ;
+  int16_t ry = robot_state.current_pos.y ;
+  float   ra = robot_state.current_pos.a ;
+  a += M_PI/6;
+  uint8_t nb_step = 6;
+  int16_t x = rx - cx;
+  int16_t y = ry - cy;
+
+  for(int i=0 ; i < nb_step ; i ++){
+    int16_t tmpx = cx+x*cos((i+1)*a/nb_step)-y*sin((i+1)*a/nb_step);
+    int16_t tmpy = cy+y*cos((i+1)*a/nb_step)+x*sin((i+1)*a/nb_step);
+    float tmpa = ra+i*((a-M_PI/6)/nb_step);
+
+    goto_xya_synced(tmpx,tmpy,tmpa);
+  }
+}
+
+
 #define CLAW_X 70
 #define CLAW_Y -200
 #define CLAW_APPROACH 50
@@ -484,6 +543,7 @@ bool starting_cord_plugged(void)
 team_t strat_select_team(void)
 {
   // wait for starting cord to be unplugged
+  ROME_LOG(&rome_paddock,INFO,"Unplug starting cord ...");
   while(starting_cord_plugged()) {
     if((uptime_us() / 500000) % 2 == 0) {
       portpin_outset(&LED_B_PP);
@@ -495,6 +555,7 @@ team_t strat_select_team(void)
 
   // wait for color to be selected
   // color is selected when starting cord is plugged
+  ROME_LOG(&rome_paddock,INFO,"Select color ...");
   team_t team = TEAM_NONE;
   portpin_outclr(&LED_B_PP);
   for(;;) {
@@ -505,8 +566,8 @@ team_t strat_select_team(void)
       team = TEAM_GREEN;
     } else {
       portpin_outset(&LED_R_PP);
-      portpin_outset(&LED_G_PP);
-      portpin_outclr(&LED_B_PP);
+      portpin_outclr(&LED_G_PP);
+      portpin_outset(&LED_B_PP);
       team = TEAM_PURPLE;
     }
     if(starting_cord_plugged()) {
@@ -516,6 +577,11 @@ team_t strat_select_team(void)
     idle();
   }
 
+  if(team == TEAM_GREEN)
+    ROME_LOG(&rome_paddock,INFO,"Color : GREEN !");
+  else
+    ROME_LOG(&rome_paddock,INFO,"Color : PURPLE !");
+    
   // wait 2s before next step
   uint32_t tend = uptime_us() + 2e6;
   while(uptime_us() < tend) {
@@ -532,11 +598,13 @@ void strat_wait_start(void)
     if((uptime_us() / 500000) % 2 == 0) {
       if(robot_state.team == TEAM_PURPLE) {
         portpin_outset(&LED_R_PP);
-        portpin_outset(&LED_G_PP);
+        portpin_outclr(&LED_G_PP);
+        portpin_outset(&LED_B_PP);
       } else {
+        portpin_outclr(&LED_R_PP);
         portpin_outset(&LED_G_PP);
+        portpin_outclr(&LED_B_PP);
       }
-      portpin_outclr(&LED_B_PP);
     } else {
       portpin_outclr(&LED_R_PP);
       portpin_outclr(&LED_G_PP);
@@ -550,7 +618,7 @@ void strat_wait_start(void)
   portpin_outclr(&LED_B_PP);
   ROME_SENDWAIT_START_TIMER(&rome_asserv);
 #if (defined GALIPEUR)
-  ROME_SENDWAIT_START_TIMER(&rome_meca);
+  //ROME_SENDWAIT_START_TIMER(&rome_meca);
 #endif
 }
 
@@ -599,32 +667,56 @@ void strat_prepare_galipeur(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 0, 0, 0);
   ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, 0);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
 
   // autoset robot, Y on pond
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-110), 0);
-  goto_xya_rel(KX(-500), -400, KA(0));
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_DOWN, 0, 110);
-  // move out (in relative coordinates)
-  goto_xya_rel(KX(0), 200, KA(0));
-
-  // go to start area
-  int16_t traj[] = {
-    KX(1500-600), 1250,
-    KX(1500-250), 1250,
-  };
-  goto_traj(traj,KA(-M_PI/6));
-
+  autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, 103);
+  // move in front of strating area
+  goto_xya(KX(200), 1210, KA(0));
+  //and autoset X
+  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-103), 0);
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
 }
 
 void galipeur_destroy_dune(void){
-  int16_t traj[] = {
-    KX(1500-600), 1400,
-    KX(-300), 1400,
+  //mettre pleine balle !!!
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 3, 0.1);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 80, 0.1);
+  int16_t traj1[] = {
+    KX(1500-300), 1300,
+    KX(-300), 1550,
   };
-  goto_traj(traj,KA(-M_PI/6));
+  goto_traj(traj1,KA(M_PI/2));
+  //ralentir un peu
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
+  //destroy 1st row
+  goto_xya(KX(-300), 2000-240, KA(M_PI));
+  goto_xya(KX(100),  2000-240, KA(M_PI));
+  //destroy 2nd row
+  goto_xya(KX(-400), 2000-270, KA(-5*M_PI/6));
+  goto_xya(KX(-400), 2000-220, KA(-5*M_PI/6));
+  goto_xya(KX(-250), 2000-220, KA(-5*M_PI/6));
+  goto_xya(KX(-230), 2000-230, KA(-5*M_PI/6));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-103);
+  goto_xya(KX(250),  2000-120, KA(M_PI));
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
+
+  //try to put sand in the building area
+  goto_xya(KX(1500-700), 1400, KA(M_PI));
+  goto_xya(KX(1500-800), 1500, KA(M_PI));
+  goto_xya_synced(KX(1500-600), 1600, KA(2*M_PI/3));
+  goto_xya_synced(KX(1500-600), 1150, KA(2*M_PI/3));
+
+  goto_xya(KX(1500-600), 1250, KA(2*M_PI/3));
+  goto_xya_synced(KX(1500-300), 950, KA(M_PI/6));
+  goto_xya_synced(KX(1500-800), 950, KA(M_PI/6));
+
+  //go_around(KX(1500-900),1230,KA(-M_PI));
 
 }
 
@@ -777,6 +869,24 @@ void strat_run_galipeur(void)
 
 #if 1
   galipeur_destroy_dune();
+
+  /*/return to start stuff
+    uint32_t start_time_us = uptime_us();
+    for(;;) {
+      uint32_t time = uptime_us() - start_time_us;
+      if((time) > ((uint32_t) 15000000))
+        break;
+      idle();
+    }
+
+  int16_t traj[] = {
+    //KX(-300), 1500,
+    KX(1500-600), 1500,
+    KX(1500-200), 1210,
+    KX(1500-600), 600,
+  };
+  goto_traj(traj,KA(-M_PI/3)-M_PI/2);
+*/
 #else
   //lift galette
   ext_arm_galette_lift();
@@ -869,7 +979,7 @@ void strat_run_galipeur(void)
 
   _delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-  ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 0);
+  //ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 0);
 }
 
 void strat_test_galipeur(void)
@@ -880,14 +990,28 @@ void strat_test_galipeur(void)
 
 void strat_init_galipette(void)
 {
+  ROME_LOG(&rome_paddock,INFO,"Strat init");
+  // disable asserv
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  for(;;) {
+    update_rome_interfaces();
+    if(!robot_state.gyro_calibration)
+      break;
+  }
+
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, 0, 1800);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, 1, 2700);
 }
 
 void strat_prepare_galipette(void)
 {
+  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv,1290,1100,0);
 }
 
 void strat_run_galipette(void)
 {
+  goto_xya(250,1100,-M_PI/2);
+  goto_xya(800,260,0);
 }
 
 void strat_test_galipette(void)
