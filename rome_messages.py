@@ -24,7 +24,9 @@ register_messages(
       # order to run along a trajectory (xy array size must be even)
       (Order, 'asserv_run_traj', [('a','angle'),('xy','dist[]')]),
 
-      # autoset robot, sides are (from 0 to 4): none, left, right, up, down
+      # autoset robot
+      #   robot side: 0: left, 1: right, 2: back
+      #   table side: 0: none, 1: left, 2: right, 3: up, 4: down
       (Order, 'asserv_autoset', [('robot_side','uint8'), ('table_side','uint8'), ('x','float'), ('y','float')]),
 
       # __ SETTERS __
