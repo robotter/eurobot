@@ -94,6 +94,9 @@ register_messages(
       # turn on/off gyro integration
       (Order, 'asserv_gyro_integration', [('b','bool')]),
 
+      # bumper state (used by galipeur autoset)
+      ('asserv_tm_bumpers_state', [('b0','bool'),('b1','bool')]),
+
       ]),
 
     # STRATEGY

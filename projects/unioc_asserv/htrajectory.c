@@ -32,6 +32,9 @@
 #include "telemetry.h"
 
 #include "avoidance.h"
+#if defined(GALIPETTE)
+#include "bumpers.h"
+#endif
 
 // float angles normalization
 #define ANGLE_TYPE__ float
@@ -550,8 +553,12 @@ static void _htrajectory_update( htrajectory_t *htj )
 
   if( htj->state == STATE_AUTOSET_MOVE )
   {
+#if defined(GALIPEUR)
     // XXX maybe replaced with an advance detector XXX
     if(true)
+#elif defined(GALIPETTE)
+    if(bumpers_pushed())
+#endif
     {
       htj->autosetCount++;
 

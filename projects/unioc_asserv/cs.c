@@ -34,6 +34,7 @@
 #include "hrobot_manager.h"
 #include "adxrs/adxrs.h"
 #include "avoidance.h"
+#include "bumpers.h"
 
 #include "settings.h"
 
@@ -91,6 +92,7 @@ void cs_initialize(void)
 
   // Initialize avoidance system
   avoidance_init(&avoidance);
+  bumpers_init();
 }
 
 void cs_update(void* dummy)
@@ -103,4 +105,8 @@ void cs_update(void* dummy)
 	hposition_update(&position);
 	// update control systems
 	robot_cs_update(&robot_cs);
+#if defined(GALIPETTE)
+  // update bumpers
+  bumpers_update();
+#endif
 }
