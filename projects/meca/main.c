@@ -26,8 +26,8 @@ struct {
 }rome_color_sensor;
 
 //sand roller
-void sand_roller_off(void) { servo_set(0,1500); }
-void sand_roller_on(void)  { servo_set(0,1800); }
+void sand_roller_off(void) { servo_set(0,1300); }
+void sand_roller_on(void)  { servo_set(0,1600); }
 
 void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
@@ -59,6 +59,7 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
         sand_roller_on();
       else
         sand_roller_off();
+      rome_reply_ack(intf, frame);
     }
     default:
       break;
@@ -187,6 +188,7 @@ int main(void)
   servos_init();
 
   sand_roller_off();
+  _delay_ms(1000);
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
