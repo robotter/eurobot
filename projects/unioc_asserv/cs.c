@@ -92,7 +92,10 @@ void cs_initialize(void)
 
   // Initialize avoidance system
   avoidance_init(&avoidance);
+
+#if defined(GALIPETTE)
   bumpers_init();
+#endif
 }
 
 void cs_update(void* dummy)

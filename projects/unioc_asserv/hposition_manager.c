@@ -50,6 +50,20 @@ extern struct pid_filter pid_x;
 extern struct pid_filter pid_y;
 extern struct pid_filter pid_angle;
 
+// O = A*B
+static inline void _multiply_matrix33(double *a, double *b, double *o) {
+  int i,j,k;
+  for(j=0;j<3;j++)
+  for(i=0;i<3;i++) {
+    double s = 0;
+    for(k=0;k<3;k++) {
+      s += a[i+k*3] * b[k + j*3];
+    }
+    o[i+j*3] = s;
+  }
+}
+
+
 void hposition_init( hrobot_position_t* hpos )
 {
   INTLVL_DISABLE_BLOCK(INTLVL_LO) {
@@ -124,7 +138,6 @@ void hposition_update(void *dummy)
   int16_t *vectors  = NULL;
   int16_t *pvectors = NULL;
   double *matrix    = NULL;
-
   // access motor encoders values
   motor_encoders_update();
   vectors = motor_encoders_get_value();
@@ -146,6 +159,9 @@ void hposition_update(void *dummy)
   for(k=0;k<3;k++)
     dp[k] = 0.0;
 
+  double cmatrix[9];
+  _multiply_matrix33(matrix, hrobot_motors_invmatrix_correct, cmatrix);
+
   bool is_moving = false;
   // for each encoder coordinate
   for(i=0;i<3;i++)
@@ -160,7 +176,7 @@ void hposition_update(void *dummy)
 
     // for each robot coordinate (x,y,a) compute a dx of mouvement
     for(k=0;k<3;k++)
-      dp[k] += matrix[i+k*3]*v;
+      dp[k] += cmatrix[i+k*3]*v;
   }
 
   // scale units
@@ -181,7 +197,8 @@ void hposition_update(void *dummy)
   // Integrate speed in robot coordinates to position
   vec.x = hpos->position.x + dp[HROBOT_DX]*_ca - dp[HROBOT_DY]*_sa;
   vec.y = hpos->position.y + dp[HROBOT_DX]*_sa + dp[HROBOT_DY]*_ca;
-	vec.alpha = adxrs_get_angle();
+	//vec.alpha += dp[HROBOT_DA];
+  vec.alpha = adxrs_get_angle();
 
   //------------------------------------
   // Latch computed values to accessors

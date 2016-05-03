@@ -56,6 +56,8 @@ register_messages(
 
       (Order, 'asserv_set_servo', [('id','uint8'),('value','uint16')]),
 
+      (Order, 'asserv_set_cmatrix', [('m%d'%i,'float')for i in xrange(0,9)]),
+
       # __ TELEMETRY __
       # Encoder raw data
       ('asserv_tm_encoder_raw', [('enc0','int16'), ('enc1','int16'), ('enc2','int16')]),

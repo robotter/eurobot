@@ -78,6 +78,8 @@ rome_intf_t rome;
 rome_intf_t rome_r3d2;
 #endif
 
+// HACK HACK HACK
+extern double hrobot_motors_invmatrix_correct[9];
 
 // ROME messages handler
 void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
@@ -294,6 +296,21 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       }
     } break;
 
+    case ROME_MID_ASSERV_SET_CMATRIX: {
+      INTLVL_DISABLE_ALL_BLOCK() {
+
+        hrobot_motors_invmatrix_correct[0] = frame->asserv_set_cmatrix.m0;
+        hrobot_motors_invmatrix_correct[1] = frame->asserv_set_cmatrix.m1;
+        hrobot_motors_invmatrix_correct[2] = frame->asserv_set_cmatrix.m2;
+        hrobot_motors_invmatrix_correct[3] = frame->asserv_set_cmatrix.m3;
+        hrobot_motors_invmatrix_correct[4] = frame->asserv_set_cmatrix.m4;
+        hrobot_motors_invmatrix_correct[5] = frame->asserv_set_cmatrix.m5;
+        hrobot_motors_invmatrix_correct[6] = frame->asserv_set_cmatrix.m6;
+        hrobot_motors_invmatrix_correct[7] = frame->asserv_set_cmatrix.m7;
+        hrobot_motors_invmatrix_correct[8] = frame->asserv_set_cmatrix.m8;
+      }
+    }
+
 #if defined(GALIPEUR)
     // forward orders to R3D2 board
     case ROME_MID_R3D2_SET_ROTATION:
@@ -400,7 +417,7 @@ int main(void)
     double offset_sqsd = adxrs_get_offset_sqsd();
 
     // exit calibration if sqsd is low enough
-    if(offset_sqsd < 50.0) {
+    if(offset_sqsd < 160.0) {
       ROME_LOGF(&rome, DEBUG, "gyro cal done ! off=%d sqsd=%f", offset, offset_sqsd);
       break;
     }
@@ -415,10 +432,12 @@ int main(void)
   // remove break
   hrobot_break(0);
 
+
   printf("-- reboot --\n");
   //----------------------------------------------------------------------
   PORTQ.OUT = 6;
   for(;;) {
+
     PORTQ.OUT++;
     _delay_ms(10);
     rome_handle_input(&rome);

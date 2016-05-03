@@ -42,6 +42,19 @@
 // hrobot system singleton
 hrobot_system_t system;
 
+// O = A*B
+static inline void _multiply_matrix33(double *a, double *b, double *o) {
+  int i,j,k;
+  for(j=0;j<3;j++)
+  for(i=0;i<3;i++) {
+    double s = 0;
+    for(k=0;k<3;k++) {
+      s += a[i+k*3] * b[k + j*3];
+    }
+    o[i+j*3] = s;
+  }
+}
+
 static void _set_motorA_sign(bool sign) {
   if(sign)
     portpin_outset(system.signs+0);
@@ -147,10 +160,13 @@ void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega)
   for(k=0;k<3;k++)
     dp[k] = 0.0;
 
+  double matrix[9];
+  _multiply_matrix33(hrobot_motors_matrix, hrobot_motors_matrix_correct, matrix);
+  
   // compute consign in motors coordinates
   for(i=0;i<3;i++)
     for(k=0;k<3;k++)
-      dp[k] += hrobot_motors_matrix[i+k*3]*v[i];
+      dp[k] += matrix[i+k*3]*v[i];
 
   // for each motor
   for(i=0;i<3;i++)
