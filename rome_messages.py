@@ -153,6 +153,10 @@ register_messages(
       # carpets
       (Order, 'meca_carpet_lock', [('n','uint8')]),
       (Order, 'meca_carpet_unlock', [('n','uint8')]),
+      # sand roller
+      (Order, 'meca_set_sand_roller', [('active','bool')]),
+      # generic analog servo commands
+      (Order, 'meca_set_servo', [('id','uint8'),('value','uint16')]),
       # __ TELEMETRY __
       # match timer
       ('meca_tm_match_timer', [('seconds','int16')]),

@@ -2,7 +2,7 @@ include ../../config.mk
 
 ## Project configuration
 
-SRCS = $(wildcard *.c)
+SRCS = main.c servos.c
 ASRCS =
 TARGET = main
 MODULES = uart pwm ax12 timer encoder/quadra rome

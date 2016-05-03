@@ -12,12 +12,11 @@
 #include <rome/rome.h>
 #include "config.h"
 #include "telemetry.h"
-#include "spot_elevator.h"
-#include "arm.h"
 #include <pwm/motor.h>
+#include "servos.h"
 
 // match timer
-bool match_timer_counting = false;
+bool match_started = false;
 int32_t match_timer_ms = -1;
 
 // ROME interface
@@ -26,132 +25,22 @@ struct {
   rome_intf_t left,right;
 }rome_color_sensor;
 
-// robot color
-robot_color_t robot_color = COLOR_GREEN; // TODO
-
-// spot_elevator structure
-// left spot elevator
-spot_elevator_t l_spot_elevator = 
-{
-  .claw_ax12_addr = SE_LEFT_AX12_CLAW_ID,
-  .elevator_ax12_addr = SE_LEFT_AX12_ELEVATOR_ID,
-  .claw_ax12_positions = {SE_LEFT_CLAW_OPENED, SE_LEFT_CLAW_CLOSED_FOR_SPOT, SE_LEFT_CLAW_CLOSED_FOR_BULB},
-  .elevator_ax12_positions = {SE_LEFT_ELEVATOR_UP, SE_LEFT_ELEVATOR_DOWN_WAIT_SPOT, SE_LEFT_ELEVATOR_DOWN_WAIT_BULB, SE_LEFT_ELEVATOR_DOWN_PUT_BULB, SE_LEFT_ELEVATOR_UP_MOVE_SPOT},
-};
-
-// right spot elevator
-spot_elevator_t r_spot_elevator = 
-{
-  .claw_ax12_addr = SE_RIGHT_AX12_CLAW_ID,
-  .elevator_ax12_addr = SE_RIGHT_AX12_ELEVATOR_ID,
-  .claw_ax12_positions = {SE_RIGHT_CLAW_OPENED, SE_RIGHT_CLAW_CLOSED_FOR_SPOT, SE_RIGHT_CLAW_CLOSED_FOR_BULB},
-  .elevator_ax12_positions = {SE_RIGHT_ELEVATOR_UP, SE_RIGHT_ELEVATOR_DOWN_WAIT_SPOT, SE_RIGHT_ELEVATOR_DOWN_WAIT_BULB, SE_RIGHT_ELEVATOR_DOWN_PUT_BULB, SE_RIGHT_ELEVATOR_UP_MOVE_SPOT},
-};
-
-// color sensor structure
-struct {
-  struct {
-    robot_color_t color;
-    bool detected;
-  } left,right;
-} color_sensor = {
-  .left =  {.color = COLOR_UNDEFINED, .detected = false},
-  .right = {.color = COLOR_UNDEFINED, .detected = false},
-};
-
-// CARPETS
-pwm_motor_t carpet_r_servo,carpet_l_servo;
-void carpet_unlock_r  (void){pwm_motor_set(&carpet_r_servo, SE_RIGHT_CARPET_UNLOCK);}
-void carpet_lock_r(void){pwm_motor_set(&carpet_r_servo, SE_RIGHT_CARPET_LOCK);}
-void carpet_unlock_l  (void){pwm_motor_set(&carpet_l_servo, SE_LEFT_CARPET_UNLOCK);}
-void carpet_lock_l(void){pwm_motor_set(&carpet_l_servo, SE_LEFT_CARPET_LOCK);}
-
-// ROME messages handler
-void rome_color_sensor_handler(rome_intf_t *intf, const rome_frame_t *frame)
-{
-  switch(frame->mid) {
-    case ROME_MID_COLOR_SENSOR_TM_DETECTION: {
-      bool detected = frame->color_sensor_tm_detection.detected;
-      uint8_t color = frame->color_sensor_tm_detection.color;
-
-      if(intf == &rome_color_sensor.left) {
-        // left sensor
-        color_sensor.left.color = color;
-        color_sensor.left.detected = detected;
-      }
-      else if(intf == &rome_color_sensor.right) {
-        // right sensor
-        color_sensor.right.color = color;
-        color_sensor.right.detected = detected;
-      }
-      else {
-        // XXX
-        ROME_LOGF(&rome_strat, ERROR, "Invalid interface %p", intf);
-      }
-
-    } break;
-
-    default:
-      break;
-  }
-
-  // forward
-  rome_send(&rome_strat, frame);
-}
+//sand roller
+void sand_roller_off(void) { servo_set(0,1500); }
+void sand_roller_on(void)  { servo_set(0,1800); }
 
 void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
 
   switch(frame->mid) {
     case ROME_MID_START_TIMER: {
-      match_timer_counting = true;
+      match_started = true;
       rome_reply_ack(intf, frame);
     } break;
 
-    case ROME_MID_MECA_CMD: {
-      ROME_LOGF(&rome_strat, DEBUG, "MECA: cmd %d arm %d",frame->meca_cmd.cmd,frame->meca_cmd.side);
-      void (*func)(spot_elevator_t*);
-      switch(frame->meca_cmd.cmd) {
-        case ROME_ENUM_MECA_COMMAND_RESET_ELEVATOR:
-          func = spot_elevator_reset;
-          break;
-        case ROME_ENUM_MECA_COMMAND_PREPARE_PICK_SPOT:
-          func = spot_elevator_prepare_spot_stacking;
-          break;
-        case ROME_ENUM_MECA_COMMAND_PICK_SPOT:
-          func = spot_elevator_automatic_spot_stacking;
-          break;
-        case ROME_ENUM_MECA_COMMAND_RELEASE_SPOT_STACK:
-          func = spot_elevator_release_spot_stack;
-          break;
-        case ROME_ENUM_MECA_COMMAND_DISCHARGE_SPOT_STACK:
-          func = spot_elevator_discharge_spot_stack;
-          break;
-        case ROME_ENUM_MECA_COMMAND_PICK_CUP:
-          func = spot_elevator_pick_cup;
-          break;
-        case ROME_ENUM_MECA_COMMAND_PREPARE_CUP:
-          func = spot_elevator_prepare_cup;
-          break;
-        case ROME_ENUM_MECA_COMMAND_UNLOAD_CUP:
-          func = spot_elevator_unload_cup;
-          break;
-        case ROME_ENUM_MECA_COMMAND_PICK_BULB:
-          func = spot_elevator_pick_bulb;
-          break;
-        case ROME_ENUM_MECA_COMMAND_PREPARE_BULB:
-          func = spot_elevator_prepare_bulb;
-          break;
-        case ROME_ENUM_MECA_COMMAND_NONE:
-        default:
-          func = NULL;
-          break;
-      }
-      spot_elevator_t * se = frame->meca_cmd.side ? &r_spot_elevator : &l_spot_elevator;
-      if(func)
-        func(se);
-      rome_reply_ack(intf, frame);
-      spot_elevator_reset_order_timeout(se);
+    case ROME_MID_MECA_SET_SERVO: {
+        servo_set(frame->asserv_set_servo.id,frame->asserv_set_servo.value);
+        rome_reply_ack(intf, frame);
     } break;
 
     case ROME_MID_MECA_SET_POWER: {
@@ -164,51 +53,13 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
 
-    case ROME_MID_MECA_SET_ARM: {
-      spot_elevator_move_middle_arm(frame->meca_set_arm.position);
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_COLOR_SENSOR_SET_COLOR_FILTER: {
-      // forward message
-      switch(frame->color_sensor_set_color_filter.i) {
-        case 0: rome_send(&rome_color_sensor.left, frame); break;
-        case 1: rome_send(&rome_color_sensor.right, frame); break;
-        default: break;
-      }
-
-    } break;
-
-    case ROME_MID_MECA_CARPET_LOCK: {
-       switch(frame->meca_carpet_lock.n)
-      {
-        case 0:
-          carpet_lock_l();
-          break;
-        case 1:
-          carpet_lock_r();
-          break;
-        default :
-          break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
-    case ROME_MID_MECA_CARPET_UNLOCK: {
-       switch(frame->meca_carpet_unlock.n)
-      {
-        case 0:
-          carpet_unlock_l();
-          break;
-        case 1:
-          carpet_unlock_r();
-          break;
-        default :
-          break;
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-
+    case ROME_MID_MECA_SET_SAND_ROLLER: {
+      uint8_t active = frame->meca_set_sand_roller.active;
+      if(active)
+        sand_roller_on();
+      else
+        sand_roller_off();
+    }
     default:
       break;
   }
@@ -281,46 +132,27 @@ ax12_t ax12 = {
   .set_state = ax12_set_state,
 };
 
+static void open_store(void){
+  ax12_write_word(&ax12, SE_AX12_STORE_ID, AX12_ADDR_MOVING_SPEED_L,  0x05F);
+  ax12_write_byte(&ax12, SE_AX12_STORE_ID, AX12_ADDR_TORQUE_ENABLE,   0x01);
+  ax12_write_word(&ax12, SE_AX12_STORE_ID, AX12_ADDR_GOAL_POSITION_L, SE_STORE_OPEN);
+}
+
+static void close_store(void){
+  ax12_write_word(&ax12, SE_AX12_STORE_ID, AX12_ADDR_MOVING_SPEED_L,  0x1FF);
+  ax12_write_byte(&ax12, SE_AX12_STORE_ID, AX12_ADDR_TORQUE_ENABLE,   0x01);
+  ax12_write_word(&ax12, SE_AX12_STORE_ID, AX12_ADDR_GOAL_POSITION_L, SE_STORE_CLOSE);
+}
+
 void update_match_timer(void)
 {
   // update match timer
-  // check match timer
-  if(match_timer_ms > 1000*(int32_t)MATCH_DURATION_SECS) {
-    // out of time
-    spot_elevator_end_of_match(&l_spot_elevator);
-    spot_elevator_end_of_match(&r_spot_elevator);
+  if(match_started) {
+    match_timer_ms += UPDATE_MATCH_TIMER_TICK_US/1000;
   }
-  else {
-    // update match timer
-    if(match_timer_counting) {
-      match_timer_ms += UPDATE_MATCH_TIMER_TICK_US/1000;
-    }
-  }
+
   // downlink match timer telemetry
   TM_DL_MATCH_TIMER(match_timer_ms/1000);
-}
-
-bool is_spot_present_l(void)
-{
-  return true;
-  //return color_sensor.left.detected;
-}
-
-bool is_spot_present_r(void)
-{
-  return color_sensor.right.detected;
-}
-
-robot_color_t get_spot_color_l(void)
-{
-  return COLOR_GREEN;
-  //return color_sensor.left.color; 
-}
-
-robot_color_t get_spot_color_r(void)
-{
-  return COLOR_GREEN;
-  //return color_sensor.right.color; 
 }
 
 int main(void)
@@ -352,21 +184,10 @@ int main(void)
   uart_fopen(UART_PPP);
   portpin_dirset(&AX12_DIR_PP);
 
-  // initialize spot elevator
-  spot_elevator_init(&l_spot_elevator);
-  spot_elevator_set_claw_ax12_addr(&l_spot_elevator, SE_LEFT_AX12_CLAW_ID);
-  spot_elevator_set_elevator_ax12_addr(&l_spot_elevator, SE_LEFT_AX12_ELEVATOR_ID);
-  spot_elevator_set_is_spot_present_fn(&l_spot_elevator, is_spot_present_l);
-  spot_elevator_set_get_spot_color_fn(&l_spot_elevator, get_spot_color_l);
-  spot_elevator_init_spipe_servo(&l_spot_elevator, SE_SERVO_LEFT_TUBE_PIN, SE_LEFT_TUBE_OPEN_PWM_US, SE_LEFT_TUBE_CLOSE_PWM_US);
+  servos_init();
 
-  spot_elevator_init(&r_spot_elevator);
-  spot_elevator_set_claw_ax12_addr(&r_spot_elevator, SE_RIGHT_AX12_CLAW_ID);
-  spot_elevator_set_elevator_ax12_addr(&r_spot_elevator, SE_RIGHT_AX12_ELEVATOR_ID);
-  spot_elevator_set_is_spot_present_fn(&r_spot_elevator, is_spot_present_r);
-  spot_elevator_set_get_spot_color_fn(&r_spot_elevator, get_spot_color_r);
-  spot_elevator_init_spipe_servo(&r_spot_elevator, SE_SERVO_RIGHT_TUBE_PIN, SE_RIGHT_TUBE_OPEN_PWM_US, SE_RIGHT_TUBE_CLOSE_PWM_US);
-  
+  sand_roller_off();
+
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
@@ -379,34 +200,16 @@ int main(void)
   rome_strat.uart = UART_PPP;
   rome_strat.handler = rome_strat_handler;
  
-  rome_intf_init(&rome_color_sensor.left);
-  rome_color_sensor.left.uart = UART_COLOR_SENSOR_LEFT;
-  rome_color_sensor.left.handler = rome_color_sensor_handler;
-
-  rome_intf_init(&rome_color_sensor.right);
-  rome_color_sensor.right.uart = UART_COLOR_SENSOR_RIGHT;
-  rome_color_sensor.right.handler = rome_color_sensor_handler;
-
   uint32_t luptime = UINT32_MAX;
-  uint32_t spot_elevator_uptime = UINT32_MAX;
+  //uint32_t t = 0;
 
-  uint32_t t = 0;
+  close_store();
 
-  //intialize capet servos
-  pwm_servo_init(&carpet_r_servo, SE_SERVO_RIGHT_CARPET_PORT, SE_SERVO_RIGHT_CARPET_PIN);
-  carpet_unlock_r();
-  pwm_servo_init(&carpet_l_servo, (TC0_t*) SE_SERVO_LEFT_CARPET_PORT, SE_SERVO_LEFT_CARPET_PIN);
-  carpet_unlock_l();
-
-  spot_elevator_set_enable(&l_spot_elevator, true);
-  spot_elevator_set_enable(&r_spot_elevator, true);
-
-  bool update_left = false;
   // main loop
   for(;;) {
     
     // debug info
-    PORTA.OUT = (t++)/1000;
+    //PORTA.OUT = (t++)/1000;
     uint32_t uptime = uptime_us();
 
     // update rome every 100 ms
@@ -415,23 +218,16 @@ int main(void)
       luptime = uptime;
       portpin_outtgl(&LED_COM_PP);
       rome_handle_input(&rome_strat);
-      rome_handle_input(&rome_color_sensor.left);
-      rome_handle_input(&rome_color_sensor.right);
     }
-    
-    uptime = uptime_us();
-    if(uptime - spot_elevator_uptime > (SPOT_ELEVATOR_PERIOD_MS*1000/2)) {
-      spot_elevator_uptime = uptime;
-      if (update_left){
-        spot_elevator_manage(&l_spot_elevator);
-        ROME_SEND_MECA_TM_LEFT_ELEVATOR(&rome_strat,l_spot_elevator.tm_state,l_spot_elevator.nb_spots);
-        update_left = false;
-      }
-      else{
-        spot_elevator_manage(&r_spot_elevator);
-        ROME_SEND_MECA_TM_RIGHT_ELEVATOR(&rome_strat,r_spot_elevator.tm_state,r_spot_elevator.nb_spots);
-        update_left = true;
-      }
+
+    // check match timer
+    if(match_timer_ms > 1000*(int32_t)MATCH_DURATION_SECS) {
+      sand_roller_off();
+    }
+
+    //check store deploy timer
+    if(match_timer_ms > 1000*(int32_t)STORE_DEPLOY_TIME_SECS) {
+      open_store();
     }
   }
 }
