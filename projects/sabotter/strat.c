@@ -19,6 +19,8 @@
 #define DEFAULT_WAIT_MS  2000
 #define DEFAULT_FOV  (M_PI/3)
 
+#define AUTOSET_OFFSET 114
+
 extern rome_intf_t rome_asserv;
 extern rome_intf_t rome_meca;
 extern rome_intf_t rome_paddock;
@@ -618,50 +620,43 @@ void strat_wait_start(void)
   portpin_outclr(&LED_B_PP);
   ROME_SENDWAIT_START_TIMER(&rome_asserv);
 #if (defined GALIPEUR)
-  //ROME_SENDWAIT_START_TIMER(&rome_meca);
+  ROME_SENDWAIT_START_TIMER(&rome_meca);
 #endif
 }
 
 
 void strat_init_galipeur(void)
 {
-  ROME_LOG(&rome_paddock,INFO,"Strat init");
+  ROME_LOG(&rome_paddock,INFO,"Galipeur : Strat init");
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
 
-  #if 0
   // initialize meca
+  ROME_LOG(&rome_paddock,INFO,"Init meca");
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
   // set R3D2 parameters
-  // fuck c'est trop long ...
-  //ext_arm_raise();
-  //ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
-  ext_arm_lower(); 
+  //ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,0,25);
 
-  ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
-  ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_LEFT);
-  _meca_order_blocking_both(PREPARE_BULB);
-  #endif
   for(;;) {
     update_rome_interfaces();
     if(!robot_state.gyro_calibration)
       break;
   }
-  #if 0
-  _meca_order_blocking_both(PICK_BULB);
-  ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, MECA_RIGHT);
-  ROME_SENDWAIT_MECA_CARPET_LOCK(&rome_meca, MECA_LEFT);
-  #endif
+  
+  strat_delay_ms(5000);
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
 
+  // set R3D2 parameters
+  //ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
 }
 
 void strat_prepare_galipeur(void)
 {
   //initalise kx factor
   robot_kx = robot_state.team == TEAM_GREEN ? 1 : -1;
-
+  
   ROME_LOG(&rome_paddock,DEBUG,"Strat prepare");
   // initialize asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
@@ -671,14 +666,27 @@ void strat_prepare_galipeur(void)
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
 
   // autoset robot, Y on pond
-  autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, 103);
-  // move in front of strating area
+  autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET);
+  // move in front of starting area
   goto_xya(KX(200), 1210, KA(0));
   //and autoset X
-  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-103), 0);
+  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
+}
+
+void galipeur_close_doors(void){
+  //go in front of first door
+  goto_xya(KX(1250), 1750, KA(M_PI));
+  //push it
+  goto_xya(KX(1200), 1850, KA(M_PI));
+  //go in front of 2nd door
+  goto_xya(KX(1100), 1750, KA(M_PI));
+  //push it
+  goto_xya(KX(1050), 1850, KA(M_PI));
+  //evade the doors
+  goto_xya(KX(1100), 1700, KA(M_PI));
 }
 
 void galipeur_destroy_dune(void){
@@ -694,15 +702,23 @@ void galipeur_destroy_dune(void){
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
   //destroy 1st row
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(-300), 2000-240, KA(M_PI));
   goto_xya(KX(100),  2000-240, KA(M_PI));
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   //destroy 2nd row
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(-400), 2000-270, KA(-5*M_PI/6));
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(-400), 2000-220, KA(-5*M_PI/6));
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   goto_xya(KX(-250), 2000-220, KA(-5*M_PI/6));
   goto_xya(KX(-230), 2000-230, KA(-5*M_PI/6));
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-103);
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(250),  2000-120, KA(M_PI));
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
 
@@ -868,7 +884,18 @@ void strat_run_galipeur(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
 #if 1
-  galipeur_destroy_dune();
+  
+  // get out of start area
+  goto_xya(KA(1100), 1100, KA(M_PI/2));
+  
+  galipeur_close_doors();
+
+  // push prepared tower in front of start area
+  int16_t traj[] = {
+    KX(1100) , 1100,
+    KX(300)  , 950,
+    KX(1100) , 1100 };
+  goto_traj(traj,KA(M_PI/6));
 
   /*/return to start stuff
     uint32_t start_time_us = uptime_us();
