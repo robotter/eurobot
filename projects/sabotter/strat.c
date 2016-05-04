@@ -1015,6 +1015,47 @@ void strat_test_galipeur(void)
 
 /****************************************************************************/
 
+// enum for galipette servo number assignation
+typedef enum{
+  FISHROD_MOTOR_SPEED = 0,    // PWM that controls the MOTOR speed controler
+  FISHROD_MAGNET_RELEASE =1,   // SERVO that separates the fishs and the magnets
+  FISHROD_ANGLE = 2,          // SERVO that rotates the full fishrod
+  FISHROD_MOTOR_ANGLE = 3,    // SERVO that controls MOTOR angle
+} fishrod_servo_t;
+
+#define MAGNET_PWM_POS_RELEASE 2400 // magnet servo position to release fish
+#define MAGNET_PWM_POS_CAPTURE 1650 // magnet servo position to capture fish
+
+#define FISHROD_POS_HIGH    3400    // fishrod servo closed position
+#define FISHROD_POS_MIDDLE  3200    // fishrod servo position to move fish
+#define FISHROD_POS_LOW     2700    // fishrod servo position to capture fish
+
+void galipette_rod_prepare_for_fishing(void)
+{
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_CAPTURE);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, FISHROD_POS_LOW);
+}
+
+void galipette_rod_close(void)
+{
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_CAPTURE);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, FISHROD_POS_HIGH);
+}
+
+void galipette_rod_prepare_to_move_fish(void)
+{
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_CAPTURE);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, FISHROD_POS_MIDDLE);
+}
+
+void galipette_rod_release_fish(void)
+{
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, FISHROD_POS_MIDDLE);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_RELEASE);
+  idle_delay_ms(1000);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_CAPTURE);
+}
+
 void strat_init_galipette(void)
 {
   ROME_LOG(&rome_paddock,INFO,"Strat init");
@@ -1025,25 +1066,45 @@ void strat_init_galipette(void)
     if(!robot_state.gyro_calibration)
       break;
   }
-
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, 0, 1800);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, 1, 2700);
+  galipette_rod_close();
 }
 
 void strat_prepare_galipette(void)
 {
-  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv,1290,1100,0);
+  //initalise kx factor
+  robot_kx = robot_state.team == TEAM_GREEN ? 1 : -1;
+
+  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, KX(1320), 1020, 0); 
+
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
 }
 
 void strat_run_galipette(void)
 {
-  goto_xya(250,1100,-M_PI/2);
-  goto_xya(800,260,0);
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  goto_xya(KX(1100),750,0);
+  goto_xya(KX(1100),200,0);
+  goto_xya(KX(900),140,0);
+  galipette_rod_prepare_for_fishing();
+  goto_xya(KX(700),140,0);
+  galipette_rod_prepare_to_move_fish();
+  goto_xya(KX(700),400,0);
+  goto_xya(KX(400),400,0);
+  goto_xya(KX(400),140,0);
+  galipette_rod_release_fish();
+  goto_xya(KX(400),400,0);
+  galipette_rod_close();
 }
 
 void strat_test_galipette(void)
 {
 }
+
+
+
+
 
 #if (defined GALIPEUR)
 # define ROBOT_SUFFIX  galipeur
