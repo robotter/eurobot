@@ -21,29 +21,37 @@ extern rome_intf_t rome_intf;
 
 #define R3D2_MOTOR_POS_TC  TCC1
 #define R3D2_MOTOR_POS_PRESCALER  TIMER_PRESCALER_DIV
-/// Interrupt vector triggered at motor revolution
-#define R3D2_MOTOR_INT_VECT  PORTC_INT0_vect
 /// Port pin of interrupt triggered at motor revolution
 #define R3D2_MOTOR_INT_PP  PORTPIN(C,3)
-/// Port interrupt number of interrupt triggered at motor revolution
-#define R3D2_MOTOR_INT_NUM  0
-
-/// Port pin of interrupt triggered by R3D2 long range sensor
-#define R3D2_LR_SENSOR_INT_PP  PORTPIN(C,2)
+/// Channel used to capture motor period
+#define R3D2_MOTOR_CAPT_CH 'A'
+/// Event used to capture motor period
+#define R3D2_MOTOR_CAPT_EVENT  0
+/** @brief Interrupt vector for motor capture
+ *
+ * Value must match R3D2_MOTOR_POS_TC and R3D2_MOTOR_CAPT_CH.
+ */
+#define R3D2_MOTOR_CAPT_VECT  TCC1_CCA_vect
 
 /// Port pin of interrupt triggered by R3D2 short range sensor
 #define R3D2_SR_SENSOR_INT_PP  PORTPIN(C,1)
+/// Port interrupt number of interrupt triggered by R3D2 short range sensor
+#define R3D2_SR_SENSOR_INT_NUM  0
+/// interrupt vector triggered at motor by R3D2 short range sensor
+#define R3D2_SR_SENSOR_INT_VECT  PORTC_INT0_vect
 
+/// Port pin of interrupt triggered by R3D2 long range sensor
+#define R3D2_LR_SENSOR_INT_PP  PORTPIN(C,2)
 /// Port interrupt number of interrupt triggered by R3D2 long range sensor
-#define R3D2_SENSOR_INT_NUM  1
-/// interrupt vector triggered at motor by R3D2 long and short range sensor
-#define R3D2_SENSOR_INT_VECT  PORTC_INT1_vect
+#define R3D2_LR_SENSOR_INT_NUM  1
+/// interrupt vector triggered at motor by R3D2 long range sensor
+#define R3D2_LR_SENSOR_INT_VECT  PORTC_INT1_vect
 
 /// Port pin of sensor control (on/off)
 #define R3D2_SENSOR_CTRL_PP  PORTPIN(E,1)
 
 #define R3D2_OBJECT_WIDTH_CM 8.0
-#define R3D2_MAX_OBJECTS  2
+#define R3D2_MAX_OBJECTS  4
 
 #define TC_CLKSEL_DIVn_gc_(n)  TC_CLKSEL_DIV ## n ## _gc
 #define TC_CLKSEL_DIVn_gc(n)  TC_CLKSEL_DIVn_gc_(n)
@@ -52,7 +60,6 @@ extern rome_intf_t rome_intf;
 typedef struct {
   int32_t start_tick_us;
   int32_t end_tick_us;
-  uint8_t count;
 }measure_t;
 
 typedef struct {
@@ -83,6 +90,7 @@ typedef struct {
     double end;
   }blind_spot_arc;
 
+  uint8_t measure_count;
   measure_t measure_lr;
   measure_t measure_sr;
 
@@ -154,36 +162,23 @@ static void _new_measure(measure_t *m) {
   else {
     distance = 10*da.distance;
   }
-  
+
   // add mount offset (rotation from r3d2 to robot)
   da.angle = fmod(da.angle + R3D2_MOUNT_ANGLE_OFFSET_RADIANS, 2*M_PI);
 
-  ROME_SEND_R3D2_TM_DETECTION(&rome_intf, m->count, true, 1000*da.angle,distance);
+  ROME_SEND_R3D2_TM_DETECTION(&rome_intf, r3d2.measure_count, true, 1000*da.angle,distance);
 
-  ROME_SEND_R3D2_TM_ARCS(&rome_intf, m->count,
+  ROME_SEND_R3D2_TM_ARCS(&rome_intf, r3d2.measure_count,
     1000*start_tick_angle,
     1000*end_tick_angle);
 }
 
-/// Sensor interrupt routine
-ISR(R3D2_SENSOR_INT_VECT) {
+/// Short range sensor interrupt routine
+ISR(R3D2_SR_SENSOR_INT_VECT) {
   uint32_t cnt = TIMER_TICKS_TO_US(C1, R3D2_MOTOR_POS_TC.CNT);
-  //bool pin_lr = portpin_in(&R3D2_LR_SENSOR_INT_PP);
-  bool pin_sr = portpin_in(&R3D2_SR_SENSOR_INT_PP);
+  bool pin = portpin_in(&R3D2_SR_SENSOR_INT_PP);
 
-/*
-  if(!pin_lr) {
-    portpin_outclr(&LED_LR_PP);
-    r3d2.measure_lr.start_tick_us = cnt;
-  }
-  else {
-    portpin_outset(&LED_LR_PP);
-    r3d2.measure_lr.end_tick_us = cnt;
-    _new_measure(&r3d2.measure_lr);
-    r3d2.measure_lr.count++;
-  }
-*/
-  if(pin_sr) {
+  if(pin) {
     portpin_outset(&LED_SR_PP);
     r3d2.measure_sr.start_tick_us = cnt;
   }
@@ -191,9 +186,26 @@ ISR(R3D2_SENSOR_INT_VECT) {
     portpin_outclr(&LED_SR_PP);
     r3d2.measure_sr.end_tick_us = cnt;
     _new_measure(&r3d2.measure_sr);
-    r3d2.measure_sr.count++;
+    r3d2.measure_count++;
   }
 
+}
+
+/// Long range sensor interrupt routine
+ISR(R3D2_LR_SENSOR_INT_VECT) {
+  uint32_t cnt = TIMER_TICKS_TO_US(C1, R3D2_MOTOR_POS_TC.CNT);
+  bool pin = portpin_in(&R3D2_LR_SENSOR_INT_PP);
+
+  if(!pin) {
+    portpin_outclr(&LED_LR_PP);
+    r3d2.measure_lr.start_tick_us = cnt;
+  }
+  else {
+    portpin_outset(&LED_LR_PP);
+    r3d2.measure_lr.end_tick_us = cnt;
+    _new_measure(&r3d2.measure_lr);
+    r3d2.measure_count++;
+  }
 }
 
 /// @return error in percent of value against consign
@@ -202,12 +214,11 @@ static inline int32_t _error_pc(int32_t value, int32_t consign) {
 }
 
 /// Motor revolution interrupt routine
-ISR(R3D2_MOTOR_INT_VECT) {
+ISR(R3D2_MOTOR_CAPT_VECT) {
   portpin_outtgl(&LED_RUN_PP);
 
   uint32_t counter_us =
-    TIMER_TICKS_TO_US(C1, R3D2_MOTOR_POS_TC.CNT);
-
+    TIMER_TICKS_TO_US(C1, R3D2_MOTOR_POS_TC.CCA + (R3D2_MOTOR_CAPT_CH - 'A'));
   R3D2_MOTOR_POS_TC.CNT = 0;
   if(!r3d2.invalidate_next_tick) {
     r3d2.motor_period_us = counter_us;
@@ -229,17 +240,10 @@ ISR(R3D2_MOTOR_INT_VECT) {
   }
   pstable = r3d2.motor_rpm_stable;
 
-  for(uint8_t i=r3d2.measure_sr.count; i<R3D2_MAX_OBJECTS; i++) {
+  for(uint8_t i=r3d2.measure_count; i<R3D2_MAX_OBJECTS; i++) {
     ROME_SEND_R3D2_TM_DETECTION(&rome_intf, i, false, 0, 0);
   }
-  r3d2.measure_sr.count = 0;
-
-  /*
-  for(uint8_t i=r3d2.measure_lr.count; i<R3D2_MAX_OBJECTS; i++) {
-    ROME_SEND_R3D2_TM_DETECTION(&rome_intf, i, false, 0, 0);
-  }
-  r3d2.measure_lr.count = 0;
-  */
+  r3d2.measure_count = 0;
   r3d2.invalidate_next_tick = false;
 }
 
@@ -261,14 +265,15 @@ void r3d2_init() {
   // initialize motor
   pwm_motor_init(&r3d2.pwm, &(R3D2_MOTOR_PWM_TC), R3D2_MOTOR_POS_CH, 0);
   pwm_motor_set_frequency(&r3d2.pwm, R3D2_MOTOR_FREQUENCY);
-  // initialize timer counter used for rotor position
+  // initialize timer counter used for rotor position, with capture
   R3D2_MOTOR_POS_TC.CNT = 0;
   R3D2_MOTOR_POS_TC.CTRLA = TC_CLKSEL_DIVn_gc(R3D2_MOTOR_POS_PRESCALER);
-  R3D2_MOTOR_POS_TC.CTRLB = 0;
+  R3D2_MOTOR_POS_TC.CTRLB = (1 << (TC0_CCAEN_bp + (R3D2_MOTOR_CAPT_CH - 'A')));
+  R3D2_MOTOR_POS_TC.CTRLD = TC_EVACT_FRQ_gc | (TC_EVSEL_CH0_gc + R3D2_MOTOR_CAPT_EVENT);
   R3D2_MOTOR_POS_TC.INTCTRLA = TC_OVFINTLVL_LO_gc;
-  // initialize motor tick irq
-  PORTPIN_CTRL(&R3D2_MOTOR_INT_PP) |= PORT_ISC_RISING_gc;
-  portpin_enable_int(&R3D2_MOTOR_INT_PP, R3D2_MOTOR_INT_NUM, INTLVL_LO);
+  R3D2_MOTOR_POS_TC.INTCTRLB = TC_CCAINTLVL_LO_gc + (R3D2_MOTOR_CAPT_CH - 'A') * (TC_CCBINTLVL_LO_gc - TC_CCAINTLVL_LO_gc);
+  (&EVSYS.CH0MUX)[R3D2_MOTOR_CAPT_EVENT] = PORTPIN_EVSYS_CHMUX(&R3D2_MOTOR_INT_PP);
+
   // intialize pid filter
   pid_init(&r3d2.pid);
   pid_set_gains(&r3d2.pid, 300, 70, 0);
@@ -278,14 +283,11 @@ void r3d2_init() {
   // init sensor
   portpin_dirset(&R3D2_SENSOR_CTRL_PP);
   portpin_outset(&R3D2_SENSOR_CTRL_PP);
-  // init sensor interrupt (on both edges)
+  // init sensor interrupts (on both edges)
   PORTPIN_CTRL(&R3D2_SR_SENSOR_INT_PP) |= PORT_ISC_BOTHEDGES_gc;
-  portpin_enable_int(&R3D2_SR_SENSOR_INT_PP, R3D2_SENSOR_INT_NUM, INTLVL_LO);
-  
-  /*
+  portpin_enable_int(&R3D2_SR_SENSOR_INT_PP, R3D2_SR_SENSOR_INT_NUM, INTLVL_LO);
   PORTPIN_CTRL(&R3D2_LR_SENSOR_INT_PP) |= PORT_ISC_BOTHEDGES_gc;
-  portpin_enable_int(&R3D2_LR_SENSOR_INT_PP, R3D2_SENSOR_INT_NUM, INTLVL_LO);
-  */
+  portpin_enable_int(&R3D2_LR_SENSOR_INT_PP, R3D2_LR_SENSOR_INT_NUM, INTLVL_LO);
 }
 
 void r3d2_update() {
