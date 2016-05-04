@@ -17,6 +17,8 @@ extern rome_intf_t rome_intf;
 #define R3D2_MOTOR_POS_CH 'A'
 #define R3D2_MOTOR_FREQUENCY 10000
 
+#define R3D2_MOUNT_ANGLE_OFFSET_RADIANS (1.1*M_PI)
+
 #define R3D2_MOTOR_POS_TC  TCC1
 #define R3D2_MOTOR_POS_PRESCALER  TIMER_PRESCALER_DIV
 /// Interrupt vector triggered at motor revolution
@@ -152,6 +154,10 @@ static void _new_measure(measure_t *m) {
   else {
     distance = 10*da.distance;
   }
+  
+  // add mount offset (rotation from r3d2 to robot)
+  da.angle = fmod(da.angle + R3D2_MOUNT_ANGLE_OFFSET_RADIANS, 2*M_PI);
+
   ROME_SEND_R3D2_TM_DETECTION(&rome_intf, m->count, true, 1000*da.angle,distance);
 
   ROME_SEND_R3D2_TM_ARCS(&rome_intf, m->count,
