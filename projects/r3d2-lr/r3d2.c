@@ -18,7 +18,7 @@ extern rome_intf_t rome_intf;
 #define R3D2_MOTOR_FREQUENCY 10000
 
 #define R3D2_MOTOR_POS_TC  TCC1
-#define R3D2_MOTOR_POS_PRESCALER  64
+#define R3D2_MOTOR_POS_PRESCALER  TIMER_PRESCALER_DIV
 /// Interrupt vector triggered at motor revolution
 #define R3D2_MOTOR_INT_VECT  PORTC_INT0_vect
 /// Port pin of interrupt triggered at motor revolution
@@ -87,8 +87,8 @@ typedef struct {
 } r3d2_t;
 /// r3d2 singleton
 r3d2_t r3d2 = {
-  .motor_consign_rpm = 5000,
-  .motor_consign_threshold_pc = 5,
+  .motor_consign_rpm = 100,
+  .motor_consign_threshold_pc = 10,
 
   .blind_spot_arc = {.begin = 0, .end = 0},
 
@@ -104,7 +104,7 @@ static inline distance_angle_t _compute_distance_angle(measure_t *m) {
 
   // compute view angle
   double delta = (2*M_PI*delta_us)/r3d2.motor_period_us;
-  double angle = -(2*M_PI*angle_us)/r3d2.motor_period_us;
+  double angle = (2*M_PI*angle_us)/r3d2.motor_period_us;
   double distance = w/(2*tan(.5*delta));
 
   return (distance_angle_t){.angle = angle, .distance=distance};
@@ -161,10 +161,11 @@ static void _new_measure(measure_t *m) {
 
 /// Sensor interrupt routine
 ISR(R3D2_SENSOR_INT_VECT) {
-  uint32_t cnt = TIMER_TICKS_TO_US(E0, R3D2_MOTOR_POS_TC.CNT);
-  bool pin_lr = portpin_in(&R3D2_LR_SENSOR_INT_PP);
+  uint32_t cnt = TIMER_TICKS_TO_US(C1, R3D2_MOTOR_POS_TC.CNT);
+  //bool pin_lr = portpin_in(&R3D2_LR_SENSOR_INT_PP);
   bool pin_sr = portpin_in(&R3D2_SR_SENSOR_INT_PP);
 
+/*
   if(!pin_lr) {
     portpin_outclr(&LED_LR_PP);
     r3d2.measure_lr.start_tick_us = cnt;
@@ -175,13 +176,13 @@ ISR(R3D2_SENSOR_INT_VECT) {
     _new_measure(&r3d2.measure_lr);
     r3d2.measure_lr.count++;
   }
-
-  if(!pin_sr) {
-    portpin_outclr(&LED_SR_PP);
+*/
+  if(pin_sr) {
+    portpin_outset(&LED_SR_PP);
     r3d2.measure_sr.start_tick_us = cnt;
   }
   else {
-    portpin_outset(&LED_SR_PP);
+    portpin_outclr(&LED_SR_PP);
     r3d2.measure_sr.end_tick_us = cnt;
     _new_measure(&r3d2.measure_sr);
     r3d2.measure_sr.count++;
@@ -199,7 +200,8 @@ ISR(R3D2_MOTOR_INT_VECT) {
   portpin_outtgl(&LED_RUN_PP);
 
   uint32_t counter_us =
-    TIMER_TICKS_TO_US(E0, R3D2_MOTOR_POS_TC.CNT);
+    TIMER_TICKS_TO_US(C1, R3D2_MOTOR_POS_TC.CNT);
+
   R3D2_MOTOR_POS_TC.CNT = 0;
   if(!r3d2.invalidate_next_tick) {
     r3d2.motor_period_us = counter_us;
@@ -226,10 +228,12 @@ ISR(R3D2_MOTOR_INT_VECT) {
   }
   r3d2.measure_sr.count = 0;
 
+  /*
   for(uint8_t i=r3d2.measure_lr.count; i<R3D2_MAX_OBJECTS; i++) {
-//    ROME_SEND_R3D2_TM_DETECTION(&rome_intf, i, false, 0, 0);
+    ROME_SEND_R3D2_TM_DETECTION(&rome_intf, i, false, 0, 0);
   }
   r3d2.measure_lr.count = 0;
+  */
   r3d2.invalidate_next_tick = false;
 }
 
@@ -243,7 +247,7 @@ static void _update_motor(void) {
   int32_t error = r3d2.motor_consign_rpm - r3d2.motor_rpm;
   int32_t output = pid_do_filter(&r3d2.pid, error);
   output = MAX(output, 0);
-  pwm_motor_set(&r3d2.pwm, r3d2.motor_consign_rpm);
+  pwm_motor_set(&r3d2.pwm, output);
 
 }
 
@@ -254,13 +258,14 @@ void r3d2_init() {
   // initialize timer counter used for rotor position
   R3D2_MOTOR_POS_TC.CNT = 0;
   R3D2_MOTOR_POS_TC.CTRLA = TC_CLKSEL_DIVn_gc(R3D2_MOTOR_POS_PRESCALER);
+  R3D2_MOTOR_POS_TC.CTRLB = 0;
   R3D2_MOTOR_POS_TC.INTCTRLA = TC_OVFINTLVL_LO_gc;
   // initialize motor tick irq
   PORTPIN_CTRL(&R3D2_MOTOR_INT_PP) |= PORT_ISC_RISING_gc;
   portpin_enable_int(&R3D2_MOTOR_INT_PP, R3D2_MOTOR_INT_NUM, INTLVL_LO);
   // intialize pid filter
   pid_init(&r3d2.pid);
-  pid_set_gains(&r3d2.pid, 100, 40, 0);
+  pid_set_gains(&r3d2.pid, 300, 70, 0);
   pid_set_maximums(&r3d2.pid, 1000, 10000, 0x7fff);
   pid_set_out_shift(&r3d2.pid, 5);
 
@@ -271,8 +276,10 @@ void r3d2_init() {
   PORTPIN_CTRL(&R3D2_SR_SENSOR_INT_PP) |= PORT_ISC_BOTHEDGES_gc;
   portpin_enable_int(&R3D2_SR_SENSOR_INT_PP, R3D2_SENSOR_INT_NUM, INTLVL_LO);
   
+  /*
   PORTPIN_CTRL(&R3D2_LR_SENSOR_INT_PP) |= PORT_ISC_BOTHEDGES_gc;
   portpin_enable_int(&R3D2_LR_SENSOR_INT_PP, R3D2_SENSOR_INT_NUM, INTLVL_LO);
+  */
 }
 
 void r3d2_update() {

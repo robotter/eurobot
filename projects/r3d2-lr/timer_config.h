@@ -18,19 +18,11 @@
  *
  * Valid values are 1, 2, 4, 8, 64, 256 and 1024.
  */
-#define TIMER_PRESCALER_DIV  64
+#define TIMER_PRESCALER_DIV  256
 
 /// Enable TIMERxn
-#define TIMERE0_ENABLED
+#define TIMERC1_ENABLED
 
-
-/// Timer used for uptime as xn
-#define UPTIME_TIMER  E0
-/// Timer channel used for uptime
-#define UPTIME_TIMER_CHANNEL  'A'
-
-/// Uptime tick period in microseconds
-#define UPTIME_TICK_US  10000
 
 //@}
 //@}
