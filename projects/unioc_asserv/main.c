@@ -310,7 +310,6 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       }
     }
 
-#if defined(GALIPEUR)
     // forward orders to R3D2 board
     case ROME_MID_R3D2_SET_ROTATION:
     case ROME_MID_R3D2_SET_BLIND_SPOT:
@@ -413,11 +412,12 @@ int main(void)
     double offset_sqsd = adxrs_get_offset_sqsd();
 
     // exit calibration if sqsd is low enough
-<<<<<<< HEAD
-    if(offset_sqsd < 160.0) {
-=======
-    if(offset_sqsd < 150.0) {
->>>>>>> handle galipette servo for fishrod
+#if defined(GALIPETTE)
+    if(offset_sqsd < 160.0)
+#else
+    if(offset_sqsd < 50.0)
+#endif
+    {
       ROME_LOGF(&rome, DEBUG, "gyro cal done ! off=%d sqsd=%f", offset, offset_sqsd);
       break;
     }
