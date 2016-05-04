@@ -195,6 +195,11 @@ int main(void)
   // Initialize clocks
   clock_init();
 
+  #ifdef GALIPETTE
+  // HACK : in unioc, Pin D0  and D1 are outputs
+  PORTD.DIRCLR = _BV(0) | _BV(1);
+  #endif
+
   // Initialize UART
   uart_init();
   uart_fopen(uartC0);
