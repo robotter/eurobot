@@ -114,7 +114,7 @@ bool opponent_detected_in_arc(float angle, float fov)
     max += 2*M_PI;
   for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
     r3d2_object_t *object = &robot_state.r3d2.objects[i];
-    d_a = float_modulo__(object->a+M_PI/6+robot_state.current_pos.a, 0, 2*M_PI);
+    d_a = float_modulo__(object->a+robot_state.current_pos.a, 0, 2*M_PI);
     bool in_range = IN_RANGE(d_a,min,max)||IN_RANGE(d_a+2*M_PI,min,max);
     // note: object->a is in ]-2*Pi;0]
     if(object->detected && object->r < R3D2_AVOID_DISTANCE && in_range) {
