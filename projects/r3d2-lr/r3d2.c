@@ -104,7 +104,7 @@ static inline distance_angle_t _compute_distance_angle(measure_t *m) {
 
   // compute view angle
   double delta = (2*M_PI*delta_us)/r3d2.motor_period_us;
-  double angle = (2*M_PI*angle_us)/r3d2.motor_period_us;
+  double angle = -(2*M_PI*angle_us)/r3d2.motor_period_us;
   double distance = w/(2*tan(.5*delta));
 
   return (distance_angle_t){.angle = angle, .distance=distance};
