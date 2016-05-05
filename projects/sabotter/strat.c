@@ -1065,7 +1065,7 @@ void strat_init_galipette(void)
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   for(;;) {
-    update_rome_interfaces();
+    idle();
     if(!robot_state.gyro_calibration)
       break;
   }
