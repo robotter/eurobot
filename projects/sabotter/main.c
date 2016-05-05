@@ -87,6 +87,11 @@ static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
       robot_state.asserv.path_i = frame->asserv_tm_htraj_path_index.i;
       robot_state.asserv.path_n = frame->asserv_tm_htraj_path_index.size;
     } break;
+    case ROME_MID_ASSERV_TM_BUMPERS_STATE:{
+      robot_state.bumpers.left  = frame->asserv_tm_bumpers_state.b0;
+      robot_state.bumpers.right = frame->asserv_tm_bumpers_state.b1;
+    } break;
+
     default:
       break;
   }

@@ -61,6 +61,10 @@ typedef struct {
     int8_t state;
     int8_t nb_spots;
   }right_elev;
+  struct{
+    bool left;
+    bool right;
+  }bumpers;
 } robot_state_t;
 
 extern robot_state_t robot_state;
