@@ -236,6 +236,10 @@ static void _meca_order_blocking_main_aux(uint8_t cmd_main, uint8_t cmd_aux){
     _meca_order_blocking_left_right(cmd_main,cmd_aux);
 }
 
+static void set_xya_wait(double x, double y, double a) {
+  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, x, y, 1000.0*a);
+}
+
 #define _meca_order_blocking_ma(m,a) _meca_order_blocking_main_aux(ROME_ENUM_MECA_COMMAND_##m,ROME_ENUM_MECA_COMMAND_##a)
 #define _meca_order_blocking_both(cmd) _meca_order_blocking_left_right(ROME_ENUM_MECA_COMMAND_##cmd,ROME_ENUM_MECA_COMMAND_##cmd)
 
@@ -662,7 +666,7 @@ void strat_prepare_galipeur(void)
   ROME_LOG(&rome_paddock,DEBUG,"Strat prepare");
   // initialize asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, 0, 0, 0);
+  set_xya_wait(0,0,0);
   ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, 0);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
@@ -1077,7 +1081,7 @@ void strat_prepare_galipette(void)
   //initalise kx factor
   robot_kx = robot_state.team == TEAM_GREEN ? 1 : -1;
 
-  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, KX(1320), 1020, KA(-M_PI/2)); 
+  set_xya_wait(KX(1320), 1020, KA(-M_PI/2));
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
