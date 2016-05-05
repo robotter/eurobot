@@ -19,7 +19,7 @@
 #define BOOTLOADER_UART_BSCALE  UART_BSCALE
 
 /// Wait delay before running the application in milliseconds
-#define BOOTLOADER_TIMEOUT  1000
+#define BOOTLOADER_TIMEOUT  3000
 
 /// Code to execute when the bootloader starts
 #define BOOTLOADER_INIT_CODE
