@@ -682,7 +682,7 @@ void strat_prepare_galipeur(void)
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
 }
 
-void galipeur_close_doors(void){
+order_result_t galipeur_close_doors(void){
   //go in front of first door
   goto_xya(KX(1250), 1750, KA(M_PI));
   //push it
@@ -693,6 +693,7 @@ void galipeur_close_doors(void){
   goto_xya(KX(1050), 1850, KA(M_PI));
   //evade the doors
   goto_xya(KX(1100), 1700, KA(M_PI));
+  return ORDER_SUCCESS;
 }
 
 typedef enum{
@@ -825,12 +826,33 @@ void strat_run_galipeur(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
 #if 1
-  if (galipeur_destroy_dune_first_row() == ORDER_SUCCESS){
-    galipeur_bring_back_sand();
-    if(galipeur_destroy_dune_second_row()== ORDER_SUCCESS)
+  order_result_t or_dune_row1 = ORDER_FAILURE;
+  order_result_t or_dune_row2 = ORDER_FAILURE;
+  order_result_t or_doors = ORDER_FAILURE;
+
+  do{
+    or_dune_row1 = galipeur_destroy_dune_first_row();
+    if (or_dune_row1 == ORDER_SUCCESS)
       galipeur_bring_back_sand();
+    else
+      if (or_doors != ORDER_SUCCESS)
+        or_doors = galipeur_close_doors();
   }
-  galipeur_close_doors();
+  while(or_dune_row1 != ORDER_SUCCESS);
+ 
+  do{
+    or_dune_row2 = galipeur_destroy_dune_second_row();
+    if (or_dune_row2 == ORDER_SUCCESS)
+      galipeur_bring_back_sand();
+    else
+      if (or_doors != ORDER_SUCCESS)
+        or_doors = galipeur_close_doors();
+  }
+  while(or_dune_row2 != ORDER_SUCCESS);
+
+  if (or_doors != ORDER_SUCCESS)
+    or_doors = galipeur_close_doors();
+
 
 #else
   //2015 1st match code modified to use advanced detection
