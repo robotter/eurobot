@@ -269,7 +269,11 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t time
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
-          start_time_us = uptime_us();
+          uint32_t time2 = uptime_us() - start_time_us;
+          if((time2) > ((uint32_t) timeout_ms*1000)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
+            return ORDER_DETECTION;
+          }
           if(!opponent_detected_carrot())
             break;
           idle();
@@ -308,7 +312,11 @@ static order_result_t goto_xya_synced_wait(int16_t x, int16_t y, float a, uint16
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
-          start_time_us = uptime_us();
+          uint32_t time2 = uptime_us() - start_time_us;
+          if((time2) > ((uint32_t) timeout_ms*1000)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
+            return ORDER_DETECTION;
+          }
           if(!opponent_detected_carrot())
             break;
           idle();
@@ -348,7 +356,11 @@ static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
-          start_time_us = uptime_us();
+          uint32_t time2 = uptime_us() - start_time_us;
+          if((time2) > ((uint32_t) timeout_ms*1000)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
+            return ORDER_DETECTION;
+          }
           if(!opponent_detected_carrot())
             break;
           idle();
@@ -409,7 +421,11 @@ static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t 
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
-          start_time_us = uptime_us();
+          uint32_t time2 = uptime_us() - start_time_us;
+          if((time2) > ((uint32_t) timeout_ms*1000)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
+            return ORDER_DETECTION;
+          }
           if(!opponent_detected_carrot())
             break;
           idle();
@@ -682,18 +698,20 @@ void strat_prepare_galipeur(void)
 }
 
 order_result_t galipeur_close_doors(void){
+  ROME_LOG(&rome_paddock,DEBUG,"Close cabin doors");
   //do in the corner to do an autoset
-  goto_xya(KX(1350),1750, KA(M_PI/2));
+  goto_xya(KX(1330),1650, KA(M_PI/2));
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
-  goto_xya_rel(0,100,0);
+  goto_xya_rel(KX(-200),0,0);
   //go in front of first door
   goto_xya(KX(1250), 1750, KA(M_PI));
   //push it
   goto_xya(KX(1200), 1850, KA(M_PI));
   //go in front of 2nd door
-  goto_xya(KX(1100), 1750, KA(M_PI));
+  goto_xya(KX(950), 1750, KA(M_PI));
   //push it
-  goto_xya(KX(1050), 1850, KA(M_PI));
+  goto_xya(KX(900), 1850, KA(M_PI));
+  //autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET-11);
   //evade the doors
   goto_xya(KX(1100), 1700, KA(M_PI));
   return ORDER_SUCCESS;
@@ -735,6 +753,7 @@ void galipeur_reset_sandroller(void){
 #define DESTROY_DUNE_END_POSITION_Y 1400
 
 order_result_t galipeur_goto_dune(void){
+  ROME_LOG(&rome_paddock,DEBUG,"Go to dune");
   order_result_t or;
   //we must be the first to get there !
   galipeur_set_speed(RS_FAST);
@@ -746,6 +765,7 @@ order_result_t galipeur_goto_dune(void){
   or = goto_traj(traj1,KA(M_PI/2));
   if (or != ORDER_SUCCESS){
     //go to destroy end position
+    ROME_LOG(&rome_paddock,DEBUG,"openent is here ... abort ...");
     galipeur_set_speed(RS_NORMAL);
     goto_xya_synced(DESTROY_DUNE_END_POSITION_X,
                     DESTROY_DUNE_END_POSITION_Y,
@@ -759,21 +779,23 @@ order_result_t galipeur_destroy_dune_first_row(void){
   if (galipeur_goto_dune() != ORDER_SUCCESS)
     return ORDER_FAILURE;
 
+  ROME_LOG(&rome_paddock,DEBUG,"Destroy first row");
   //slow down to push sand
   galipeur_set_speed(RS_SLOW);
   //destroy 1st row
-  goto_xya(KX(-300), 2000-240, KA(M_PI));
+  goto_xya(KX(-300), 2000-210, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
-  goto_xya(KX(100),  2000-240, KA(M_PI));
+  goto_xya(KX(100),  2000-210, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   return ORDER_SUCCESS;
 }
 
-order_result_t galipeur_destroy_dune_second_row(void){
+order_result_t galipeur_destroy_dune_second_row_first_half(void){
   //go to dune, and abort if failed
   if (galipeur_goto_dune() != ORDER_SUCCESS)
     return ORDER_FAILURE;
 
+  ROME_LOG(&rome_paddock,DEBUG,"Destroy second row, 1/2");
   //slow down to push sand
   galipeur_set_speed(RS_SLOW);
   //destroy 2nd row
@@ -788,13 +810,30 @@ order_result_t galipeur_destroy_dune_second_row(void){
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
   ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
   goto_xya(KX(0),  2000 - AUTOSET_OFFSET - 20, KA(M_PI));
-  galipeur_reset_sandroller();
-  goto_xya(KX(250),  2000 - AUTOSET_OFFSET - 20, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   return ORDER_SUCCESS;
 }
 
+#if 0
+order_result_t galipeur_destroy_dune_second_row_second_half(void){
+  //go to dune, and abort if failed
+  if (galipeur_goto_dune() != ORDER_SUCCESS)
+    return ORDER_FAILURE;
+
+  ROME_LOG(&rome_paddock,DEBUG,"Destroy second row, 2/2");
+  //slow down to push sand
+  galipeur_set_speed(RS_SLOW);
+  goto_xya(KX(-100),  2000 - 200, KA(M_PI));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
+  ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
+  goto_xya(KX(250),  2000 - AUTOSET_OFFSET - 20, KA(M_PI));
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  return ORDER_SUCCESS;
+}
+#endif
+
 void galipeur_bring_back_sand(void){
+  ROME_LOG(&rome_paddock,DEBUG,"Bring back sand in builing area");
 #if 1
   galipeur_set_speed(RS_NORMAL);
   goto_xya(KX(1500-700), 1400, KA(M_PI));
@@ -823,13 +862,13 @@ void strat_run_galipeur(void)
   ROME_LOG(&rome_paddock,DEBUG,"Go !!!");
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-
 #if 1
-  order_result_t or_dune_row1 = ORDER_FAILURE;
-  order_result_t or_dune_row2 = ORDER_FAILURE;
+
   order_result_t or_doors = ORDER_FAILURE;
 
+#if 1
   //try to do first row, deroute on doors if failed
+  order_result_t or_dune_row1 = ORDER_FAILURE;
   do{
     or_dune_row1 = galipeur_destroy_dune_first_row();
     if (or_dune_row1 == ORDER_SUCCESS)
@@ -839,20 +878,37 @@ void strat_run_galipeur(void)
         or_doors = galipeur_close_doors();
   }
   while(or_dune_row1 != ORDER_SUCCESS);
+#endif
+#if 1
  
   //do doors if it wasn't already done
   do {
     or_doors = galipeur_close_doors();
   }
   while (or_doors != ORDER_SUCCESS);
- 
-  //try to do second row
+#endif
+
+#if 0
+  //try to do first half of second row
+  order_result_t or_dune_row2 = ORDER_FAILURE;
   do{
-    or_dune_row2 = galipeur_destroy_dune_second_row();
+    or_dune_row2 = galipeur_destroy_dune_second_row_first_half();
     if (or_dune_row2 == ORDER_SUCCESS)
       galipeur_bring_back_sand();
   }
   while(or_dune_row2 != ORDER_SUCCESS);
+#endif
+
+#if 0
+  //try to do second half of second row
+  order_result_t or_dune_row3 = ORDER_FAILURE;
+  do{
+    or_dune_row3 = galipeur_destroy_dune_second_row_second_half();
+    if (or_dune_row3 == ORDER_SUCCESS)
+      galipeur_bring_back_sand();
+  }
+  while(or_dune_row3 != ORDER_SUCCESS);
+#endif
 
 
 
