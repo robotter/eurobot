@@ -720,16 +720,22 @@ void galipeur_set_speed(robot_speed_t s){
   }
 }
 
+void galipeur_reset_sandroller(void){
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  strat_delay_ms(500);
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
+}
+
 #define DESTROY_DUNE_END_POSITION_X KX(950)
 #define DESTROY_DUNE_END_POSITION_Y 1400
 
-void galipeur_destroy_dune(void){
+order_result_t galipeur_destroy_dune_first_row(void){
   order_result_t or;
   //we must be the first to get there !
   galipeur_set_speed(RS_FAST);
   int16_t traj1[] = {
-    KX(1500-300), 1300,
-    KX(-300), 1550,
+    DESTROY_DUNE_END_POSITION_X,DESTROY_DUNE_END_POSITION_Y,
+    KX(-300), 1600,
   };
   //first traj must be a success, if not leave the area
   or = goto_traj(traj1,KA(M_PI/2));
@@ -739,7 +745,7 @@ void galipeur_destroy_dune(void){
     goto_xya_synced(DESTROY_DUNE_END_POSITION_X,
                     DESTROY_DUNE_END_POSITION_Y,
                     KA(M_PI/2));
-    return;
+    return ORDER_FAILURE;
   }
   //slow down to push sand
   galipeur_set_speed(RS_SLOW);
@@ -748,41 +754,65 @@ void galipeur_destroy_dune(void){
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(100),  2000-240, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
-#if 0
+  return ORDER_SUCCESS;
+}
+
+order_result_t galipeur_destroy_dune_second_row(void){
+  order_result_t or;
+  //we must be the first to get there !
+  galipeur_set_speed(RS_FAST);
+  int16_t traj1[] = {
+    DESTROY_DUNE_END_POSITION_X,DESTROY_DUNE_END_POSITION_Y,
+    KX(-300), 1600,
+  };
+  //first traj must be a success, if not leave the area
+  or = goto_traj(traj1,KA(M_PI/2));
+  if (or != ORDER_SUCCESS){
+    //go to destroy end position
+    galipeur_set_speed(RS_NORMAL);
+    goto_xya_synced(DESTROY_DUNE_END_POSITION_X,
+                    DESTROY_DUNE_END_POSITION_Y,
+                    KA(M_PI/2));
+    return ORDER_FAILURE;
+  }
+
+  //slow down to push sand
+  galipeur_set_speed(RS_SLOW);
   //destroy 2nd row
-  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(-400), 2000-270, KA(-5*M_PI/6));
-  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(-400), 2000-220, KA(-5*M_PI/6));
-  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  galipeur_reset_sandroller();
   goto_xya(KX(-250), 2000-220, KA(-5*M_PI/6));
+  galipeur_reset_sandroller();
   goto_xya(KX(-230), 2000-230, KA(-5*M_PI/6));
-  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-103);
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(250),  2000-120, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
-#endif
-  //try to put sand in the building area
-  //reset normal speed
-  galipeur_set_speed(RS_NORMAL);
+  return ORDER_SUCCESS;
+}
 
+void galipeur_bring_back_sand(void){
 #if 1
-  //push sand by successive increments
+  galipeur_set_speed(RS_NORMAL);
   goto_xya(KX(1500-700), 1400, KA(M_PI));
+  //push sand by successive increments
   goto_xya(KX(1500-800), 1500, KA(M_PI));
   goto_xya_synced(KX(1500-600), 1600, KA(2*M_PI/3));
   goto_xya_synced(KX(1500-600), 1150, KA(2*M_PI/3));
 
   goto_xya(KX(1500-600), 1250, KA(2*M_PI/3));
   goto_xya_synced(KX(1500-300), 950, KA(M_PI/6));
-  goto_xya_synced(KX(200), 950, KA(M_PI/6));
+  goto_xya_synced(KX(350), 950, KA(M_PI/6));
 #else
   //push sand by a smooth curvy move
   go_around(KX(1500-900),1230,KA(-M_PI));
 #endif
   
   int16_t end[] = {
+    KX(550),1000,
     KX(1000),1200,
     DESTROY_DUNE_END_POSITION_X,DESTROY_DUNE_END_POSITION_Y};
   goto_traj(end,KA(M_PI/2));
@@ -795,11 +825,11 @@ void strat_run_galipeur(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
 #if 1
-  
-  // get out of start area
-  goto_xya(KA(1100), 1100, KA(M_PI/2));
- 
-  galipeur_destroy_dune();
+  if (galipeur_destroy_dune_first_row() == ORDER_SUCCESS){
+    galipeur_bring_back_sand();
+    if(galipeur_destroy_dune_second_row()== ORDER_SUCCESS)
+      galipeur_bring_back_sand();
+  }
   galipeur_close_doors();
 
 #else
