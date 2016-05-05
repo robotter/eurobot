@@ -1031,6 +1031,12 @@ void galipette_rod_close(void)
 void galipette_rod_prepare_to_move_fish(void)
 {
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_CAPTURE);
+  // ramp to rise up fish slowly
+  for( uint16_t pos = FISHROD_POS_LOW; pos < FISHROD_POS_MIDDLE; pos += 10)
+  {
+    ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, pos);
+    idle_delay_ms(10);
+  }
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, FISHROD_POS_MIDDLE);
 }
 
