@@ -696,22 +696,22 @@ void galipeur_close_doors(void){
 }
 
 typedef enum{
-  GS_SLOW = 0,
-  GS_NORMAL,
-  GS_FAST,
-} galipeur_speed_t;
+  RS_SLOW = 0,
+  RS_NORMAL,
+  RS_FAST,
+} robot_speed_t;
 
-void galipeur_set_speed(galipeur_speed_t s){
+void galipeur_set_speed(robot_speed_t s){
   switch (s){
-    case GS_SLOW:
+    case RS_SLOW:
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
       break;
-    case GS_NORMAL:
+    case RS_NORMAL:
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
       break;
-    case GS_FAST:
+    case RS_FAST:
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 3, 0.1);
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 80, 0.1);
       break;
@@ -726,7 +726,7 @@ void galipeur_set_speed(galipeur_speed_t s){
 void galipeur_destroy_dune(void){
   order_result_t or;
   //we must be the first to get there !
-  galipeur_set_speed(GS_FAST);
+  galipeur_set_speed(RS_FAST);
   int16_t traj1[] = {
     KX(1500-300), 1300,
     KX(-300), 1550,
@@ -735,14 +735,14 @@ void galipeur_destroy_dune(void){
   or = goto_traj(traj1,KA(M_PI/2));
   if (or != ORDER_SUCCESS){
     //go to destroy end position
-    galipeur_set_speed(GS_NORMAL);
+    galipeur_set_speed(RS_NORMAL);
     goto_xya_synced(DESTROY_DUNE_END_POSITION_X,
                     DESTROY_DUNE_END_POSITION_Y,
                     KA(M_PI/2));
     return;
   }
   //slow down to push sand
-  galipeur_set_speed(GS_SLOW);
+  galipeur_set_speed(RS_SLOW);
   //destroy 1st row
   goto_xya(KX(-300), 2000-240, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
@@ -765,7 +765,7 @@ void galipeur_destroy_dune(void){
 #endif
   //try to put sand in the building area
   //reset normal speed
-  galipeur_set_speed(GS_NORMAL);
+  galipeur_set_speed(RS_NORMAL);
 
 #if 1
   //push sand by successive increments
@@ -885,6 +885,26 @@ typedef enum{
 #define FISHROD_POS_HIGH    3400    // fishrod servo closed position
 #define FISHROD_POS_MIDDLE  3200    // fishrod servo position to move fish
 #define FISHROD_POS_LOW     2700    // fishrod servo position to capture fish
+
+void galipette_set_speed(robot_speed_t s){
+  switch (s){
+    case RS_SLOW:
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
+      break;
+    case RS_NORMAL:
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
+      break;
+    case RS_FAST:
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 3, 0.1);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 80, 0.1);
+      break;
+    default:
+      break;
+  }
+}
+
 
 void galipette_rod_prepare_for_fishing(void)
 {
