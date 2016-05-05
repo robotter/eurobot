@@ -170,9 +170,9 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
     case ROME_MID_ASSERV_SET_XYA: {
-      int16_t x = frame->asserv_set_xya.x;
-      int16_t y = frame->asserv_set_xya.y;
-      int16_t a = (frame->asserv_set_xya.a)/1000.0;
+      double x = frame->asserv_set_xya.x;
+      double y = frame->asserv_set_xya.y;
+      double a = (frame->asserv_set_xya.a)/1000.0;
       hposition_set(&position,x,y,a);
       htrajectory_reset_carrot(&trajectory);
       rome_reply_ack(intf, frame);
@@ -180,8 +180,8 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_ASSERV_SET_XY: {
       double a;
       hposition_get_a(&position, &a);
-      int16_t x = frame->asserv_set_xya.x;
-      int16_t y = frame->asserv_set_xya.y;
+      double x = frame->asserv_set_xya.x;
+      double y = frame->asserv_set_xya.y;
       hposition_set(&position,x,y,a);
       htrajectory_reset_carrot(&trajectory);
       rome_reply_ack(intf, frame);
@@ -189,7 +189,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_ASSERV_SET_A: {
       vect_xy_t xy;
       hposition_get_xy(&position,&xy);
-      int16_t a = (frame->asserv_set_xya.a)/1000.0;
+      double a = (frame->asserv_set_xya.a)/1000.0;
       hposition_set(&position, xy.x, xy.y, a);
       htrajectory_reset_carrot(&trajectory);
       rome_reply_ack(intf, frame);
