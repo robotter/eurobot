@@ -936,27 +936,119 @@ void strat_prepare_galipette(void)
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
 }
 
-void strat_run_galipette(void)
+void galipette_return_fish_to_net(void)
 {
-  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-#if 1
-  //homologation
-  goto_xya_rel(KX(100), -100, KA(-M_PI/2));
-  goto_xya_rel(KX(500), -300, 0);
-#else
-  goto_xya(KX(1100),750,0);
+  // go away from table edge and aquarium
+  goto_xya_rel(KX(0),-100,KA(0));
+  // go to net and avoid net fixation
+  goto_xya(KX(250), 200, KA(0));
+  goto_xya(KX(250), 150, KA(0));
+  galipette_rod_release_fish();
+  goto_xya_rel(KX(0),-100,KA(0));
+}
+
+void galipette_push_sand_stack(void)
+{
+  int16_t traj_sand_push[] = {
+    KX(1220) , 1020,
+    KX(1020) , 1020,
+    KX(350) , 1000};
+  goto_traj(traj_sand_push, KA(-M_PI/2));
+
+#if 0
+  // fear the galipeur contact and go away from starting area
+  goto_xya(KX(1220), 1020, KA(-M_PI/2));
+  
+  // align with stack,
+  goto_xya(KX(1020), 1100, KA(-M_PI/2));
+  
+  // push stack
+  goto_xya(KX(350), 1000, KA(-M_PI/2));
+ 
+#endif
+
+  // go forward  (galipette safe radius estimated to 200 mm)
+  // avoid shells 
+  // and prepare to push shell in front of fish
+  int16_t traj_sand_extraction[] = {
+    KX(400) , 1000,
+    KX(400) , 900,
+    KX(320) , 620,
+    KX(550) , 290,
+    KX(760) , 150 };
+  goto_traj(traj_sand_extraction,KA(-M_PI/2));
+
+  // push shell
+  goto_xya(KX(1000), 150, KA(-M_PI/2));
+  goto_xya(KX(750),  150, KA(0));
+
+  // final connection point : x:750, y:150
+}
+
+void galipette_take_fish(void)
+{
+  // go fishing (half aquarium near net)
+  goto_xya(KX(750),  150, KA(0)); // must be aligned with one fish aquarium edge
+  galipette_rod_prepare_for_fishing();
+  goto_xya(KX(900),  150, KA(0)); // must be aligned with one fish aquarium edge
+  galipette_rod_prepare_to_move_fish();
+
+  // go to net and release any fish taken
+  galipette_return_fish_to_net();
+
+  goto_xya(KX(850),  160, KA(0)); // must be aligned with one fish aquarium edge
+  // go fishing (half aquarium far away from the net)
+  galipette_rod_prepare_for_fishing();
+  goto_xya(KX(850),  150, KA(0)); 
+  goto_xya(KX(1050), 150, KA(0));
+
+  galipette_rod_prepare_to_move_fish();
+
+
+
+
+  while(1); /// TODO REMOVE  THIS HORRIBLE LOOP !!!!!!!!!!!!!!!!!!  
+}
+
+void galipette_single_fishing(void)
+{
+  // original position : X:1320 Y:1020
+  // go between sheels
+  goto_xya(KX(1100),750,0); 
   goto_xya(KX(1100),200,0);
+  // final approch
   goto_xya(KX(900),140,0);
   galipette_rod_prepare_for_fishing();
+  // fishing
   goto_xya(KX(700),140,0);
+  // go to net
   galipette_rod_prepare_to_move_fish();
   goto_xya(KX(700),400,0);
   goto_xya(KX(400),400,0);
   goto_xya(KX(400),140,0);
   galipette_rod_release_fish();
+  // fish delivered 
   goto_xya(KX(400),400,0);
   galipette_rod_close();
+}
+
+void strat_run_galipette(void)
+{
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+#if 0 // homologation done !!!
+
+  //homologation
+  goto_xya_rel(KX(100), -100, KA(-M_PI/2));
+  goto_xya_rel(KX(500), -300, 0);
+#else
+  galipette_push_sand_stack();
+
+  galipette_take_fish();
+  galipette_single_fishing();
+
+
+
 #endif
 }
 
