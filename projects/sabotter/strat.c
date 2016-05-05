@@ -1075,13 +1075,13 @@ void galipette_push_sand_stack(void)
   goto_xya(KX(1020), 1100, KA(-M_PI/2));
   
   // push stack
-  goto_xya(KX(350), 1000, KA(-M_PI/2));
+  goto_xya(KX(350), 1050, KA(-M_PI/2));
 
   // go forward  (galipette safe radius estimated to 200 mm)
   // avoid shells 
   // and prepare to push shell in front of fish
   int16_t traj_sand_extraction[] = {
-    KX(400) , 1000,
+    KX(400) , 1050,
     KX(400) , 900,
     KX(320) , 620,
     KX(550) , 290,
@@ -1106,6 +1106,9 @@ void galipette_return_fish_to_net(void)
   // robot may enconter table edge
   goto_xya_wait(KX(250), 150, KA(0), 2000);
 
+  // robot autoset when releasing fish
+  autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, robot_state.current_pos.x, 150);
+
   galipette_rod_release_fish();
   idle_delay_ms(500);
   
@@ -1127,7 +1130,7 @@ void galipette_take_fish(void)
   // go to net and release any fish taken
   galipette_return_fish_to_net();
 
-  goto_xya(KX(850),  190, KA(0)); // must be aligned with one fish aquarium edge
+  goto_xya(KX(1050),  190, KA(0)); // must be aligned with one fish aquarium edge
   // go fishing (half aquarium far away from the net)
   galipette_rod_prepare_for_fishing();
   goto_xya_wait(KX(1050),  160, KA(0), 3000); 
