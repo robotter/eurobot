@@ -695,23 +695,60 @@ void galipeur_close_doors(void){
   goto_xya(KX(1100), 1700, KA(M_PI));
 }
 
+typedef enum{
+  GS_SLOW = 0,
+  GS_NORMAL,
+  GS_FAST,
+} galipeur_speed_t;
+
+void galipeur_set_speed(galipeur_speed_t s){
+  switch (s){
+    case GS_SLOW:
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
+      break;
+    case GS_NORMAL:
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
+      break;
+    case GS_FAST:
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 3, 0.1);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 80, 0.1);
+      break;
+    default:
+      break;
+  }
+}
+
+#define DESTROY_DUNE_END_POSITION_X KX(950)
+#define DESTROY_DUNE_END_POSITION_Y 1400
+
 void galipeur_destroy_dune(void){
-  //mettre pleine balle !!!
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 3, 0.1);
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 80, 0.1);
+  order_result_t or;
+  //we must be the first to get there !
+  galipeur_set_speed(GS_FAST);
   int16_t traj1[] = {
     KX(1500-300), 1300,
     KX(-300), 1550,
   };
-  goto_traj(traj1,KA(M_PI/2));
-  //ralentir un peu
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
+  //first traj must be a success, if not leave the area
+  or = goto_traj(traj1,KA(M_PI/2));
+  if (or != ORDER_SUCCESS){
+    //go to destroy end position
+    galipeur_set_speed(GS_NORMAL);
+    goto_xya_synced(DESTROY_DUNE_END_POSITION_X,
+                    DESTROY_DUNE_END_POSITION_Y,
+                    KA(M_PI/2));
+    return;
+  }
+  //slow down to push sand
+  galipeur_set_speed(GS_SLOW);
   //destroy 1st row
-  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(-300), 2000-240, KA(M_PI));
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(100),  2000-240, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+#if 0
   //destroy 2nd row
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(-400), 2000-270, KA(-5*M_PI/6));
@@ -725,10 +762,13 @@ void galipeur_destroy_dune(void){
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 1);
   goto_xya(KX(250),  2000-120, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
-
+#endif
   //try to put sand in the building area
+  //reset normal speed
+  galipeur_set_speed(GS_NORMAL);
+
+#if 1
+  //push sand by successive increments
   goto_xya(KX(1500-700), 1400, KA(M_PI));
   goto_xya(KX(1500-800), 1500, KA(M_PI));
   goto_xya_synced(KX(1500-600), 1600, KA(2*M_PI/3));
@@ -736,153 +776,17 @@ void galipeur_destroy_dune(void){
 
   goto_xya(KX(1500-600), 1250, KA(2*M_PI/3));
   goto_xya_synced(KX(1500-300), 950, KA(M_PI/6));
-  goto_xya_synced(KX(1500-800), 950, KA(M_PI/6));
-
-  //go_around(KX(1500-900),1230,KA(-M_PI));
-
-}
-
-void galipeur_se_spots(void) {
-  ROME_LOG(&rome_paddock,DEBUG,"SE spots");
-    // autoset against right side
-  //autoset(ROBOT_SIDE_MAIN,AUTOSET_MAIN, KX(1500-110), 0);
-  _meca_order_blocking_ma(PREPARE_PICK_SPOT,PREPARE_CUP);
-  //goto_xya_rel(KX(-100),0,KA(0));
-
-  // -- SE SPOTS --
-  // pick one spot
-  _wait_meca_ready();
-  goto_xya(KX(1500-160), 450, KA(0));
-  _meca_order_blocking_ma(PICK_SPOT,PICK_CUP);
-  _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
-  _wait_meca_ready();
-  // pick one spot
-  _wait_meca_ready();
-  goto_xya(KX(1500-160), 300, KA(0));
-  _meca_order_blocking_ma(PICK_SPOT,NONE);
-}
-
-void galipeur_do_claps(void) {
-  ROME_LOG(&rome_paddock,DEBUG,"Claps");
-  // -- SE CLAPS -- 
-  goto_xya(KX(1500-500), 330, KA(0));
-  goto_xya(KX(1500-180), 280, KA(0));
-  // translate along SE border
-  ext_arm_clap();
-  #if 1
-  // fuck the rules !!!!
-  goto_xya(KX(1500-300), 280, KA(0));
-  ext_arm_raise();
-  goto_xya(KX(1500-700), 280, KA(0));
-  ext_arm_clap();
-  #endif
-  goto_xya(KX(1500-950), 280, KA(0));
-  goto_xya_rel(KX(+100), 100,KA(0));
-  ext_arm_lower();
-}
-
-void galipeur_pick_south_spot(void) {
-  ROME_LOG(&rome_paddock,DEBUG,"South spot");
-  _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
-  goto_xya(KX(1500-820), 230, KA(-2*M_PI/3));
-  _wait_meca_ready();
-  goto_xya_rel(KX(-150), 0, KA(0));
-  _meca_order_blocking_ma(PICK_SPOT,NONE);
-}
-
-void galipeur_unload_spots_red(void) {
-  ROME_LOG(&rome_paddock,NOTICE,"Discharge pile in red area");
-  // -- DISCHARGE ON THE RED AREA --
-  goto_xya(KX(1500-1000), 300, KA(-M_PI/4));
-  ROME_LOG(&rome_paddock,DEBUG,"Discharge");
-  _meca_order_blocking_ma(DISCHARGE_SPOT_STACK,NONE);
-  goto_xy_rel_align_course(KX(-60), -60, true);
-  ROME_LOG(&rome_paddock,DEBUG,"Release");
-  _meca_order_blocking_ma(RELEASE_SPOT_STACK,UNLOAD_CUP);
-  goto_xy_rel_align_course(KX(60*1.2), 60*1.2, false);
-  _meca_order_blocking_both(PREPARE_PICK_SPOT);
-  goto_xya(KX(1500-880), 250, KA(-M_PI/4));
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_DOWN, 0, 110);
-  goto_xya_rel(KX(0),100,KA(0));
-}
-
-void galipeur_take_start_area_bulb(void) {
-  ROME_LOG(&rome_paddock,DEBUG,"start area bulb");
-  // -- BACK TO START AREA --
-  goto_xya(KX(1500-700), 1000, KA(M_PI/2));
-  _meca_order_blocking_ma(PREPARE_BULB,NONE);
-  // -- TAKE BULB --
-  goto_xya(KX(1500-350), 1000, KA(M_PI/2));
-  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-227), 0);
-  _meca_order_blocking_ma(PICK_BULB,NONE);
-  goto_xya(KX(1500-700), 1030, KA(M_PI/2));
-}
-
-#if 0
-void galipeur_go_to_stairs(void) {
-  ROME_LOG(&rome_paddock,DEBUG,"Stairs");
-  // -- GO TO STAIRS ! --
-  goto_xya(KX(1500-590), 800, KA(-M_PI/2-M_PI/6));
-  int16_t traj[] = {
-    KX(1500-600), 1000,
-    KX(1500-600), 1300,
-    KC(1500-850,820-1500), 1400,
-    KC(1500-850,820-1500), 1650,
-  };
-  //do traj, with a longer timeout !
-  goto_traj_wait(traj,KA(M_PI),20000);
-  _meca_order_blocking_ma(PICK_SPOT,NONE);
-  _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
-  _wait_meca_ready();
-  goto_xya(KC(1500-850,820-1500), 1750, KA(M_PI));
-  _meca_order_blocking_ma(PICK_SPOT,NONE);
-  
-  ROME_LOG(&rome_paddock,DEBUG,"put galette on the podium");
-  // -- PUT GALETTE ON THE PODIUM --
-  goto_xya(KC(1500-770,730-1500), 1600, KA(M_PI));
-  goto_xya(KC(1500-790,750-1500), 1750, KA(-M_PI/2));
-  //push against wall
-  ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv,KX(-200),0,0);
-  idle_delay_ms(1000);
-  ext_arm_galette_release();
-  idle_delay_ms(500);
-  goto_xya_rel(KX(100),0, KA(0));
-  ext_arm_lower();
-  goto_xya_rel(KX(-50), -100, KA(0));
-  autoset(ROBOT_SIDE_MAIN,AUTOSET_AUX, KX(1500-970+110), 0);
-}
+  goto_xya_synced(KX(200), 950, KA(M_PI/6));
+#else
+  //push sand by a smooth curvy move
+  go_around(KX(1500-900),1230,KA(-M_PI));
 #endif
-void galipeur_put_carpet(void){
-  int16_t traj[] = {
-  KC(1500-790,770-1500), 1650,
-  };
-  goto_traj(traj,KA(M_PI - M_PI/6));
-  ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_RIGHT);
-  ROME_SENDWAIT_MECA_CARPET_UNLOCK(&rome_meca, MECA_LEFT);
-  idle_delay_ms(500); 
+  
+  int16_t end[] = {
+    KX(1000),1200,
+    DESTROY_DUNE_END_POSITION_X,DESTROY_DUNE_END_POSITION_Y};
+  goto_traj(end,KA(M_PI/2));
 }
-
-void galipeur_unload_spots_start_area(void){
-  //unload them in start area
-  goto_xya(KX(1500-600), 1000, KA(M_PI/2));
-  _meca_discharge_spots();
-  _meca_order_blocking_both(RELEASE_SPOT_STACK);
-  goto_xya_rel(KX(200),0,KA(0));
-  _wait_meca_ready();
-  goto_xya_rel(KX(-500),0,KA(0));
-  _meca_order_blocking_both(PREPARE_PICK_SPOT);
-}
-
-/* Spot positions
-  KX(1500-90)  ,1800
-  KX(1500-850) ,1900
-  KX(1500-850) ,1800
-  KX(1500-870) ,645
-  KX(1500-1300),600
-  KX(1500-1100),230
-  KX(1500-90)  ,250
-  KX(1500-90)  ,150
- */
 
 void strat_run_galipeur(void)
 {
@@ -894,66 +798,11 @@ void strat_run_galipeur(void)
   
   // get out of start area
   goto_xya(KA(1100), 1100, KA(M_PI/2));
-  
+ 
+  galipeur_destroy_dune();
   galipeur_close_doors();
 
-  // push prepared tower in front of start area
-  int16_t traj[] = {
-    KX(1100) , 1100,
-    KX(300)  , 950,
-    KX(1100) , 1100 };
-  goto_traj(traj,KA(M_PI/6));
-
-  /*/return to start stuff
-    uint32_t start_time_us = uptime_us();
-    for(;;) {
-      uint32_t time = uptime_us() - start_time_us;
-      if((time) > ((uint32_t) 15000000))
-        break;
-      idle();
-    }
-
-  int16_t traj[] = {
-    //KX(-300), 1500,
-    KX(1500-600), 1500,
-    KX(1500-200), 1210,
-    KX(1500-600), 600,
-  };
-  goto_traj(traj,KA(-M_PI/3)-M_PI/2);
-*/
 #else
-  //lift galette
-  ext_arm_galette_lift();
-  //change asserv for galette transporting
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
-
-  //get out of start area
-  goto_xya(KX(1500-580), 1000, KA(-M_PI/2-M_PI/6));
-
-  galipeur_go_to_stairs();
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
-  galipeur_put_carpet();
-  //pick some spots
-  goto_xya(KX(1500-600), 1000, KA(M_PI));
-  go_pick_spot(KC(1500-880 ,870 -1500),645,MECA_MAIN);
-  galipeur_do_claps();
-  go_pick_spot(KC(1500-1110,1100-1500),230,MECA_RIGHT);
-  go_pick_spot(KC(1500-1310,1300-1500),600,MECA_LEFT);
-
-  if(robot_state.left_elev.nb_spots != 0 ||
-     robot_state.right_elev.nb_spots != 0)
-    galipeur_unload_spots_start_area();
-
-  //oponent clap
-
-  goto_xya(KX(300-1500), 320, KA(0));
-  ext_arm_clap();
-  goto_xya(KX(800-1500), 320, KA(0));
-  ext_arm_lower();
-  goto_xya(KX(1500-700), 1000, KA(0));
-
   //2015 1st match code modified to use advanced detection
   //never tested
 
