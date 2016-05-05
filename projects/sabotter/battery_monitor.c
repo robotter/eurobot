@@ -52,7 +52,7 @@ void BATTMON_monitor(BATTMON_t *Batt)
    
     AdcVal = adc_get_value(&BATTERY_ADC, BATTERY_ADC_MUX); 
     /* convert it to battery voltage*/
-    Batt->BatteryVoltage_mV = (uint16_t)( ((uint32_t)AdcVal*((uint32_t)BATTERY_VOLT_DIVIDER_GROUND_RESISTOR_OHMS + (uint32_t)BATTERY_VOLT_DIVIDER_BATT_RESISTOR_OHMS))/(uint32_t)BATTERY_VOLT_DIVIDER_BATT_RESISTOR_OHMS);
+    Batt->BatteryVoltage_mV = (uint16_t)((uint32_t)AdcVal*(1+BATTERY_VOLT_DIVIDER_GROUND_RESISTOR_OHMS/BATTERY_VOLT_DIVIDER_BATT_RESISTOR_OHMS));
 
     /* add 0.6V due to protection diode */
     Batt->BatteryVoltage_mV += 1000;

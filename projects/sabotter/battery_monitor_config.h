@@ -22,8 +22,8 @@
  * The resistor between the adc pin and the battery voltage is called BATTERY_VOLT_DIVIDER_BATT_RESISTOR_OHMS
  * these defines shall contain the value in ohms of each resistor
  */
-#define BATTERY_VOLT_DIVIDER_GROUND_RESISTOR_OHMS   15000u
-#define BATTERY_VOLT_DIVIDER_BATT_RESISTOR_OHMS     1000u
+#define BATTERY_VOLT_DIVIDER_GROUND_RESISTOR_OHMS   15000.0
+#define BATTERY_VOLT_DIVIDER_BATT_RESISTOR_OHMS     1050.0
 
 /* @brief define BATTERY_LED_ALARM_PORTPIN if a led is defined to display battery alarm problems
  * if not defined, the program will simply avoid signalling low level battery with led
