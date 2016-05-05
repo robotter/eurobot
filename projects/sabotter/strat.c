@@ -104,6 +104,8 @@ bool opponent_detected(void)
 
 #define IN_RANGE(x,min,max) ((x) >= (min) && (x) <= (max))
 #define DEFAULT_DETECTION_FOV 2*M_PI/3
+#define R3D2_OFFSET (0)
+
 // Return true if an opponent is detected within an arc
 bool opponent_detected_in_arc(float angle, float fov)
 {
@@ -114,7 +116,7 @@ bool opponent_detected_in_arc(float angle, float fov)
     max += 2*M_PI;
   for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
     r3d2_object_t *object = &robot_state.r3d2.objects[i];
-    d_a = float_modulo__(object->a+robot_state.current_pos.a, 0, 2*M_PI);
+    d_a = float_modulo__(object->a+robot_state.current_pos.a+R3D2_OFFSET, 0, 2*M_PI);
     bool in_range = IN_RANGE(d_a,min,max)||IN_RANGE(d_a+2*M_PI,min,max);
     // note: object->a is in ]-2*Pi;0]
     if(object->detected && object->r < R3D2_AVOID_DISTANCE && in_range) {
@@ -812,6 +814,7 @@ void galipeur_take_start_area_bulb(void) {
   goto_xya(KX(1500-700), 1030, KA(M_PI/2));
 }
 
+#if 0
 void galipeur_go_to_stairs(void) {
   ROME_LOG(&rome_paddock,DEBUG,"Stairs");
   // -- GO TO STAIRS ! --
@@ -844,7 +847,7 @@ void galipeur_go_to_stairs(void) {
   goto_xya_rel(KX(-50), -100, KA(0));
   autoset(ROBOT_SIDE_MAIN,AUTOSET_AUX, KX(1500-970+110), 0);
 }
-
+#endif
 void galipeur_put_carpet(void){
   int16_t traj[] = {
   KC(1500-790,770-1500), 1650,
@@ -1074,7 +1077,7 @@ void strat_prepare_galipette(void)
   //initalise kx factor
   robot_kx = robot_state.team == TEAM_GREEN ? 1 : -1;
 
-  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, KX(1320), 1020, 0); 
+  ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, KX(1320), 1020, KA(-M_PI/2)); 
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
@@ -1084,6 +1087,11 @@ void strat_run_galipette(void)
 {
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+#if 1
+  //homologation
+  goto_xya_rel(KX(100), -100, KA(-M_PI/2));
+  goto_xya_rel(KX(500), -300, 0);
+#else
   goto_xya(KX(1100),750,0);
   goto_xya(KX(1100),200,0);
   goto_xya(KX(900),140,0);
@@ -1096,6 +1104,7 @@ void strat_run_galipette(void)
   galipette_rod_release_fish();
   goto_xya(KX(400),400,0);
   galipette_rod_close();
+#endif
 }
 
 void strat_test_galipette(void)
