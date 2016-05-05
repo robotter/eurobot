@@ -1008,26 +1008,8 @@ void strat_prepare_galipette(void)
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
 }
 
-void galipette_return_fish_to_net(void)
-{
-  // go away from table edge and aquarium
-  goto_xya_rel(KX(0),-100,KA(0));
-  // go to net and avoid net fixation
-  goto_xya(KX(250), 200, KA(0));
-  goto_xya(KX(250), 150, KA(0));
-  galipette_rod_release_fish();
-  goto_xya_rel(KX(0),-100,KA(0));
-}
-
 void galipette_push_sand_stack(void)
 {
-  int16_t traj_sand_push[] = {
-    KX(1220) , 1020,
-    KX(1020) , 1020,
-    KX(350) , 1000};
-  goto_traj(traj_sand_push, KA(-M_PI/2));
-
-#if 0
   // fear the galipeur contact and go away from starting area
   goto_xya(KX(1220), 1020, KA(-M_PI/2));
   
@@ -1036,8 +1018,6 @@ void galipette_push_sand_stack(void)
   
   // push stack
   goto_xya(KX(350), 1000, KA(-M_PI/2));
- 
-#endif
 
   // go forward  (galipette safe radius estimated to 200 mm)
   // avoid shells 
@@ -1047,61 +1027,61 @@ void galipette_push_sand_stack(void)
     KX(400) , 900,
     KX(320) , 620,
     KX(550) , 290,
-    KX(760) , 150 };
+    KX(760) , 190 };
   goto_traj(traj_sand_extraction,KA(-M_PI/2));
 
   // push shell
-  goto_xya(KX(1000), 150, KA(-M_PI/2));
-  goto_xya(KX(750),  150, KA(0));
+  goto_xya_wait(KX(1000), 180, KA(-M_PI/2 + M_PI/9), 5000);
+  goto_xya_wait(KX(750),  190, KA(0), 5000);
 
-  // final connection point : x:750, y:150
+  // final connection point : x:750, y:190
+}
+
+void galipette_return_fish_to_net(void)
+{
+  // go away from table edge and aquarium
+  goto_xya_rel(KX(0), 100,KA(0));
+
+  // go to net and avoid net fixation
+  goto_xya(KX(250), 200, KA(0));
+
+  // robot may enconter table edge
+  goto_xya_wait(KX(250), 150, KA(0), 2000);
+
+  galipette_rod_release_fish();
+  idle_delay_ms(500);
+  
+  goto_xya_rel(KX(0), 100,KA(0));
 }
 
 void galipette_take_fish(void)
 {
   // go fishing (half aquarium near net)
-  goto_xya(KX(750),  150, KA(0)); // must be aligned with one fish aquarium edge
+  goto_xya_wait(KX(750),  150, KA(0), 2000); // must be aligned with one fish aquarium edge
+  goto_xya_rel(KX(0), 10, KA(0)); // robot must be in contact with table border
   galipette_rod_prepare_for_fishing();
-  goto_xya(KX(900),  150, KA(0)); // must be aligned with one fish aquarium edge
+  idle_delay_ms(500);
+
+  goto_xya(KX(900),  160, KA(0)); // must be aligned with one fish aquarium edge
   galipette_rod_prepare_to_move_fish();
+  idle_delay_ms(500);
 
   // go to net and release any fish taken
   galipette_return_fish_to_net();
 
-  goto_xya(KX(850),  160, KA(0)); // must be aligned with one fish aquarium edge
+  goto_xya(KX(850),  190, KA(0)); // must be aligned with one fish aquarium edge
   // go fishing (half aquarium far away from the net)
   galipette_rod_prepare_for_fishing();
-  goto_xya(KX(850),  150, KA(0)); 
-  goto_xya(KX(1050), 150, KA(0));
+  goto_xya_wait(KX(1050),  160, KA(0), 3000); 
+  goto_xya(KX(850), 160, KA(0));
 
   galipette_rod_prepare_to_move_fish();
-
-
+  
+  // go to net and release any fish taken
+  galipette_return_fish_to_net();
 
 
   while(1); /// TODO REMOVE  THIS HORRIBLE LOOP !!!!!!!!!!!!!!!!!!  
-}
-
-void galipette_single_fishing(void)
-{
-  // original position : X:1320 Y:1020
-  // go between sheels
-  goto_xya(KX(1100),750,0); 
-  goto_xya(KX(1100),200,0);
-  // final approch
-  goto_xya(KX(900),140,0);
-  galipette_rod_prepare_for_fishing();
-  // fishing
-  goto_xya(KX(700),140,0);
-  // go to net
-  galipette_rod_prepare_to_move_fish();
-  goto_xya(KX(700),400,0);
-  goto_xya(KX(400),400,0);
-  goto_xya(KX(400),140,0);
-  galipette_rod_release_fish();
-  // fish delivered 
-  goto_xya(KX(400),400,0);
-  galipette_rod_close();
 }
 
 void strat_run_galipette(void)
@@ -1117,7 +1097,6 @@ void strat_run_galipette(void)
   galipette_push_sand_stack();
 
   galipette_take_fish();
-  galipette_single_fishing();
 
 
 
