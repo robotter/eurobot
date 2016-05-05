@@ -994,7 +994,7 @@ typedef enum{
 
 #define FISHROD_POS_HIGH    3400    // fishrod servo closed position
 #define FISHROD_POS_MIDDLE  3200    // fishrod servo position to move fish
-#define FISHROD_POS_LOW     2700    // fishrod servo position to capture fish
+#define FISHROD_POS_LOW     2850    // fishrod servo position to capture fish
 
 void galipette_set_speed(robot_speed_t s){
   switch (s){
