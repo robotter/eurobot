@@ -1034,9 +1034,11 @@ typedef enum{
 #define MAGNET_PWM_POS_CAPTURE 1650 // magnet servo position to capture fish
 
 #define FISHROD_POS_HIGH    3400    // fishrod servo closed position
-#define FISHROD_POS_MIDDLE  3200    // fishrod servo position to move fish
+#define FISHROD_POS_MIDDLE  3250    // fishrod servo position to move fish
 #define FISHROD_POS_LOW     2850    // fishrod servo position to capture fish
-#define FISHROD_POS_ULTRA_LOW     2700    // fishrod servo position to release fish
+#define FISHROD_POS_ULTRA_LOW     2600    // fishrod servo position to release fish
+
+#define GALIPETTE_BUMPER_TO_CENTER_DIST 100 // distance from the edge of galipette to the center of the robot (in mm)
 
 void galipette_set_speed(robot_speed_t s){
   switch (s){
@@ -1089,8 +1091,6 @@ void galipette_rod_release_fish(void)
 {
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, FISHROD_POS_ULTRA_LOW);
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_RELEASE);
-  idle_delay_ms(1000);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_CAPTURE);
 }
 
 void strat_init_galipette(void)
@@ -1123,6 +1123,7 @@ void strat_prepare_galipette(void)
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
 }
 
+// forget it !!! bad idea , galipette is only a fish robot, not a buldobot nor a rugbybot ...
 void galipette_push_sand_stack(void)
 {
   // fear the galipeur contact and go away from starting area
@@ -1163,12 +1164,8 @@ void galipette_go_directly_fishing(void)
   };
   goto_traj(traj_sand_extraction,KA(0));
 
-  // push shell with a little angle to avoid the sand border
- // goto_xya_wait(KX(300),  180, KA(-M_PI/2 + M_PI/24), 5000);
- // goto_xya_wait(KX(750),  190, KA(0), 5000);
+  // in front of aquarium, oriented to take fishes 
   goto_xya_wait(KX(900),  190, KA(0), 5000);
-
-  // final connection point : x:750, y:190
 }
 
 void galipette_return_fish_to_net(void)
@@ -1177,13 +1174,10 @@ void galipette_return_fish_to_net(void)
   goto_xya_rel(KX(0), 200,KA(0));
 
   // go to net and avoid net fixation
-  goto_xya(KX(250), 200, KA(0));
+  goto_xya(KX(250), 200 + GALIPETTE_BUMPER_TO_CENTER_DIST, KA(0));
 
   // robot may enconter table edge
-  goto_xya_wait(KX(250), 150, KA(0), 2000);
-
-  // robot autoset when releasing fish
-  //autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, robot_state.current_pos.x, 150);
+  goto_xya_wait(KX(250), 100, KA(0), 2000);
 
   /*
   // reset position if system in contact avec table border
@@ -1202,37 +1196,37 @@ void galipette_take_fish(void)
 {
   // loop fishing
   for (uint8_t it = 0; it < 10; it ++){
-    // go fishing (half aquarium near net)
-    goto_xya(KX(900),  190, KA(0));
+    // go fishing (half aquarium in the corner of the table)
+    goto_xya(KX(900),  220, KA(0));
     goto_xya_wait(KX(900),  100, KA(0), 2000);
    // reset position if system in contact avec table border
-    if ((robot_state.bumpers.left) && (robot_state.bumpers.right)) {
-      ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, robot_state.current_pos.x, 150, robot_state.current_pos.a);
+    if (robot_state.bumpers.left && robot_state.bumpers.right) {
+      ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, robot_state.current_pos.x, 100, robot_state.current_pos.a);
     }
 
-    goto_xya_rel(KX(0), 10, KA(0)); // robot must be in contact with table border
+    goto_xya_rel(KX(0), 10, KA(0)); // go away from table
     galipette_rod_prepare_for_fishing();
     idle_delay_ms(500);
 
-    goto_xya(KX(750),  160, KA(0)); // must be aligned with one fish aquarium edge
+    goto_xya_rel_wait(KX(-150), 0, KA(0), 2000); 
     galipette_rod_prepare_to_move_fish();
     idle_delay_ms(500);
 
     // go to net and release any fish taken
     galipette_return_fish_to_net();
 
-    goto_xya(KX(950),  160, KA(0)); // must be aligned with one fish aquarium edge
-    goto_xya(KX(950),  100, KA(0)); // must be aligned with one fish aquarium edge
-  /*  // reset position if system in contact avec table border
-    if ((robot_state.bumpers.left) && (robot_state.bumpers.right)) {
-      ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, robot_state.current_pos.x, 150, robot_state.current_pos.a);
-    }*/
+    //
+    goto_xya(KX(950),  220, KA(0)); 
 
+    // go in contact with table
+    goto_xya(KX(950),  100, KA(0)); 
+  
     goto_xya_rel(KX(0), 10, KA(0)); // robot must be in contact with table border
+    
     // go fishing (half aquarium far away from the net)
     galipette_rod_prepare_for_fishing();
-    goto_xya_wait(KX(950),  160, KA(0), 2000); 
-    goto_xya(KX(850), 160, KA(0));
+    //goto_xya_wait(KX(950),  160, KA(0), 2000); 
+    goto_xya(KX(-100), 0, KA(0));
 
     galipette_rod_prepare_to_move_fish();
 
