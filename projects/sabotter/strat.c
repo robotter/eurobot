@@ -28,7 +28,7 @@ extern rome_intf_t rome_paddock;
 robot_state_t robot_state;
 // we don't put 'kx' on robot_state to allow it to be static
 // this avoids optimization errors
-static int16_t robot_kx;
+static float robot_kx;
 
 
 typedef enum {
@@ -149,99 +149,9 @@ bool wait_detected_opponent(uint16_t ms)
   return true;
 }
 
-
-void ext_arm_set(int16_t pos)
-{
-  ROME_SENDWAIT_MECA_SET_ARM(&rome_meca, pos);
-}
-
-/// Set arm position
-void ext_arm_raise(void) { ext_arm_set(430); }
-void ext_arm_lower(void) { ext_arm_set(100); }
-void ext_arm_clap(void)  { ext_arm_set(300); }
-void ext_arm_galette_prepare(void)  { ext_arm_set(270); }
-void ext_arm_galette_lift(void)  { ext_arm_set(460); }
-void ext_arm_galette_release(void)  { ext_arm_set(350); }
-
-void _wait_meca_ready(void){
-  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ready");
-  for (;;){
-    if((robot_state.left_elev.state == SPOT_ELEV_S_READY)&&
-       (robot_state.right_elev.state == SPOT_ELEV_S_READY)){
-      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ready");
-      return;
-    }
-    idle();
-  }
-}
-
-void _wait_meca_ground_clear(void){
-  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ground clear");
-  for (;;){
-    if((robot_state.left_elev.state != SPOT_ELEV_S_BUSY)&&
-       (robot_state.right_elev.state != SPOT_ELEV_S_BUSY)){
-      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ground clear");
-      return;}
-    idle();
-  }
-}
-
-void _meca_discharge_spots(void){
-  _wait_meca_ready();
-  if(robot_state.left_elev.nb_spots > 0){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_DISCHARGE_SPOT_STACK, MECA_LEFT);
-    robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
-  }
-
-  if(robot_state.right_elev.nb_spots > 0){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_DISCHARGE_SPOT_STACK, MECA_RIGHT);
-    robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
-  }
-  _wait_meca_ground_clear();
-}
-
-void _meca_release_spots(void){
-  _wait_meca_ready();
-  if(robot_state.left_elev.nb_spots > 0){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_RELEASE_SPOT_STACK, MECA_LEFT);
-    robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
-  }
-
-  if(robot_state.right_elev.nb_spots > 0){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_RELEASE_SPOT_STACK, MECA_RIGHT);
-    robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
-  }
-  _wait_meca_ground_clear();
-}
-
-static void _meca_order_blocking_left_right(uint8_t cmd_left, uint8_t cmd_right){
-  _wait_meca_ready();
-  //send orders
-  if (cmd_left){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_left, MECA_LEFT);
-    robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
-  }
-  if (cmd_right){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_right, MECA_RIGHT);
-    robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
-  }
-  //wait for meca to compute orders...
-  _wait_meca_ground_clear();
-}
-
-static void _meca_order_blocking_main_aux(uint8_t cmd_main, uint8_t cmd_aux){
-  if(robot_state.team == TEAM_GREEN)
-    _meca_order_blocking_left_right(cmd_aux,cmd_main);
-  else if(robot_state.team == TEAM_PURPLE)
-    _meca_order_blocking_left_right(cmd_main,cmd_aux);
-}
-
 static void set_xya_wait(double x, double y, double a) {
   ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, x, y, 1000.0*a);
 }
-
-#define _meca_order_blocking_ma(m,a) _meca_order_blocking_main_aux(ROME_ENUM_MECA_COMMAND_##m,ROME_ENUM_MECA_COMMAND_##a)
-#define _meca_order_blocking_both(cmd) _meca_order_blocking_left_right(ROME_ENUM_MECA_COMMAND_##cmd,ROME_ENUM_MECA_COMMAND_##cmd)
 
 /// Go to given position, avoid opponents
 static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t timeout_ms)
@@ -471,6 +381,97 @@ void go_around(int16_t cx,int16_t cy, float a){
 }
 
 
+#if 0
+
+void ext_arm_set(int16_t pos)
+{
+  ROME_SENDWAIT_MECA_SET_ARM(&rome_meca, pos);
+}
+
+/// Set arm position
+void ext_arm_raise(void) { ext_arm_set(430); }
+void ext_arm_lower(void) { ext_arm_set(100); }
+void ext_arm_clap(void)  { ext_arm_set(300); }
+void ext_arm_galette_prepare(void)  { ext_arm_set(270); }
+void ext_arm_galette_lift(void)  { ext_arm_set(460); }
+void ext_arm_galette_release(void)  { ext_arm_set(350); }
+
+void _wait_meca_ready(void){
+  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ready");
+  for (;;){
+    if((robot_state.left_elev.state == SPOT_ELEV_S_READY)&&
+       (robot_state.right_elev.state == SPOT_ELEV_S_READY)){
+      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ready");
+      return;
+    }
+    idle();
+  }
+}
+
+void _wait_meca_ground_clear(void){
+  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ground clear");
+  for (;;){
+    if((robot_state.left_elev.state != SPOT_ELEV_S_BUSY)&&
+       (robot_state.right_elev.state != SPOT_ELEV_S_BUSY)){
+      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ground clear");
+      return;}
+    idle();
+  }
+}
+
+void _meca_discharge_spots(void){
+  _wait_meca_ready();
+  if(robot_state.left_elev.nb_spots > 0){
+    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_DISCHARGE_SPOT_STACK, MECA_LEFT);
+    robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
+  }
+
+  if(robot_state.right_elev.nb_spots > 0){
+    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_DISCHARGE_SPOT_STACK, MECA_RIGHT);
+    robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
+  }
+  _wait_meca_ground_clear();
+}
+
+void _meca_release_spots(void){
+  _wait_meca_ready();
+  if(robot_state.left_elev.nb_spots > 0){
+    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_RELEASE_SPOT_STACK, MECA_LEFT);
+    robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
+  }
+
+  if(robot_state.right_elev.nb_spots > 0){
+    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_RELEASE_SPOT_STACK, MECA_RIGHT);
+    robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
+  }
+  _wait_meca_ground_clear();
+}
+
+static void _meca_order_blocking_left_right(uint8_t cmd_left, uint8_t cmd_right){
+  _wait_meca_ready();
+  //send orders
+  if (cmd_left){
+    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_left, MECA_LEFT);
+    robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
+  }
+  if (cmd_right){
+    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_right, MECA_RIGHT);
+    robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
+  }
+  //wait for meca to compute orders...
+  _wait_meca_ground_clear();
+}
+
+static void _meca_order_blocking_main_aux(uint8_t cmd_main, uint8_t cmd_aux){
+  if(robot_state.team == TEAM_GREEN)
+    _meca_order_blocking_left_right(cmd_aux,cmd_main);
+  else if(robot_state.team == TEAM_PURPLE)
+    _meca_order_blocking_left_right(cmd_main,cmd_aux);
+}
+
+#define _meca_order_blocking_ma(m,a) _meca_order_blocking_main_aux(ROME_ENUM_MECA_COMMAND_##m,ROME_ENUM_MECA_COMMAND_##a)
+#define _meca_order_blocking_both(cmd) _meca_order_blocking_left_right(ROME_ENUM_MECA_COMMAND_##cmd,ROME_ENUM_MECA_COMMAND_##cmd)
+
 #define CLAW_X 70
 #define CLAW_Y -200
 #define CLAW_APPROACH 50
@@ -524,6 +525,7 @@ order_result_t go_pick_spot_wait(int16_t x, int16_t y, spot_elevator_t side, uin
     }
   return ORDER_SUCCESS;
 }
+#endif
 
 /// Do an autoset
 void autoset(robot_side_t robot_side, autoset_side_t table_side, float x, float y)
@@ -718,13 +720,18 @@ order_result_t galipeur_close_doors(void){
 }
 
 typedef enum{
-  RS_SLOW = 0,
+  RS_VERYSLOW = 0,
+  RS_SLOW,
   RS_NORMAL,
   RS_FAST,
 } robot_speed_t;
 
 void galipeur_set_speed(robot_speed_t s){
   switch (s){
+    case RS_VERYSLOW:
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 10, 0.03);
+      break;
     case RS_SLOW:
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
@@ -776,8 +783,9 @@ order_result_t galipeur_goto_dune(void){
 
 order_result_t galipeur_destroy_dune_first_row(void){
   //go to dune, and abort if failed
-  if (galipeur_goto_dune() != ORDER_SUCCESS)
-    return ORDER_FAILURE;
+  order_result_t or = galipeur_goto_dune();
+  if (or != ORDER_SUCCESS)
+    return or;
 
   ROME_LOG(&rome_paddock,DEBUG,"Destroy first row");
   //slow down to push sand
@@ -790,47 +798,69 @@ order_result_t galipeur_destroy_dune_first_row(void){
   return ORDER_SUCCESS;
 }
 
-order_result_t galipeur_destroy_dune_second_row_first_half(void){
+order_result_t galipeur_destroy_dune_second_row_first_pass(void){
   //go to dune, and abort if failed
-  if (galipeur_goto_dune() != ORDER_SUCCESS)
-    return ORDER_FAILURE;
+  order_result_t or = galipeur_goto_dune();
+  if (or != ORDER_SUCCESS)
+    return or;
 
-  ROME_LOG(&rome_paddock,DEBUG,"Destroy second row, 1/2");
+  ROME_LOG(&rome_paddock,DEBUG,"Destroy second row, 1st.");
   //slow down to push sand
-  galipeur_set_speed(RS_SLOW);
+  galipeur_set_speed(RS_VERYSLOW);
   //destroy 2nd row
   goto_xya(KX(-400), 2000-270, KA(-5*M_PI/6));
+  goto_xya(KX(-400), 2000-230, KA(-5*M_PI/6));
   ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
-  goto_xya(KX(-400), 2000-250, KA(-5*M_PI/6));
+  goto_xya(KX(-330), 2000-230, KA(-5*M_PI/6));
   galipeur_reset_sandroller();
-  goto_xya(KX(-250), 2000-250, KA(-5*M_PI/6));
+  goto_xya(KX(-250), 2000-230, KA(-5*M_PI/6));
   galipeur_reset_sandroller();
-  goto_xya(KX(-320), 2000-280, KA(-5*M_PI/6));
+  goto_xya(KX(-320), 2000-230, KA(-5*M_PI/6));
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
   ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
-  goto_xya(KX(0),  2000 - AUTOSET_OFFSET - 20, KA(M_PI));
+  goto_xya(KX(-200), 2000 - AUTOSET_OFFSET - 20, KA(M_PI));
+  galipeur_reset_sandroller();
+  goto_xya(KX(-100), 2000 - AUTOSET_OFFSET - 20, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  goto_xya(KX(-100), 2000-250, KA(M_PI));
   return ORDER_SUCCESS;
 }
 
-#if 0
-order_result_t galipeur_destroy_dune_second_row_second_half(void){
+order_result_t galipeur_destroy_dune_second_row_second_pass(void){
   //go to dune, and abort if failed
-  if (galipeur_goto_dune() != ORDER_SUCCESS)
-    return ORDER_FAILURE;
+  order_result_t or = galipeur_goto_dune();
+  if (or != ORDER_SUCCESS)
+    return or;
 
-  ROME_LOG(&rome_paddock,DEBUG,"Destroy second row, 2/2");
+  ROME_LOG(&rome_paddock,DEBUG,"Destroy second row, 2nd !");
   //slow down to push sand
-  galipeur_set_speed(RS_SLOW);
-  goto_xya(KX(-100),  2000 - 200, KA(M_PI));
+  galipeur_set_speed(RS_VERYSLOW);
+  goto_xya(KX(-300),  2000 - 200, KA(M_PI));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
+  ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
+  goto_xya(KX(50),  2000 - AUTOSET_OFFSET - 20, KA(M_PI));
+  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  goto_xya(KX(50), 2000-250, KA(M_PI));
+  return ORDER_SUCCESS;
+}
+
+order_result_t galipeur_destroy_dune_second_row_third_pass(void){
+  //go to dune, and abort if failed
+  order_result_t or = galipeur_goto_dune();
+  if (or != ORDER_SUCCESS)
+    return or;
+
+  ROME_LOG(&rome_paddock,DEBUG,"Destroy second row, 3rd !!");
+  //slow down to push sand
+  galipeur_set_speed(RS_VERYSLOW);
+  goto_xya(KX(200),  2000 - 200, KA(M_PI));
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
   ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
   goto_xya(KX(250),  2000 - AUTOSET_OFFSET - 20, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   return ORDER_SUCCESS;
 }
-#endif
 
 void galipeur_bring_back_sand(void){
   ROME_LOG(&rome_paddock,DEBUG,"Bring back sand in builing area");
@@ -864,10 +894,10 @@ void strat_run_galipeur(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 #if 1
 
-  order_result_t or_doors = ORDER_FAILURE;
 
 #if 1
   //try to do first row, deroute on doors if failed
+  order_result_t or_doors = ORDER_FAILURE;
   order_result_t or_dune_row1 = ORDER_FAILURE;
   do{
     or_dune_row1 = galipeur_destroy_dune_first_row();
@@ -878,8 +908,6 @@ void strat_run_galipeur(void)
         or_doors = galipeur_close_doors();
   }
   while(or_dune_row1 != ORDER_SUCCESS);
-#endif
-#if 1
  
   //do doors if it wasn't already done
   do {
@@ -888,26 +916,39 @@ void strat_run_galipeur(void)
   while (or_doors != ORDER_SUCCESS);
 #endif
 
-#if 0
-  //try to do first half of second row
-  order_result_t or_dune_row2 = ORDER_FAILURE;
+#if 1
+  //try to do a part of second row
+  order_result_t or_dune_row21 = ORDER_FAILURE;
   do{
-    or_dune_row2 = galipeur_destroy_dune_second_row_first_half();
-    if (or_dune_row2 == ORDER_SUCCESS)
+    or_dune_row21 = galipeur_destroy_dune_second_row_first_pass();
+    if (or_dune_row21 == ORDER_SUCCESS)
       galipeur_bring_back_sand();
   }
-  while(or_dune_row2 != ORDER_SUCCESS);
-#endif
+  while(or_dune_row21 != ORDER_SUCCESS);
+  
+  goto_xya(KX(1500-150),1500,KA(M_PI/2));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
 
-#if 0
   //try to do second half of second row
-  order_result_t or_dune_row3 = ORDER_FAILURE;
+  order_result_t or_dune_row22 = ORDER_FAILURE;
   do{
-    or_dune_row3 = galipeur_destroy_dune_second_row_second_half();
-    if (or_dune_row3 == ORDER_SUCCESS)
+    or_dune_row22 = galipeur_destroy_dune_second_row_second_pass();
+    if (or_dune_row22 == ORDER_SUCCESS)
       galipeur_bring_back_sand();
   }
-  while(or_dune_row3 != ORDER_SUCCESS);
+  while(or_dune_row22 != ORDER_SUCCESS);
+
+  goto_xya(KX(1500-150),1500,KA(M_PI/2));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
+
+  //try to do second half of second row
+  order_result_t or_dune_row23 = ORDER_FAILURE;
+  do{
+    or_dune_row23 = galipeur_destroy_dune_second_row_third_pass();
+    if (or_dune_row23 == ORDER_SUCCESS)
+      galipeur_bring_back_sand();
+  }
+  while(or_dune_row23 != ORDER_SUCCESS);
 #endif
 
 
