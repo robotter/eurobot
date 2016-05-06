@@ -1165,19 +1165,19 @@ void galipette_go_directly_fishing(void)
   goto_traj(traj_sand_extraction,KA(0));
 
   // in front of aquarium, oriented to take fishes 
-  goto_xya_wait(KX(900),  190, KA(0), 5000);
+  goto_xya_wait(KX(850),  190, KA(0), 5000);
 }
 
 void galipette_return_fish_to_net(void)
 {
   // go away from table edge and aquarium
-  goto_xya_rel(KX(0), 200,KA(0));
+  goto_xya_rel(KX(-30), 200,KA(0));
 
   // go to net and avoid net fixation
-  goto_xya(KX(250), 200 + GALIPETTE_BUMPER_TO_CENTER_DIST, KA(0));
+  goto_xya(KX(350), 200 + GALIPETTE_BUMPER_TO_CENTER_DIST, KA(0));
 
   // robot may enconter table edge
-  goto_xya_wait(KX(250), 100, KA(0), 2000);
+  goto_xya_wait(KX(350), 100, KA(0), 2000);
 
   /*
   // reset position if system in contact avec table border
@@ -1216,22 +1216,24 @@ void galipette_take_fish(void)
     galipette_return_fish_to_net();
 
     //
-    goto_xya(KX(950),  220, KA(0)); 
+    goto_xya(KX(1000),  220, KA(0)); 
 
     // go in contact with table
-    goto_xya(KX(950),  100, KA(0)); 
+    goto_xya(KX(1000),  100, KA(0)); 
   
     goto_xya_rel(KX(0), 10, KA(0)); // robot must be in contact with table border
     
     // go fishing (half aquarium far away from the net)
     galipette_rod_prepare_for_fishing();
-    //goto_xya_wait(KX(950),  160, KA(0), 2000); 
-    goto_xya(KX(-100), 0, KA(0));
+
+    goto_xya_rel_wait(KX(-100), 0, KA(0), 2000);
 
     galipette_rod_prepare_to_move_fish();
+    goto_xya_rel(KX(10), 10, KA(0)); // go away from table
 
     // go to net and release any fish taken
     galipette_return_fish_to_net();
+
   }
 
   while(1); /// TODO REMOVE  THIS HORRIBLE LOOP !!!!!!!!!!!!!!!!!!  
