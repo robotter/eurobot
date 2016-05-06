@@ -1295,7 +1295,7 @@ void strat_run_galipette(void)
 
 
   galipette_go_away_from_galipeur();
-  galipette_bring_back_closest_shell();
+  //galipette_bring_back_closest_shell();
 
   galipette_turn_around_shells_and_go_fishing();
 
