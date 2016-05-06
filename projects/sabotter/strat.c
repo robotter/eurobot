@@ -767,7 +767,6 @@ order_result_t galipeur_goto_dune(bool avoid_galipette){
   if (avoid_galipette){
     int16_t traj1[] = {
       KX(1500-200),1400,
-      DESTROY_DUNE_END_POSITION_X,DESTROY_DUNE_END_POSITION_Y,
       KX(-300), 1600,
     };
     //traj must be a success, if not leave the area
@@ -921,6 +920,8 @@ order_result_t or_doors = ORDER_FAILURE;
   //try to do first row, deroute on doors if failed
   //on first time, avoid galipette
   order_result_t or_dune_row1 = galipeur_destroy_dune_first_row(true);
+  if (or_dune_row1 == ORDER_SUCCESS)
+    galipeur_bring_back_sand();
 #endif
 
   while(or_dune_row1 != ORDER_SUCCESS){
