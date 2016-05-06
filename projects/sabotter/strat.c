@@ -894,6 +894,9 @@ void strat_run_galipeur(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 #if 1
 
+  //avoid galipette
+  goto_xya_rel(KX(-50),200,0);
+
 
 #if 1
   //try to do first row, deroute on doors if failed
