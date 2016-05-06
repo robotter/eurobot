@@ -183,8 +183,10 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t time
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
           uint32_t time2 = uptime_us() - start_time_us;
-          if((time2) > ((uint32_t) DEFAULT_DETECTION_WAIT_MS)){
-            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t) DEFAULT_DETECTION_WAIT_MS);
+          if((time2) > ((uint32_t) 1000*DEFAULT_DETECTION_WAIT_MS)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t) 1000*DEFAULT_DETECTION_WAIT_MS);
+            ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
+            ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
             return ORDER_DETECTION;
           }
           if(!opponent_detected_carrot())
@@ -227,8 +229,10 @@ static order_result_t goto_xya_synced_wait(int16_t x, int16_t y, float a, uint16
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
           uint32_t time2 = uptime_us() - start_time_us;
-          if((time2) > ((uint32_t) DEFAULT_DETECTION_WAIT_MS)){
-            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)DEFAULT_DETECTION_WAIT_MS);
+          if((time2) > ((uint32_t) 1000*DEFAULT_DETECTION_WAIT_MS)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)1000*DEFAULT_DETECTION_WAIT_MS);
+            ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
+            ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
             return ORDER_DETECTION;
           }
           if(!opponent_detected_carrot())
@@ -272,8 +276,10 @@ static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
           uint32_t time2 = uptime_us() - start_time_us;
-          if((time2) > ((uint32_t) DEFAULT_DETECTION_WAIT_MS)){
-            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)DEFAULT_DETECTION_WAIT_MS);
+          if((time2) > ((uint32_t) 1000*DEFAULT_DETECTION_WAIT_MS)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)1000*DEFAULT_DETECTION_WAIT_MS);
+            ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
+            ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
             return ORDER_DETECTION;
           }
           if(!opponent_detected_carrot())
@@ -338,8 +344,10 @@ static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t 
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
           uint32_t time2 = uptime_us() - start_time_us;
-          if((time2) > ((uint32_t) DEFAULT_DETECTION_WAIT_MS)){
-            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)DEFAULT_DETECTION_WAIT_MS);
+          if((time2) > ((uint32_t) 1000*DEFAULT_DETECTION_WAIT_MS)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)1000*DEFAULT_DETECTION_WAIT_MS);
+            ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
+            ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
             return ORDER_DETECTION;
           }
           if(!opponent_detected_carrot())
