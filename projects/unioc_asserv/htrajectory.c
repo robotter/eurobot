@@ -386,7 +386,7 @@ double htrajectory_get_sync_angle(htrajectory_t *htj){
         +(rp.y - htraj_man_data.origin.y)*
           (rp.y - htraj_man_data.origin.y));
   float completion = d_current/d_total;
-  return (htraj_man_data.origin.a+completion*(htraj_man_data.destination.a-htraj_man_data.origin.a));
+  return (htraj_man_data.origin.a+completion*NORMALIZE_RADIANS_FLOAT_PI_PI(htraj_man_data.destination.a-htraj_man_data.origin.a));
 }
 
 void htrajectory_gotoXY_panning( htrajectory_t *htj, double dx, double dy, double panning_angle, void(*acq_callback)(double a))
