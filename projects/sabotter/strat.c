@@ -897,6 +897,12 @@ void strat_run_galipeur(void)
   //avoid galipette
   goto_xya_rel(KX(-50),200,0);
 
+#if 1
+  //do doors if it wasn't already done
+  while(or_doors != ORDER_SUCCESS){
+    or_doors = galipeur_close_doors();
+  }
+#endif
 
 #if 1
   //try to do first row, deroute on doors if failed
@@ -913,10 +919,9 @@ void strat_run_galipeur(void)
   while(or_dune_row1 != ORDER_SUCCESS);
  
   //do doors if it wasn't already done
-  do {
+  while(or_doors != ORDER_SUCCESS){
     or_doors = galipeur_close_doors();
   }
-  while (or_doors != ORDER_SUCCESS);
 #endif
 
 #if 1
