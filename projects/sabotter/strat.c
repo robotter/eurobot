@@ -19,6 +19,8 @@
 #define DEFAULT_WAIT_MS  2000
 #define DEFAULT_FOV  (M_PI/3)
 
+#define DEFAULT_DETECTION_WAIT_MS 2000
+
 #define AUTOSET_OFFSET 114
 
 extern rome_intf_t rome_asserv;
@@ -175,13 +177,14 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t time
         return ORDER_SUCCESS;
       }
       if(opponent_detected_carrot()) {
+        start_time_us = uptime_us()
         ROME_LOG(&rome_paddock,INFO,"goto_xya : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
           uint32_t time2 = uptime_us() - start_time_us;
-          if((time2) > ((uint32_t) timeout_ms*1000)){
-            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
+          if((time2) > ((uint32_t) DEFAULT_DETECTION_WAIT_MS)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t) DEFAULT_DETECTION_WAIT_MS);
             return ORDER_DETECTION;
           }
           if(!opponent_detected_carrot())
@@ -218,13 +221,14 @@ static order_result_t goto_xya_synced_wait(int16_t x, int16_t y, float a, uint16
         return ORDER_SUCCESS;
       }
       if(opponent_detected_carrot()) {
+        start_time_us = uptime_us()
         ROME_LOG(&rome_paddock,INFO,"goto_xya_synced : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
           uint32_t time2 = uptime_us() - start_time_us;
-          if((time2) > ((uint32_t) timeout_ms*1000)){
-            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
+          if((time2) > ((uint32_t) DEFAULT_DETECTION_WAIT_MS)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)DEFAULT_DETECTION_WAIT_MS);
             return ORDER_DETECTION;
           }
           if(!opponent_detected_carrot())
@@ -261,14 +265,15 @@ static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t
         return ORDER_SUCCESS;
       }
       if(opponent_detected_carrot()) {
+        start_time_us = uptime_us()
         ROME_LOG(&rome_paddock,INFO,"goto_traj : opponent detected");
         path_i = robot_state.asserv.path_i;
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
           uint32_t time2 = uptime_us() - start_time_us;
-          if((time2) > ((uint32_t) timeout_ms*1000)){
-            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
+          if((time2) > ((uint32_t) DEFAULT_DETECTION_WAIT_MS)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)DEFAULT_DETECTION_WAIT_MS);
             return ORDER_DETECTION;
           }
           if(!opponent_detected_carrot())
@@ -327,13 +332,14 @@ static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t 
         return ORDER_SUCCESS;
       }
       if(opponent_detected_carrot()) {
+        start_time_us = uptime_us()
         ROME_LOG(&rome_paddock,INFO,"goto_xya_rel : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
           uint32_t time2 = uptime_us() - start_time_us;
-          if((time2) > ((uint32_t) timeout_ms*1000)){
-            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
+          if((time2) > ((uint32_t) DEFAULT_DETECTION_WAIT_MS)){
+            ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)DEFAULT_DETECTION_WAIT_MS);
             return ORDER_DETECTION;
           }
           if(!opponent_detected_carrot())
@@ -713,7 +719,6 @@ order_result_t galipeur_close_doors(void){
   goto_xya(KX(950), 1750, KA(M_PI));
   //push it
   goto_xya(KX(900), 1850, KA(M_PI));
-  //autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET-11);
   //evade the doors
   goto_xya(KX(1100), 1700, KA(M_PI));
   return ORDER_SUCCESS;
