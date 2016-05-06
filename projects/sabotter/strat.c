@@ -899,8 +899,6 @@ void strat_run_galipeur(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 #if 1
 
-  //avoid galipette
-  goto_xya_rel(KX(-50),200,0);
 
 #if 1
   //do doors if it wasn't already done
@@ -908,6 +906,10 @@ void strat_run_galipeur(void)
   while(or_doors != ORDER_SUCCESS){
     or_doors = galipeur_close_doors();
   }
+  galipeur_bring_back_sand();
+#else
+  //avoid galipette
+  goto_xya_rel(KX(-50),200,0);
 #endif
 
 #if 1
