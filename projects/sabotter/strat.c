@@ -1136,11 +1136,16 @@ void strat_prepare_galipette(void)
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
 }
 
-// forget it !!! bad idea , galipette is only a fish robot, not a buldobot nor a rugbybot ...
-void galipette_push_sand_stack(void)
+// Even if galipeur is a good friend, galipette is very fragile and must take care of her strong big brother !!!
+void galipette_go_away_from_galipeur(void)
 {
   // fear the galipeur contact and go away from starting area
   goto_xya(KX(1220), 1020, KA(-M_PI/2));
+}
+
+// forget it !!! bad idea , galipette is only a fish robot, not a buldobot nor a rugbybot ...
+void galipette_push_sand_stack(void)
+{
   
   // align with stack,
   goto_xya(KX(1100), 1100, KA(-M_PI/2 + 2*M_PI/3));
@@ -1168,17 +1173,46 @@ void galipette_push_sand_stack(void)
 
 void galipette_go_directly_fishing(void)
 {
-  // fear the galipeur contact and go away from starting area
-  goto_xya(KX(1220), 1020, KA(-M_PI/2));
-  
   int16_t traj_sand_extraction[] = {
     KX(1050) , 830,
     KX(1050) , 180,
   };
-  goto_traj(traj_sand_extraction,KA(0));
+  goto_traj(traj_sand_extraction,KA(-M_PI/2));
 
   // in front of aquarium, oriented to take fishes 
   goto_xya_wait(KX(850),  190, KA(0), 5000);
+}
+
+void galipette_turn_around_shells_and_go_fishing(void)
+{
+  int16_t traj_sand_extraction[] = {
+    KX(1050) , 880,
+    KX(600) , 800,
+    KX(420) , 620,
+    KX(550) , 290,
+    KX(760) , 190,
+  };
+  goto_traj(traj_sand_extraction,KA(0));
+
+  // push shell with a little angle to avoid the sand border
+  goto_xya_wait(KX(1000), 190, KA(-M_PI/2), 5000);
+  goto_xya_wait(KX(750),  190, KA(-M_PI/2), 5000);
+
+  // in front of aquarium, oriented to take fishes 
+  goto_xya_wait(KX(850),  200, KA(0), 5000);
+}
+
+// turn around closest shell and 
+void galipette_bring_back_closest_shell(void)
+{
+   int16_t traj_sand_extraction[] = {
+    KX(1050) , 880,
+    KX(1050) , 600,
+    KX(1280) , 600,
+  };
+  goto_traj(traj_sand_extraction,KA(0));
+
+  goto_xya(KX(1280), 850, 0);
 }
 
 void galipette_return_fish_to_net(void)
@@ -1211,7 +1245,7 @@ void galipette_take_fish(void)
   for (uint8_t it = 0; it < 10; it ++){
     // go fishing (half aquarium in the corner of the table)
     goto_xya(KX(900),  220, KA(0));
-    goto_xya_wait(KX(900),  100, KA(0), 2000);
+    goto_xya_wait(KX(900),  90, KA(0), 2000);
    // reset position if system in contact avec table border
     if (robot_state.bumpers.left && robot_state.bumpers.right) {
       ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, robot_state.current_pos.x, 100, robot_state.current_pos.a);
@@ -1232,7 +1266,7 @@ void galipette_take_fish(void)
     goto_xya(KX(1000),  220, KA(0)); 
 
     // go in contact with table
-    goto_xya(KX(1000),  100, KA(0)); 
+    goto_xya_wait(KX(1000),  90, KA(0), 2000); 
   
     goto_xya_rel(KX(0), 10, KA(0)); // robot must be in contact with table border
     
@@ -1256,26 +1290,19 @@ void strat_run_galipette(void)
 {
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-#if 0 // homologation done !!!
 
-  //homologation
-  goto_xya_rel(KX(100), -100, KA(-M_PI/2));
-  goto_xya_rel(KX(500), -300, 0);
-#else
-  galipette_go_directly_fishing();
+
+  galipette_go_away_from_galipeur();
+  galipette_bring_back_closest_shell();
+
+  galipette_turn_around_shells_and_go_fishing();
 
   galipette_take_fish();
-
-
-
-#endif
 }
 
 void strat_test_galipette(void)
 {
 }
-
-
 
 
 
