@@ -177,7 +177,7 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t time
         return ORDER_SUCCESS;
       }
       if(opponent_detected_carrot()) {
-        start_time_us = uptime_us()
+        start_time_us = uptime_us();
         ROME_LOG(&rome_paddock,INFO,"goto_xya : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
@@ -221,7 +221,7 @@ static order_result_t goto_xya_synced_wait(int16_t x, int16_t y, float a, uint16
         return ORDER_SUCCESS;
       }
       if(opponent_detected_carrot()) {
-        start_time_us = uptime_us()
+        start_time_us = uptime_us();
         ROME_LOG(&rome_paddock,INFO,"goto_xya_synced : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
@@ -265,7 +265,7 @@ static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t
         return ORDER_SUCCESS;
       }
       if(opponent_detected_carrot()) {
-        start_time_us = uptime_us()
+        start_time_us = uptime_us();
         ROME_LOG(&rome_paddock,INFO,"goto_traj : opponent detected");
         path_i = robot_state.asserv.path_i;
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
@@ -332,7 +332,7 @@ static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t 
         return ORDER_SUCCESS;
       }
       if(opponent_detected_carrot()) {
-        start_time_us = uptime_us()
+        start_time_us = uptime_us();
         ROME_LOG(&rome_paddock,INFO,"goto_xya_rel : opponent detected");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
@@ -904,6 +904,7 @@ void strat_run_galipeur(void)
 
 #if 1
   //do doors if it wasn't already done
+  order_result_t or_doors = ORDER_FAILURE;
   while(or_doors != ORDER_SUCCESS){
     or_doors = galipeur_close_doors();
   }
@@ -911,7 +912,6 @@ void strat_run_galipeur(void)
 
 #if 1
   //try to do first row, deroute on doors if failed
-  order_result_t or_doors = ORDER_FAILURE;
   order_result_t or_dune_row1 = ORDER_FAILURE;
   do{
     or_dune_row1 = galipeur_destroy_dune_first_row();
