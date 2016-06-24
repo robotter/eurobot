@@ -705,10 +705,11 @@ order_result_t galipeur_close_doors(void){
   //do in the corner to do an autoset
   goto_xya(KX(1330),1650, KA(M_PI/2));
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
-  goto_xya_rel(KX(-200),0,0);
+  goto_xya_rel(KX(-200),-200,0);
   //go in front of first door
-  goto_xya(KX(1250), 1750, KA(M_PI));
+  goto_xya(KX(1250), 1700, KA(M_PI));
   //push it
+  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
   goto_xya(KX(1200), 1850, KA(M_PI));
   //go in front of 2nd door
   goto_xya(KX(950), 1750, KA(M_PI));
@@ -802,9 +803,9 @@ order_result_t galipeur_destroy_dune_first_row(bool avoid_galipette){
   //slow down to push sand
   galipeur_set_speed(RS_SLOW);
   //destroy 1st row
-  goto_xya(KX(-300), 2000-210, KA(M_PI));
+  goto_xya(KX(-300), 2000-260, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
-  goto_xya(KX(100),  2000-210, KA(M_PI));
+  goto_xya(KX(100),  2000-260, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   return ORDER_SUCCESS;
 }
@@ -880,12 +881,12 @@ void galipeur_bring_back_sand(void){
   goto_xya(KX(1500-700), 1400, KA(M_PI));
   //push sand by successive increments
   goto_xya(KX(1500-800), 1500, KA(M_PI));
-  goto_xya_synced(KX(1500-600), 1600, KA(2*M_PI/3));
-  goto_xya_synced(KX(1500-600), 1150, KA(2*M_PI/3));
+  goto_xya_synced(KX(1500-600), 1550, KA(2*M_PI/3));
+  goto_xya_synced(KX(1500-600), 1100, KA(2*M_PI/3));
 
-  goto_xya(KX(1500-600), 1250, KA(2*M_PI/3));
-  goto_xya_synced(KX(1500-300), 950, KA(M_PI/6));
-  goto_xya_synced(KX(450), 950, KA(M_PI/6));
+  goto_xya(KX(1500-600), 1200, KA(2*M_PI/3));
+  goto_xya_synced(KX(1500-300), 900, KA(M_PI/6));
+  goto_xya_synced(KX(450), 900, KA(M_PI/6));
 #else
   //push sand by a smooth curvy move
   go_around(KX(1500-900),1230,KA(-M_PI));
