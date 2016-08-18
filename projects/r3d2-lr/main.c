@@ -7,6 +7,7 @@
 #include "leds.h"
 #include <util/delay.h>
 #include "r3d2.h"
+#include <timer/uptime.h>
 
 rome_intf_t rome_intf;
 static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
@@ -33,8 +34,9 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 int main(void)
 {
   clock_init();
-
   uart_init();
+  timer_init();
+  uptime_init();
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
@@ -59,7 +61,6 @@ int main(void)
     
     rome_handle_input(&rome_intf);
     r3d2_update();
-  
   }
 
   while(1);
