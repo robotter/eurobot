@@ -91,9 +91,8 @@ static void ax12_set_state(ax12_state_t state)
   } else {
     INTLVL_ENABLE_BLOCK(UART_INTLVL) {
       while(ax12_nsent > 0) {
-        int c;
         for(int wdog=0; wdog<1000; wdog++) {
-          if((c = uart_recv_nowait(UART_AX12)) != -1)
+          if(uart_recv_nowait(UART_AX12) != -1)
             break;
         }
         ax12_nsent--;
@@ -215,7 +214,6 @@ int main(void)
     uint32_t uptime = uptime_us();
 
     // update rome every 100 ms
-    uptime = uptime_us();
     if(uptime - luptime > 100000) {
       luptime = uptime;
       portpin_outtgl(&LED_COM_PP);
