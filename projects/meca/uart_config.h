@@ -10,12 +10,8 @@
 #define UARTC1_BAUDRATE  19200
 // Communication
 #define UARTF0_ENABLED
-// Color Sensor left
-#define UARTD1_ENABLED
-#define UARTD1_BAUDRATE  38400
-// Color Sensor Right
+// Camera JeVois
 #define UARTF1_ENABLED
-#define UARTF1_BAUDRATE  38400
 
 
 #define UART_INTLVL  INTLVL_HI

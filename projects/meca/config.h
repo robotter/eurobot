@@ -8,10 +8,6 @@
 
 
 #define MATCH_DURATION_SECS (89)
-#define STORE_DEPLOY_TIME_SECS (92)
-#define SPOT_ELEVATOR_PERIOD_MS (10)
-#define SPOT_ELEVATOR_ORDER_TIMEOUT_MS (5000)
-#define SPOT_ELEVATOR_CHECK_PRESENCE_TIMEOUT_MS (500)
 
 /// Perlimpinpin node address
 #define PPP_ADDR  0x12
@@ -29,8 +25,8 @@
 // arm update in us
 #define UPDATE_ARM_US 100000
 
-// AX-12 timeout for state switch, in microseconds
-#define AX12_TIMEOUT_US  10000
+// AX-12 recv timeout, in microseconds
+#define AX12_TIMEOUT_US  30000
 
 // pinout
 
@@ -86,68 +82,5 @@
 #define SERVO13_PP  SERVO_DIG6_PP
 #define SERVO14_PP  SERVO_DIG7_PP
 
-#define SE_AX12_STORE_ID 5
-
-#define SE_STORE_MAX 550
-#define SE_STORE_MIN 130
-
-#define SE_STORE_OPEN 400
-#define SE_STORE_CLOSE 550
-
-#define SE_RIGHT_AX12_CLAW_ID        2
-#define SE_RIGHT_AX12_ELEVATOR_ID    1
-
-#define SE_LEFT_AX12_CLAW_ID       3
-#define SE_LEFT_AX12_ELEVATOR_ID   4
-
-#define SE_AX12_MIDDLE_ARM_ID 5
-
-#define SE_RIGHT_SPIPE_CLOSED            150
-#define SE_RIGHT_SPIPE_OPENED            150
-
-#define SE_RIGHT_CLAW_OPENED              320
-#define SE_RIGHT_CLAW_CLOSED_FOR_SPOT     170
-#define SE_RIGHT_CLAW_CLOSED_FOR_BULB     210
-
-#define SE_RIGHT_ELEVATOR_UP              200
-#define SE_RIGHT_ELEVATOR_DOWN_WAIT_SPOT  750
-#define SE_RIGHT_ELEVATOR_DOWN_WAIT_BULB  750
-#define SE_RIGHT_ELEVATOR_DOWN_PUT_BULB   500
-#define SE_RIGHT_ELEVATOR_UP_MOVE_SPOT    510
-
-#define SE_LEFT_SPIPE_CLOSED            150
-#define SE_LEFT_SPIPE_OPENED            150
-
-#define SE_LEFT_CLAW_OPENED              270
-#define SE_LEFT_CLAW_CLOSED_FOR_SPOT     400
-#define SE_LEFT_CLAW_CLOSED_FOR_BULB     370
-
-#define SE_LEFT_ELEVATOR_UP              610
-#define SE_LEFT_ELEVATOR_DOWN_WAIT_SPOT  60
-#define SE_LEFT_ELEVATOR_DOWN_WAIT_BULB  60
-#define SE_LEFT_ELEVATOR_DOWN_PUT_BULB   290
-#define SE_LEFT_ELEVATOR_UP_MOVE_SPOT    300
-
-#define SE_MIDDLE_ARM_MAX 580
-#define SE_MIDDLE_ARM_MIN 130
-
-#define SE_SERVO_TUBE_PORT     &TCD0
-#define SE_SERVO_RIGHT_TUBE_PIN     'A'
-#define SE_RIGHT_TUBE_OPEN_PWM_US   1300
-#define SE_RIGHT_TUBE_CLOSE_PWM_US  1700
-
-#define SE_SERVO_LEFT_TUBE_PIN      'B'
-#define SE_LEFT_TUBE_OPEN_PWM_US    1800
-#define SE_LEFT_TUBE_CLOSE_PWM_US   1300
-
-#define SE_SERVO_RIGHT_CARPET_PORT  &TCD0
-#define SE_SERVO_RIGHT_CARPET_PIN   'C'
-#define SE_RIGHT_CARPET_LOCK        1200
-#define SE_RIGHT_CARPET_UNLOCK      2000
-
-#define SE_SERVO_LEFT_CARPET_PORT   &TCC1
-#define SE_SERVO_LEFT_CARPET_PIN    'A'
-#define SE_LEFT_CARPET_LOCK         1200
-#define SE_LEFT_CARPET_UNLOCK       2000
 
 #endif
