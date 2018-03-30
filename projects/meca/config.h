@@ -27,7 +27,7 @@
 #define UPDATE_ARM_US 100000
 
 // AX-12 recv timeout, in microseconds
-#define AX12_TIMEOUT_US  30000
+#define AX12_TIMEOUT_US  40000
 
 // pinout
 
@@ -83,5 +83,38 @@
 #define SERVO13_PP  SERVO_DIG6_PP
 #define SERVO14_PP  SERVO_DIG7_PP
 
+//Cylinder settings
+
+//choose servo type, AX or MX
+#define USE_AX12
+
+//AX12 settings
+#ifdef USE_AX12
+
+#define CYLINDER_AX12_ID 5
+#define CYLINDER_BALLEATER_POS { 6, 142, 288, 435, 578, 721, 863, 1002 }
+#define CYLINDER_TURBINE_POS_OFFSET 830
+#define CYLINDER_TURBINE_POS { 836, 972, 720, 22, 159, 311, 454, 596 }
+
+#endif
+
+
+//MX12 settings
+#ifdef USE_MX12
+#define CYLINDER_MX12_ID 1
+
+#define CYLINDER_BALLEATER_POS_MIN 665
+#define CYLINDER_BALLEATER_POS_MAX 3960
+#define CYLINDER_TURBINE_POS_OFFSET 2746
+
+#endif
+
+#define CYLINDER_NB_POS 8
+
+#define CYLINDER_MOVING_DELAY_US         300000
+#define CYLINDER_BALL_DROP_DELAY_US      500000
+#define CYLINDER_TURBINE_STOP_DELAY_US   700000
+#define CYLINDER_BALL_FLYING_DELAY_US    1500000
+#define CYLINDER_TURBINE_BOOT_DELAY_US   2000000
 
 #endif

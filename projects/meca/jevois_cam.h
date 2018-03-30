@@ -1,3 +1,6 @@
+#ifndef JE_VOIS_CAM_H
+#define JE_VOIS_CAM_H
+
 #include <avarix.h>
 #include <avr/io.h>
 
@@ -60,3 +63,5 @@ jevois_color_t jevois_cam_get_entry_color(jevois_cam_t*);
 jevois_color_t jevois_cam_get_cylinder_color(jevois_cam_t*);
 
 uint8_t jevois_cam_is_valid(jevois_cam_t*);
+
+#endif//JE_VOIS_CAM_H

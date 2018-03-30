@@ -35,9 +35,9 @@ static void process_frame(jevois_cam_t *cam) {
   fletcher16_update_block(&csum, cam->buffer, sizeof(cam->buffer) - sizeof(uint16_t));
 
   // checksum is valid
-  if(frame.checksum == fletcher16_get(&csum)) {
-    portpin_outtgl(&LED_AN_PP(1));
-  }
+  //if(frame.checksum == fletcher16_get(&csum)) {
+  //  portpin_outtgl(&LED_AN_PP(1));
+  //}
 
   cam->received_ts = uptime_us();
 

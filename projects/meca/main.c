@@ -157,7 +157,6 @@ int main(void)
   portpin_dirset(&AX12_DIR_PP);
 
   servos_init();
-  cylinder_init();
 
   // Initialize jevois camera
   jevois_cam_init(&cam);
@@ -169,12 +168,27 @@ int main(void)
   uptime_init();
   TIMER_SET_CALLBACK_US(E0, 'B', UPDATE_MATCH_TIMER_TICK_US, INTLVL_HI, update_match_timer);
 
+  cylinder_init();
+
   // Initialize ROME
   rome_intf_init(&rome_strat);
   rome_strat.uart = UART_PPP;
   rome_strat.handler = rome_strat_handler;
 
   uint32_t luptime = UINT32_MAX;
+
+  //ax12_write_byte(&ax12, 1, MX12_ADDR_P_GAIN,  0xFF);
+  //ax12_write_byte(&ax12, 1, MX12_ADDR_D_GAIN,  0x00);
+  //ax12_write_byte(&ax12, 1, MX12_ADDR_I_GAIN,  0xFF);
+
+  while(0){
+    ax12_write_word(&ax12, 1, MX12_ADDR_GOAL_POSITION_L,  0x1FF);
+    _delay_ms(4000);
+    ax12_write_word(&ax12, 1, MX12_ADDR_GOAL_POSITION_L,  0x0);
+    _delay_ms(4000);
+    ax12_write_word(&ax12, 1, MX12_ADDR_GOAL_POSITION_L,  0xFFF);
+    _delay_ms(4000);
+  }
 
   while(1){
 
@@ -183,8 +197,9 @@ int main(void)
     jevois_cam_update(&cam);
   }
 
-  // main loop
+// main loop
   for(;;) {
+
 
     // debug info
     //PORTA.OUT = (t++)/1000;
@@ -200,6 +215,7 @@ int main(void)
     // check match timer
     if(match_timer_ms > 1000*(int32_t)MATCH_DURATION_SECS) {
       portpin_outset(&LED_AN_PP(0));
+      cylinder_shutdown();
     }
 
   }
