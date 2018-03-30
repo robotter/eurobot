@@ -6,8 +6,15 @@
 
 typedef enum{
   CYLINDER_INIT,
-  CYLINDER_TAKEBALLS,
+  CYLINDER_IDLE,
+  CYLINDER_BALLEATER_PRE_TAKE,
+  CYLINDER_BALLEATER_TAKE,
+  CYLINDER_BALLEATER_POST_TAKE,
+  CYLINDER_FIND_EMPTY,
+  CYLINDER_FIND_EMPTY_ORDER_MOVING,
+  CYLINDER_FIND_EMPTY_MOVING,
   CYLINDER_EATBALL,
+  CYLINDER_TAKEBALLS,
   CYLINDER_IS_FULL,
   CYLINDER_THROWBALLS,
   CYLINDER_TRASHBALLS,
@@ -16,6 +23,11 @@ typedef enum{
 typedef struct {
   cylinder_state_t state;
   uint8_t balls_loaded;
+
+  uint8_t position;
+
+  uint32_t moving_ts;
+  uint32_t drop_ts;
 }cylinder_t;
 
 

@@ -15,6 +15,7 @@
 #include <pwm/motor.h>
 #include "servos.h"
 #include "cylinder.h"
+#include "jevois_cam.h"
 
 // match timer
 bool match_started = false;
@@ -22,6 +23,8 @@ int32_t match_timer_ms = -1;
 
 // ROME interface
 rome_intf_t rome_strat;
+
+jevois_cam_t cam;
 
 void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
@@ -156,6 +159,9 @@ int main(void)
   servos_init();
   cylinder_init();
 
+  // Initialize jevois camera
+  jevois_cam_init(&cam);
+
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
@@ -171,7 +177,10 @@ int main(void)
   uint32_t luptime = UINT32_MAX;
 
   while(1){
+
     cylinder_update();
+    //update camera
+    jevois_cam_update(&cam);
   }
 
   // main loop

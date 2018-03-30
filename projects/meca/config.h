@@ -12,6 +12,7 @@
 /// Perlimpinpin node address
 #define PPP_ADDR  0x12
 
+#define UART_JEVOIS uartF1
 #define UART_AX12  uartC1
 #define UART_PPP  uartF0
 #define UART_COLOR_SENSOR_LEFT   uartF1
