@@ -110,13 +110,14 @@ static void rome_meca_handler(rome_intf_t *intf, const rome_frame_t *frame)
         return; // don't forward
       }
     } break;
-    case ROME_MID_MECA_TM_LEFT_ELEVATOR:
-      robot_state.left_elev.state = frame->meca_tm_left_elevator.state;
-      robot_state.left_elev.nb_spots = frame->meca_tm_left_elevator.nb_spots;
+    case ROME_MID_MECA_TM_STATE:
+      robot_state.meca_state = frame->meca_tm_state.state;
       break;
-    case ROME_MID_MECA_TM_RIGHT_ELEVATOR:
-      robot_state.right_elev.state = frame->meca_tm_right_elevator.state;
-      robot_state.right_elev.nb_spots = frame->meca_tm_right_elevator.nb_spots;
+    case ROME_MID_MECA_TM_CYLINDER_STATE:
+      robot_state.cylinder_nb_slots = frame->meca_tm_cylinder_state.nb_slots;
+      robot_state.cylinder_nb_empty = frame->meca_tm_cylinder_state.nb_empty;
+      robot_state.cylinder_nb_good = frame->meca_tm_cylinder_state.nb_good;
+      robot_state.cylinder_nb_bad = frame->meca_tm_cylinder_state.nb_bad;
       break;
     default:
       break;
@@ -252,7 +253,7 @@ int main(void)
   TIMER_SET_CALLBACK_US(E0, 'B', 50e3, INTLVL_HI, update_battery);
   idle_set_callback(rome_update, update_rome_interfaces);
 
-  // if voltage is low, blink purple led and don't start anything
+  // if voltage is low, blink red led and don't start anything
   if(voltage < BATTERY_ALERT_LIMIT) {
     for(;;) {
       if((uptime_us() / 500000) % 2 == 0) {
@@ -269,7 +270,11 @@ int main(void)
   strat_init();
   portpin_outclr(&LED_R_PP);
   robot_state.team = strat_select_team();
+
   strat_prepare();
+
+  strat_test();
+
   strat_wait_start();
 
   TIMER_SET_CALLBACK_US(F0, 'A', 1e6, ROME_SEND_INTLVL, match_end);

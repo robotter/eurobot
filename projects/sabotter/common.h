@@ -24,7 +24,7 @@ typedef struct {
 typedef enum {
   TEAM_NONE,
   TEAM_GREEN,
-  TEAM_PURPLE,
+  TEAM_ORANGE,
 } team_t;
 
 // Robot state
@@ -52,15 +52,15 @@ typedef struct {
   struct {
     r3d2_object_t objects[2];
   } r3d2;
-  // spot elevators
-  struct {
-    int8_t state;
-    int8_t nb_spots;
-  }left_elev;
-  struct {
-    int8_t state;
-    int8_t nb_spots;
-  }right_elev;
+  // MECA (galipeur)
+  uint8_t meca_state;
+  // cylinder
+  uint8_t cylinder_nb_slots;
+  uint8_t cylinder_nb_empty;
+  uint8_t cylinder_nb_good;
+  uint8_t cylinder_nb_bad;
+
+  //galipette bumpers
   struct{
     bool left;
     bool right;

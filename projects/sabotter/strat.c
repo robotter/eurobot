@@ -381,6 +381,27 @@ void go_around(int16_t cx,int16_t cy, float a){
   }
 }
 
+void _wait_meca_ready(void){
+  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ready");
+  for (;;){
+    if((robot_state.meca_state == ROME_ENUM_MECA_STATE_READY)){
+      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ready");
+      return;
+    }
+    idle();
+  }
+}
+
+void _wait_meca_ground_clear(void){
+  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ground clear");
+  for (;;){
+    if((robot_state.meca_state == ROME_ENUM_MECA_STATE_GROUND_CLEAR)){
+      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ground clear");
+      return;
+    }
+    idle();
+  }
+}
 
 #if 0
 
@@ -397,28 +418,6 @@ void ext_arm_galette_prepare(void)  { ext_arm_set(270); }
 void ext_arm_galette_lift(void)  { ext_arm_set(460); }
 void ext_arm_galette_release(void)  { ext_arm_set(350); }
 
-void _wait_meca_ready(void){
-  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ready");
-  for (;;){
-    if((robot_state.left_elev.state == SPOT_ELEV_S_READY)&&
-       (robot_state.right_elev.state == SPOT_ELEV_S_READY)){
-      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ready");
-      return;
-    }
-    idle();
-  }
-}
-
-void _wait_meca_ground_clear(void){
-  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ground clear");
-  for (;;){
-    if((robot_state.left_elev.state != SPOT_ELEV_S_BUSY)&&
-       (robot_state.right_elev.state != SPOT_ELEV_S_BUSY)){
-      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ground clear");
-      return;}
-    idle();
-  }
-}
 
 void _meca_discharge_spots(void){
   _wait_meca_ready();
@@ -593,9 +592,9 @@ team_t strat_select_team(void)
       team = TEAM_GREEN;
     } else {
       portpin_outset(&LED_R_PP);
-      portpin_outclr(&LED_G_PP);
-      portpin_outset(&LED_B_PP);
-      team = TEAM_PURPLE;
+      portpin_outset(&LED_G_PP);
+      portpin_outclr(&LED_B_PP);
+      team = TEAM_ORANGE;
     }
     if(starting_cord_plugged()) {
       portpin_outclr(&LED_B_PP);
@@ -607,8 +606,8 @@ team_t strat_select_team(void)
   if(team == TEAM_GREEN)
     ROME_LOG(&rome_paddock,INFO,"Color : GREEN !");
   else
-    ROME_LOG(&rome_paddock,INFO,"Color : PURPLE !");
-    
+    ROME_LOG(&rome_paddock,INFO,"Color : ORANGE !");
+
   // wait 2s before next step
   uint32_t tend = uptime_us() + 2e6;
   while(uptime_us() < tend) {
@@ -623,10 +622,10 @@ void strat_wait_start(void)
 
   while(starting_cord_plugged()) {
     if((uptime_us() / 500000) % 2 == 0) {
-      if(robot_state.team == TEAM_PURPLE) {
+      if(robot_state.team == TEAM_ORANGE) {
         portpin_outset(&LED_R_PP);
-        portpin_outclr(&LED_G_PP);
-        portpin_outset(&LED_B_PP);
+        portpin_outset(&LED_G_PP);
+        portpin_outclr(&LED_B_PP);
       } else {
         portpin_outclr(&LED_R_PP);
         portpin_outset(&LED_G_PP);
@@ -660,7 +659,6 @@ void strat_init_galipeur(void)
 
   // initialize meca
   ROME_LOG(&rome_paddock,INFO,"Init meca");
-  ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
   // set R3D2 parameters
   //ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,0,25);
 
@@ -669,8 +667,6 @@ void strat_init_galipeur(void)
     if(!robot_state.gyro_calibration)
       break;
   }
-  
-  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
 
   // set R3D2 parameters
   //ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
@@ -680,7 +676,10 @@ void strat_prepare_galipeur(void)
 {
   //initalise kx factor
   robot_kx = robot_state.team == TEAM_GREEN ? 1 : -1;
-  
+
+  //send color to meca
+  ROME_SENDWAIT_MECA_SET_ROBOT_COLOR(&rome_meca, robot_state.team == TEAM_GREEN);
+
   ROME_LOG(&rome_paddock,DEBUG,"Strat prepare");
   // initialize asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
@@ -689,13 +688,14 @@ void strat_prepare_galipeur(void)
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
 
+#if 0
   // autoset robot, Y on pond
   autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET);
   // move in front of starting area
   goto_xya(KX(200), 1210, KA(0));
   //and autoset X
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
-
+#endif
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
 }
@@ -751,7 +751,7 @@ void galipeur_set_speed(robot_speed_t s){
 }
 
 void galipeur_reset_sandroller(void){
-  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  //ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   //go back before restarting motor in case it is blocked
   goto_xya_rel(KX(-50),0,0);
   ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
@@ -806,7 +806,7 @@ order_result_t galipeur_destroy_dune_first_row(bool avoid_galipette){
   goto_xya(KX(-300), 2000-260, KA(M_PI));
   ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
   goto_xya(KX(100),  2000-260, KA(M_PI));
-  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  //ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   return ORDER_SUCCESS;
 }
 
@@ -828,13 +828,13 @@ order_result_t galipeur_destroy_dune_second_row_first_pass(void){
   goto_xya(KX(-250), 2000-230, KA(-5*M_PI/6));
   galipeur_reset_sandroller();
   goto_xya(KX(-320), 2000-230, KA(-5*M_PI/6));
-  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  //ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
   ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
   goto_xya(KX(-200), 2000 - AUTOSET_OFFSET - 20, KA(M_PI));
   galipeur_reset_sandroller();
   goto_xya(KX(-100), 2000 - AUTOSET_OFFSET - 20, KA(M_PI));
-  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  //ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   goto_xya(KX(-100), 2000-250, KA(M_PI));
   return ORDER_SUCCESS;
 }
@@ -852,7 +852,7 @@ order_result_t galipeur_destroy_dune_second_row_second_pass(void){
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
   ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
   goto_xya(KX(50),  2000 - AUTOSET_OFFSET - 20, KA(M_PI));
-  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  //ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   goto_xya(KX(50), 2000-250, KA(M_PI));
   return ORDER_SUCCESS;
 }
@@ -870,7 +870,7 @@ order_result_t galipeur_destroy_dune_second_row_third_pass(void){
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
   ROME_SENDWAIT_MECA_SET_SERVO(&rome_meca,0,1700);
   goto_xya(KX(250),  2000 - AUTOSET_OFFSET - 20, KA(M_PI));
-  ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
+  //ROME_SENDWAIT_MECA_SET_SAND_ROLLER(&rome_meca, 0);
   return ORDER_SUCCESS;
 }
 
@@ -904,6 +904,11 @@ void strat_run_galipeur(void)
   ROME_LOG(&rome_paddock,DEBUG,"Go !!!");
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+
+#if 1
+
+#else
+
 #if 1
 
 
@@ -1037,13 +1042,34 @@ order_result_t or_doors = ORDER_FAILURE;
 
 #endif
 
+#endif
+
   _delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-  //ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 0);
+  ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 0);
 }
 
 void strat_test_galipeur(void)
 {
+  ROME_LOG(&rome_paddock,INFO,"Galipeur : Strat test");
+  ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
+  _wait_meca_ready();
+  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_CHECK_EMPTY);
+  _wait_meca_ready();
+
+  while(1){
+  if (robot_state.cylinder_nb_empty == 0){
+    ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_LOAD_WATER);
+    }
+  else
+    if (robot_state.cylinder_nb_bad != 0){
+      ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_THRASH_TREATMENT);
+    }
+    else{
+      ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_THROW_WATERTOWER);
+    }
+  _wait_meca_ready();
+  }
 }
 
 /****************************************************************************/
