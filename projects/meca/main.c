@@ -35,16 +35,51 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
 
+    case ROME_MID_MECA_CMD: {
+      ROME_LOGF(&rome_strat, DEBUG, "MECA: cmd %d",frame->meca_cmd.cmd);
+      void (*func)(void);
+      switch(frame->meca_cmd.cmd) {
+        case ROME_ENUM_MECA_COMMAND_CHECK_EMPTY:
+          func = cylinder_check_empty;
+          break;
+        case ROME_ENUM_MECA_COMMAND_LOAD_WATER:
+          func = cylinder_load_water;
+          break;
+        case ROME_ENUM_MECA_COMMAND_THROW_WATERTOWER:
+          func = cylinder_throw_watertower;
+          break;
+        case ROME_ENUM_MECA_COMMAND_THRASH_TREATMENT:
+          func = cylinder_thrash_treatment;
+          break;
+        case ROME_ENUM_MECA_COMMAND_NONE:
+        default:
+          func = NULL;
+          break;
+      }
+      if(func)
+        func();
+      rome_reply_ack(intf, frame);
+    } break;
+
     case ROME_MID_MECA_SET_POWER: {
       uint8_t active = frame->meca_set_power.active;
       if(active) {
-        portpin_outset(&LED_ERROR_PP);
+        portpin_outset(&LED_RUN_PP);
       } else {
-        portpin_outclr(&LED_ERROR_PP);
+        portpin_outclr(&LED_RUN_PP);
       }
       rome_reply_ack(intf, frame);
     } break;
 
+    case ROME_MID_MECA_SET_ROBOT_COLOR: {
+      uint8_t green = frame->meca_set_robot_color.green;
+      if(green) {
+        cylinder_set_robot_color(JEVOIS_COLOR_GREEN);
+      } else {
+        cylinder_set_robot_color(JEVOIS_COLOR_ORANGE);
+      }
+      rome_reply_ack(intf, frame);
+    } break;
     default:
       break;
   }
@@ -177,29 +212,12 @@ int main(void)
 
   uint32_t luptime = UINT32_MAX;
 
-  //ax12_write_byte(&ax12, 1, MX12_ADDR_P_GAIN,  0xFF);
-  //ax12_write_byte(&ax12, 1, MX12_ADDR_D_GAIN,  0x00);
-  //ax12_write_byte(&ax12, 1, MX12_ADDR_I_GAIN,  0xFF);
-
-  while(0){
-    ax12_write_word(&ax12, 1, MX12_ADDR_GOAL_POSITION_L,  0x1FF);
-    _delay_ms(4000);
-    ax12_write_word(&ax12, 1, MX12_ADDR_GOAL_POSITION_L,  0x0);
-    _delay_ms(4000);
-    ax12_write_word(&ax12, 1, MX12_ADDR_GOAL_POSITION_L,  0xFFF);
-    _delay_ms(4000);
-  }
-
-  while(1){
+  // main loop
+  for(;;) {
 
     cylinder_update();
     //update camera
     jevois_cam_update(&cam);
-  }
-
-// main loop
-  for(;;) {
-
 
     // debug info
     //PORTA.OUT = (t++)/1000;
@@ -210,6 +228,12 @@ int main(void)
       luptime = uptime;
       portpin_outtgl(&LED_COM_PP);
       rome_handle_input(&rome_strat);
+      ROME_SEND_MECA_TM_STATE(&rome_strat,cylinder_get_tm_state());
+      ROME_SEND_MECA_TM_CYLINDER_STATE(&rome_strat,
+        CYLINDER_NB_POS,
+        cylinder_count_empty_slots(),
+        cylinder_count_good_water(),
+        cylinder_count_bad_water());
     }
 
     // check match timer
