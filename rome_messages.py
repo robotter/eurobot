@@ -16,7 +16,7 @@ register_messages(
       (Order, 'asserv_goto_xy', [('x','dist'), ('y','dist'), ('a','angle')]),
       # same as asserv_goto_xy, but relative to previous coordinates
       (Order, 'asserv_goto_xy_rel', [('x','dist'), ('y','dist'), ('a','angle')]),
-      
+
       # order robot to go directly to point (x,y) then turn to heading a
       (Order, 'asserv_goto_xya_panning', [('x','dist'), ('y','dist'), ('pan_angle', 'angle')]),
       (Order, 'asserv_goto_xya_synced', [('x','dist'), ('y','dist'), ('a', 'angle')]),
@@ -94,11 +94,11 @@ register_messages(
 
       # turn on/off avoidance
       (Order, 'asserv_avoidance', [('b','bool')]),
-        
+
       # turn on/off gyro integration
       (Order, 'asserv_gyro_integration', [('b','bool')]),
 
-      # bumper state (used by galipeur autoset)
+      # bumper state (used by galipette autoset)
       ('asserv_tm_bumpers_state', [('b0','bool'),('b1','bool')]),
 
       ]),
@@ -133,41 +133,31 @@ register_messages(
       # __ ORDERS __
       # activate/deactivate motor power
       (Order, 'meca_set_power', [('active','bool')]),
-      # set servo #n
-      (Order, 'meca_set_arm', [('position','int16')]),
+      # set robot color
+      (Order, 'meca_set_robot_color', [('green','bool')]),
       # meca spot elevator commands
       rome_types.rome_enum('meca_command', (
           'none',
-          'prepare_pick_spot',
-          'pick_spot',
-          'discharge_spot_stack',
-          'release_spot_stack',
-          'pick_bulb',
-          'prepare_bulb',
-          'prepare_cup',
-          'unload_cup',
-          'pick_cup',
-          'reset_elevator',
+          'check_empty',
+          'load_water',
+          'throw_watertower',
+          'thrash_treatment',
           )),
-      (Order, 'meca_cmd', [('cmd','meca_command'),('side','int8')]),
-      # carpets
-      (Order, 'meca_carpet_lock', [('n','uint8')]),
-      (Order, 'meca_carpet_unlock', [('n','uint8')]),
-      # sand roller
-      (Order, 'meca_set_sand_roller', [('active','bool')]),
+      (Order, 'meca_cmd', [('cmd','meca_command')]),
       # generic analog servo commands
       (Order, 'meca_set_servo', [('id','uint8'),('value','uint16')]),
+
       # __ TELEMETRY __
       # match timer
       ('meca_tm_match_timer', [('seconds','int16')]),
-      # spot elevators
-      rome_types.rome_enum('meca_elevator_state', (
-          'busy',  # elevator won't accept commands, robot shouldn't move
-          'ground_clear',  # elevator won't accept commands, robot can move
-          'ready',  # elevator ready for new commands
+      # meca state
+      rome_types.rome_enum('meca_state', (
+          'busy',  # meca won't accept commands and robot shouldn't move
+          'ground_clear',  # meca won't accept commands but robot can move
+          'ready',  # meca ready for new commands
           )),
-      ('meca_tm_left_elevator'  ,[('state','meca_elevator_state'),('nb_spots','int8')]),
-      ('meca_tm_right_elevator' ,[('state','meca_elevator_state'),('nb_spots','int8')]),
+      ('meca_tm_state'  ,[('state','meca_state')]),
+      ('meca_tm_cylinder_state', [('nb_slots','uint8'),('nb_empty','uint8'),('nb_good','uint8'),('nb_bad','uint8')]),
       ]),
 
   )
