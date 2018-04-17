@@ -48,8 +48,14 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
         case ROME_ENUM_MECA_COMMAND_THROW_WATERTOWER:
           func = cylinder_throw_watertower;
           break;
-        case ROME_ENUM_MECA_COMMAND_THRASH_TREATMENT:
-          func = cylinder_thrash_treatment;
+        case ROME_ENUM_MECA_COMMAND_TRASH_TREATMENT:
+          func = cylinder_trash_treatment;
+          break;
+        case ROME_ENUM_MECA_COMMAND_TRASH_BEGINMATCH:
+          func = cylinder_trash_beginmatch;
+          break;
+        case ROME_ENUM_MECA_COMMAND_THROW_OFFCUP:
+          func = cylinder_throw_offcup;
           break;
         case ROME_ENUM_MECA_COMMAND_NONE:
         default:
@@ -211,6 +217,7 @@ int main(void)
   rome_strat.handler = rome_strat_handler;
 
   uint32_t luptime = UINT32_MAX;
+  uint32_t msg_uptime = UINT32_MAX;
 
   // main loop
   for(;;) {
@@ -223,12 +230,17 @@ int main(void)
     //PORTA.OUT = (t++)/1000;
     uint32_t uptime = uptime_us();
 
-    // update rome every 100 ms
-    if(uptime - luptime > 100000) {
+    // update rome
+    if(uptime - luptime > UPDATE_ROME_US) {
       luptime = uptime;
       portpin_outtgl(&LED_COM_PP);
       rome_handle_input(&rome_strat);
+    }
+    // update msgs
+    if(uptime - msg_uptime > UPDATE_ROME_US) {
+      msg_uptime = uptime_us();
       ROME_SEND_MECA_TM_STATE(&rome_strat,cylinder_get_tm_state());
+      ROME_SEND_MECA_TM_OPTIMAL_EMPTYING_MOVE(&rome_strat,cylinder_get_tm_optimal_move());
       ROME_SEND_MECA_TM_CYLINDER_STATE(&rome_strat,
         CYLINDER_NB_POS,
         cylinder_count_empty_slots(),

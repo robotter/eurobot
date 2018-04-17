@@ -23,8 +23,9 @@
 // Interrupt level of tick interrupt
 #define MATCH_TIMER_INTLVL  INTLVL_HI
 
-// arm update in us
-#define UPDATE_ARM_US 100000
+// rome update in us
+#define UPDATE_ROME_US 10000
+#define UPDATE_MSG_US  100000
 
 // AX-12 recv timeout, in microseconds
 #define AX12_TIMEOUT_US  40000
@@ -95,6 +96,7 @@
 #define CYLINDER_BALLEATER_POS { 6, 142, 288, 435, 578, 721, 863, 1002 }
 #define CYLINDER_TURBINE_POS_OFFSET 830
 #define CYLINDER_TURBINE_POS { 836, 972, 720, 22, 159, 311, 454, 596 }
+#define CYLINDER_WHEELMODE_SPEED 400
 
 #endif
 
@@ -116,5 +118,7 @@
 #define CYLINDER_TURBINE_STOP_DELAY_US   700000
 #define CYLINDER_BALL_FLYING_DELAY_US    1500000
 #define CYLINDER_TURBINE_BOOT_DELAY_US   2000000
+
+#define CYLINDER_EATING_TIMEOUT_US       1000000
 
 #endif

@@ -42,6 +42,9 @@ void servo_set(uint8_t id, uint16_t value){
     case 1:
       pwm_motor_set(servos+1, pwm);
       break;
+    case 2:
+      pwm_motor_set(servos+2, pwm);
+      break;
     default:
       break;
    }

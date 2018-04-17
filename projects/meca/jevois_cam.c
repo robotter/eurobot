@@ -87,9 +87,14 @@ void jevois_cam_init(jevois_cam_t *cam) {
 }
 
 void jevois_cam_update(jevois_cam_t *cam) {
+  int n = 0;
   int16_t c;
   while((c = uart_recv_nowait(UART_JEVOIS)) >= 0) {
     update_frame(cam,c);
+    n++;
+    // in case jevois is flooding, limit batch read to 1024
+    if(n >= 1024)
+      break;
   }
 }
 

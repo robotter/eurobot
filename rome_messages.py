@@ -141,7 +141,9 @@ register_messages(
           'check_empty',
           'load_water',
           'throw_watertower',
-          'thrash_treatment',
+          'trash_treatment',
+          'trash_beginmatch',
+          'throw_offcup',
           )),
       (Order, 'meca_cmd', [('cmd','meca_command')]),
       # generic analog servo commands
@@ -158,6 +160,11 @@ register_messages(
           )),
       ('meca_tm_state'  ,[('state','meca_state')]),
       ('meca_tm_cylinder_state', [('nb_slots','uint8'),('nb_empty','uint8'),('nb_good','uint8'),('nb_bad','uint8')]),
+      rome_types.rome_enum('emptying_move', (
+            'none',
+            'watertower',
+            'treatment')),
+      ('meca_tm_optimal_emptying_move', [('move','emptying_move')]),
       ]),
 
   )

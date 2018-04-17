@@ -151,16 +151,20 @@ bool mx12_cylinder_in_position(uint16_t position){
     return false;
 }
 #endif
+void deflector_on(void) { servo_set(2,1800); }
+void deflector_off(void) { servo_set(2,3000); }
 
-void turbine_off(void) { servo_set(1,1300); }
-void turbine_full(void){ servo_set(1,2500); }
-void turbine_watertower(void){ servo_set(1,1900); }
-void turbine_treatment(void){ servo_set(1,1700); }
-void turbine_low(void){ servo_set(1,1650); }
+void turbine_off(void) { deflector_on(); servo_set(1,1300); }
+void turbine_full(void){ deflector_off(); servo_set(1,2500); }
+void turbine_watertower(void){ deflector_off(); servo_set(1,2100); }
+void turbine_treatment(void){  deflector_on();  servo_set(1,1800); }
+void turbine_low(void){ deflector_off(); servo_set(1,1650); }
 
 void balleater_off(void) { servo_set(0,2455); }
 void balleater_on(void)  { servo_set(0,2000); }
-//static void balleater_reverse(void) { servo_set(0,2500); }
+void balleater_reverse(void) { servo_set(0,2500); }
+
+
 
 void cylinder_shutdown(void){
   turbine_off();
@@ -224,23 +228,20 @@ jevois_color_t get_current_slot_color(void){
   return cylinder.ball_color[cylinder.position];
 }
 
-uint8_t cylinder_get_next_color_slot(jevois_color_t jvc){
-  uint8_t i = 0;
-  bool first_slot_found = false;
-  for( i=0; i < CYLINDER_NB_POS; i++){
-    if (cylinder.ball_color[i] == jvc)
-      first_slot_found = true;
-    else //if we have found the row of colored slots, search to first empty slot
-      if (first_slot_found)
-        if (cylinder.ball_color[i] == JEVOIS_COLOR_NONE)
-          return i;
+int8_t cylinder_get_next_color_slot(jevois_color_t jvc){
+  if (jvc != cylinder.robot_color){
+    for( int8_t i = 0; i < CYLINDER_NB_POS; i++){
+      if (cylinder.ball_color[i] == JEVOIS_COLOR_NONE)
+        return i;
+    }
   }
-
-  //if there are no balls of this color loaded, attribute a slot based on asked color
-  if (jvc == cylinder.robot_color)
-    return CYLINDER_NB_POS/2;
-  else
-    return 0;
+  else{
+    for( int8_t i = CYLINDER_NB_POS -1; i > 0; i--){
+      if (cylinder.ball_color[i] == JEVOIS_COLOR_NONE)
+        return i;
+    }
+  }
+  return 0;
 }
 
 //static jevois_color_t get_current_slot_color(void){
@@ -251,10 +252,9 @@ bool cylinder_is_full(void){
   return (cylinder_count_empty_slots() == CYLINDER_NB_POS);
 }
 
-void cylinder_reset_bad_ball_colors(void){
-  for (uint8_t i = 0; i < CYLINDER_NB_POS; i++)
-    if (cylinder.ball_color[i] != cylinder.robot_color)
-      cylinder.ball_color[i] = JEVOIS_COLOR_NONE;
+void cylinder_reset_next_move_ball_colors(void){
+  for (uint8_t i = 0; i <= cylinder.next_move.length; i++)
+    cylinder.ball_color[cylinder.next_move.begin+i%CYLINDER_NB_POS] = JEVOIS_COLOR_NONE;
 }
 
 void cylinder_reset_ball_colors(void){
@@ -262,15 +262,79 @@ void cylinder_reset_ball_colors(void){
     cylinder.ball_color[i] = JEVOIS_COLOR_NONE;
 }
 
+jevois_color_t _opposite_color(jevois_color_t color){
+  if (color == JEVOIS_COLOR_ORANGE)
+    return JEVOIS_COLOR_GREEN;
+
+  if (color == JEVOIS_COLOR_GREEN)
+    return JEVOIS_COLOR_ORANGE;
+
+  return JEVOIS_COLOR_NONE;
+}
+
+cylinder_move_t next_emptying_move(jevois_color_t color){
+  uint8_t idx = 0;
+  uint8_t i   = 0;
+  uint8_t j   = 0;
+  uint8_t dist = 0;
+  cylinder_move_t max_move;
+  max_move.begin = 0;
+  max_move.end = 0;
+  max_move.length = 0;
+  while (idx < CYLINDER_NB_POS){
+    //search for the beginning of a color row
+    if (cylinder.ball_color[idx] == color){
+      //search for the end of a color row
+      i = idx;
+      j = idx;
+      while( cylinder.ball_color[i] != _opposite_color(color)){
+        if (cylinder.ball_color[i] == color)
+          j = i;
+        i++;
+        i %= CYLINDER_NB_POS;
+        if (i == idx)
+          break;
+      }
+      //measure color row length, and store the longest
+      if (j != 2){
+        if (j >= idx)
+          dist = j - idx + 1;
+        else
+          dist = j+CYLINDER_NB_POS - idx + 1;
+        if (dist > max_move.length){
+          max_move.length = dist;
+          max_move.begin = idx;
+          max_move.end = j;
+        }
+      }
+    }
+
+    idx ++;
+    if (idx == 2)
+      idx ++;
+  }
+
+  ROME_LOGF(&rome_strat, DEBUG,"meca next move : %u from %u to %u", max_move.length, max_move.begin, max_move.end);
+
+  return max_move;
+}
+
+void cylinder_set_idle(void){
+  cylinder.state = CYLINDER_IDLE;
+  cylinder.tm_optimal_move = ROME_ENUM_EMPTYING_MOVE_NONE;
+}
+
 void cylinder_init(void){
   turbine_off();
   balleater_off();
+  deflector_on();
   cylinder.state = CYLINDER_INIT;
   cylinder.robot_color = JEVOIS_COLOR_GREEN;
   cylinder.moving_ts = uptime_us();
   ax12_cylinder_set_posmode();
   cylinder_reset_ball_colors();
   cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+  cylinder.tm_optimal_move = ROME_ENUM_EMPTYING_MOVE_NONE;
 }
 
 void cylinder_update(void){
@@ -292,6 +356,8 @@ void cylinder_update(void){
 
   switch (cylinder.state){
     case CYLINDER_INIT:{
+      if (!jevois_cam_is_valid(&cam))
+        break;
       bool delay = cylinder.moving_ts + CYLINDER_TURBINE_BOOT_DELAY_US < uptime_us();
       if(!delay)
         break;
@@ -299,7 +365,7 @@ void cylinder_update(void){
       balleater_off();
       cylinder.moving_ts = 0;
       cylinder.drop_ts = 0;
-      cylinder.state = CYLINDER_IDLE;
+      cylinder_set_idle();
       break;
     }
 
@@ -318,7 +384,7 @@ void cylinder_update(void){
       set_current_slot_color(jevois_cam_get_cylinder_color(&cam));
 
       if (cylinder.position == CYLINDER_NB_POS - 1 ){
-        cylinder.state = CYLINDER_IDLE;
+        cylinder_set_idle();
         break;
       }
 
@@ -343,6 +409,17 @@ void cylinder_update(void){
 
     case CYLINDER_BALLEATER_PRE_TAKE:
       balleater_on();
+      cylinder.eating_ts = uptime_us();
+      cylinder.state = CYLINDER_BALLEATER_WAIT_EATING;
+      //no break;
+
+    case CYLINDER_BALLEATER_WAIT_EATING:{
+      bool delay = cylinder.eating_ts + CYLINDER_EATING_TIMEOUT_US > uptime_us();
+      if(!delay){
+        cylinder_set_idle();
+        balleater_off();
+        break;
+      }
       //wait for a valid camera frame
       if (!jevois_cam_is_valid(&cam))
         break;
@@ -352,6 +429,7 @@ void cylinder_update(void){
         balleater_off();
       }
       break;
+    }
 
     case CYLINDER_EATING_FIND_EMPTY: {
       //wait for a valid camera frame
@@ -366,8 +444,7 @@ void cylinder_update(void){
       if(!delay)
         break;
 
-      bool cylinder_empty =
-        jevois_cam_is_valid(&cam) && jevois_cam_get_cylinder_color(&cam) == JEVOIS_COLOR_NONE;
+      bool cylinder_empty = jevois_cam_get_cylinder_color(&cam) == JEVOIS_COLOR_NONE;
 
       // cylinder position empty lets roll
       if(cylinder_empty) {
@@ -376,9 +453,17 @@ void cylinder_update(void){
         cylinder.state = CYLINDER_BALLEATER_TAKE;
         break;
       }
+      //cylinder not empty :(
+      //update current slot color in case the stored information was false ...
+      set_current_slot_color(jevois_cam_get_cylinder_color(&cam));
+      //... and check if there still are empty spots
+      if (cylinder_count_empty_slots() == 0){
+        cylinder_set_idle();
+        break;
+      }
 
-      // shift to next position
-      cylinder_position_increment();
+      // shift to next empty spot
+      cylinder.position = cylinder_get_next_color_slot(jevois_cam_get_entry_color(&cam));
       cylinder.state = CYLINDER_EATING_FIND_EMPTY_ORDER_MOVING;
       // no break
     }
@@ -424,23 +509,24 @@ void cylinder_update(void){
 
       //if all balls are loaded stop taking balls
       if (cylinder_is_full()){
-        cylinder.state = CYLINDER_IDLE;
+        cylinder_set_idle();
         break;
       }
       cylinder.state = CYLINDER_BALLEATER_PRE_TAKE;
       break;
     }
 
-    case CYLINDER_THROWBALLS_WHEELMODE:
-    case CYLINDER_THROWBALLS_WHEELMODE_PREPARE_ORDER_MOVE:
-      cylinder.position = 2;
+    case CYLINDER_THROWBALLS:
+    case CYLINDER_THROWBALLS_PREPARE_ORDER_MOVE:
+      cylinder.position = cylinder.next_move.begin;
       if (!cylinder_turbine_move())
         break;
-      cylinder.state = CYLINDER_THROWBALLS_WHEELMODE_PREPARE_MOVING;
+      cylinder.state = CYLINDER_THROWBALLS_PREPARE_MOVING;
       //no break
-    case CYLINDER_THROWBALLS_WHEELMODE_PREPARE_MOVING:
+    case CYLINDER_THROWBALLS_PREPARE_MOVING:
       if (!cylinder_turbine_move_done())
         break;
+      //switch on turbine depending on the throw mode
       switch (cylinder.throw_mode){
         case CYLINDER_THROW_WATERTOWER:
           turbine_watertower();
@@ -452,130 +538,61 @@ void cylinder_update(void){
           turbine_full();
           break;
         default:
-          turbine_low();
+          turbine_treatment();
           break;
       }
-      cylinder.state = CYLINDER_THROWBALLS_WHEELMODE_ORDER_TURN;
+      //prepare the end move position of the cylinder
+      cylinder.position = cylinder.next_move.end;
+      cylinder.state = CYLINDER_THROWBALLS_ORDER_TURN;
       cylinder.throw_ts = uptime_us();
       //no break
 
-    case CYLINDER_THROWBALLS_WHEELMODE_ORDER_TURN:{
+    case CYLINDER_THROWBALLS_ORDER_TURN:{
       bool delay = cylinder.throw_ts + CYLINDER_TURBINE_STOP_DELAY_US < uptime_us();
       if (!delay)
         break;
-      if(!ax12_cylinder_rotate(0x15F))
+      if(!ax12_cylinder_rotate(CYLINDER_WHEELMODE_SPEED))
         break;
-      cylinder.state = CYLINDER_THROWBALLS_WHEELMODE_TURNING;
-      if (cylinder.throw_mode == CYLINDER_THROW_TREATMENT){
-        //bad water storage starts from 0, and ends at the current bad water slots used
-        cylinder.position = cylinder_count_bad_water();
-      }
-      else{
-        //if there is some bad water in storage, we should not be here
-        //so let's empty the whole cylinder !
-        cylinder.position = 7;
-      }
+      cylinder.state = CYLINDER_THROWBALLS_TURNING;
       break;
     }
-    case CYLINDER_THROWBALLS_WHEELMODE_TURNING:
+
+    case CYLINDER_THROWBALLS_TURNING:
       if(!cylinder_turbine_move_done())
         break;
+      if(!ax12_cylinder_rotate(0))
+        break;
       turbine_off();
-      ax12_cylinder_set_posmode();
-      if (cylinder.throw_mode == CYLINDER_THROW_WATERTOWER)
-        cylinder_reset_ball_colors();
-      else
-        cylinder_reset_bad_ball_colors();
-      cylinder.state = CYLINDER_CHECK_EMPTY_PREPARE;
-      break;
-
-    case CYLINDER_THROWBALLS_POS:
-    case CYLINDER_THROWBALLS_PREPARE:
-      cylinder.position = 2;
-      if(!cylinder_turbine_move())
-        break;
-      cylinder.state = CYLINDER_THROWBALLS_PREPARE_MOVING;
-      break;
-
-    case CYLINDER_THROWBALLS_PREPARE_MOVING:
-      if(cylinder_turbine_move_done()) {
-        //cylinder.moving_ts = uptime_us();
-        cylinder.position = 0;
-        cylinder.state = CYLINDER_THROWBALLS_ORDER_MOVING;
-      }
-      break;
-
-    case CYLINDER_THROWBALLS_POS_THROW:{
-      //bool delay = cylinder.moving_ts + CYLINDER_MOVING_DELAY_US < uptime_us();
-      //if(!delay)
-      //  break;
-
-      if (get_current_slot_color() == JEVOIS_COLOR_NONE){
-        cylinder_position_increment();
-        //position 2 is fake one, cylinder can't get in turbine pos there
-        if (cylinder.position == 2)
-          cylinder_position_increment();
-        cylinder.state = CYLINDER_THROWBALLS_ORDER_MOVING;
-        break;
-      }
-
-      if (get_current_slot_color() == cylinder.robot_color &&
-          cylinder.throw_mode == CYLINDER_THROW_WATERTOWER)
-            turbine_watertower();
-      else
-        if (get_current_slot_color() != cylinder.robot_color &&
-          cylinder.throw_mode == CYLINDER_THROW_TREATMENT)
-            turbine_watertower();
-
+      cylinder.state = CYLINDER_THROWBALLS_STOPPING;
       cylinder.throw_ts = uptime_us();
-      cylinder.state = CYLINDER_THROWBALLS_WAIT_FLYING;
       //no break
-    }
 
-    case CYLINDER_THROWBALLS_WAIT_FLYING:{
-      bool delay = cylinder.throw_ts + CYLINDER_BALL_FLYING_DELAY_US < uptime_us();
-      if(!delay)
-        break;
-      turbine_off();
-      set_current_slot_color(JEVOIS_COLOR_NONE);
-      if (cylinder.position == CYLINDER_NB_POS -1){
-        cylinder.state = CYLINDER_IDLE;
-        break;
-      }
-      //else wait for turbine to stop before moving cylinder
-      cylinder.throw_ts = uptime_us();
-      cylinder.state = CYLINDER_THROWBALLS_WAIT_TURBINE_STOP;
-      //no break;
-    }
-
-    case CYLINDER_THROWBALLS_WAIT_TURBINE_STOP:{
+    case CYLINDER_THROWBALLS_STOPPING:{
       bool delay = cylinder.throw_ts + CYLINDER_TURBINE_STOP_DELAY_US < uptime_us();
-      if(!delay)
+      if (!delay)
         break;
-
-      cylinder_position_increment();
-      if (cylinder.position == 2)
-        cylinder_position_increment();
-      cylinder.state = CYLINDER_THROWBALLS_ORDER_MOVING;
-      //no break
+      ax12_cylinder_set_posmode();
+      if (cylinder.throw_mode == CYLINDER_THROW_WATERTOWER
+        ||cylinder.throw_mode == CYLINDER_THROW_TREATMENT)
+        cylinder_reset_next_move_ball_colors();
+      else
+        cylinder_reset_ball_colors();
+      cylinder_set_idle();
+      break;
     }
-
-    case CYLINDER_THROWBALLS_ORDER_MOVING:
-      if(!cylinder_turbine_move())
-        break;
-      turbine_off();
-      cylinder.state = CYLINDER_THROWBALLS_MOVING;
-      break;
-
-    case CYLINDER_THROWBALLS_MOVING:
-      if(cylinder_turbine_move_done()) {
-        cylinder.state = CYLINDER_THROWBALLS_POS;
-        cylinder.moving_ts = uptime_us();
-      }
-      break;
 
     case CYLINDER_IDLE:
       cylinder.tm_state = ROME_ENUM_MECA_STATE_READY;
+
+      //compute next move options
+      if (cylinder.tm_optimal_move == ROME_ENUM_EMPTYING_MOVE_NONE){
+        cylinder_move_t watertower_move = next_emptying_move(cylinder.robot_color);
+        cylinder_move_t treatment_move =  next_emptying_move(_opposite_color(cylinder.robot_color));
+        if (watertower_move.length > treatment_move.length)
+          cylinder.tm_optimal_move = ROME_ENUM_EMPTYING_MOVE_WATERTOWER;
+        else
+          cylinder.tm_optimal_move = ROME_ENUM_EMPTYING_MOVE_TREATMENT;
+      }
       break;
 
     default:
@@ -587,7 +604,7 @@ void cylinder_update(void){
 void cylinder_check_empty(void){
   if (cylinder.state == CYLINDER_IDLE){
     cylinder.state = CYLINDER_CHECK_EMPTY_PREPARE;
-    cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+    cylinder.tm_state = ROME_ENUM_MECA_STATE_GROUND_CLEAR;
   }
 }
 
@@ -600,27 +617,51 @@ void cylinder_load_water(void){
 
 void cylinder_throw_watertower(void){
   if (cylinder.state == CYLINDER_IDLE){
-    if (cylinder_count_bad_water() != 0)
-      cylinder.state = CYLINDER_THROWBALLS_WHEELMODE;
-    else
-      cylinder.state = CYLINDER_THROWBALLS_POS;
-    cylinder.throw_mode = CYLINDER_THROW_WATERTOWER;
-    cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+    cylinder.next_move = next_emptying_move(cylinder.robot_color);
+    if (cylinder.next_move.length != 0){
+      cylinder.state = CYLINDER_THROWBALLS;
+      cylinder.throw_mode = CYLINDER_THROW_WATERTOWER;
+      cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+    }
   }
 }
 
-void cylinder_thrash_treatment(void){
+void cylinder_trash_treatment(void){
   if (cylinder.state == CYLINDER_IDLE){
-    cylinder.state = CYLINDER_THROWBALLS_WHEELMODE;
-    cylinder.throw_mode = CYLINDER_THROW_TREATMENT;
+    cylinder.next_move = next_emptying_move(_opposite_color(cylinder.robot_color));
+    if (cylinder.next_move.length != 0){
+      cylinder.state = CYLINDER_THROWBALLS;
+      cylinder.throw_mode = CYLINDER_THROW_TREATMENT;
+      cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+    }
+  }
+}
+
+void cylinder_trash_beginmatch(void){
+  if (cylinder.state == CYLINDER_IDLE){
+    cylinder.state = CYLINDER_THROWBALLS;
+    cylinder.next_move.begin = 2;
+    cylinder.next_move.end = CYLINDER_NB_POS - 1;
+    cylinder.throw_mode = CYLINDER_THROW_NONE;
     cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+  }
+
+}
+
+void cylinder_throw_offcup(void){
+  if (cylinder.state == CYLINDER_IDLE){
+    cylinder.next_move.begin = 2;
+    cylinder.next_move.end = CYLINDER_NB_POS - 1;
+    cylinder.state = CYLINDER_THROWBALLS;
+    cylinder.throw_mode = CYLINDER_THROW_OFFCUP;
+    cylinder.tm_state = ROME_ENUM_MECA_STATE_GROUND_CLEAR;
   }
 }
 
 uint8_t cylinder_count_empty_slots(void){
   uint8_t balls_loaded = 0;
   for (uint8_t i = 0; i < CYLINDER_NB_POS; i++){
-    if (cylinder.ball_color[i] != JEVOIS_COLOR_NONE)
+    if (cylinder.ball_color[i] == JEVOIS_COLOR_NONE)
       balls_loaded ++;
   }
   return balls_loaded;
@@ -638,7 +679,7 @@ uint8_t cylinder_count_good_water(void){
 uint8_t cylinder_count_bad_water(void){
   uint8_t balls_loaded = 0;
   for (uint8_t i = 0; i < CYLINDER_NB_POS; i++){
-    if (cylinder.ball_color[i] != cylinder.robot_color)
+    if (cylinder.ball_color[i] == _opposite_color(cylinder.robot_color))
       balls_loaded ++;
   }
   return balls_loaded;
@@ -646,6 +687,10 @@ uint8_t cylinder_count_bad_water(void){
 
 uint8_t cylinder_get_tm_state(void){
   return cylinder.tm_state;
+}
+
+uint8_t cylinder_get_tm_optimal_move(void){
+  return cylinder.tm_optimal_move;
 }
 
 void cylinder_set_robot_color(jevois_color_t color){

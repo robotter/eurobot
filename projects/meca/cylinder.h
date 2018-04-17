@@ -11,24 +11,18 @@ typedef enum{
   CYLINDER_CHECK_EMPTY_ORDER_MOVING,
   CYLINDER_CHECK_EMPTY_MOVING, //5
   CYLINDER_BALLEATER_PRE_TAKE,
+  CYLINDER_BALLEATER_WAIT_EATING,
   CYLINDER_BALLEATER_TAKE,
   CYLINDER_BALLEATER_POST_TAKE,
-  CYLINDER_EATING_FIND_EMPTY,
-  CYLINDER_EATING_FIND_EMPTY_ORDER_MOVING, //10
+  CYLINDER_EATING_FIND_EMPTY, //10
+  CYLINDER_EATING_FIND_EMPTY_ORDER_MOVING,
   CYLINDER_EATING_FIND_EMPTY_MOVING,
-  CYLINDER_THROWBALLS_POS,
-  CYLINDER_THROWBALLS_PREPARE,
+  CYLINDER_THROWBALLS, //20
+  CYLINDER_THROWBALLS_PREPARE_ORDER_MOVE,
   CYLINDER_THROWBALLS_PREPARE_MOVING,
-  CYLINDER_THROWBALLS_POS_THROW, //15
-  CYLINDER_THROWBALLS_WAIT_FLYING,
-  CYLINDER_THROWBALLS_WAIT_TURBINE_STOP,
-  CYLINDER_THROWBALLS_ORDER_MOVING,
-  CYLINDER_THROWBALLS_MOVING,
-  CYLINDER_THROWBALLS_WHEELMODE, //20
-  CYLINDER_THROWBALLS_WHEELMODE_PREPARE_ORDER_MOVE,
-  CYLINDER_THROWBALLS_WHEELMODE_PREPARE_MOVING,
-  CYLINDER_THROWBALLS_WHEELMODE_ORDER_TURN,
-  CYLINDER_THROWBALLS_WHEELMODE_TURNING,
+  CYLINDER_THROWBALLS_ORDER_TURN,
+  CYLINDER_THROWBALLS_TURNING,
+  CYLINDER_THROWBALLS_STOPPING, //25
 }cylinder_state_t;
 
 typedef enum{
@@ -37,6 +31,12 @@ typedef enum{
   CYLINDER_THROW_TREATMENT,
   CYLINDER_THROW_OFFCUP,
 }cylinder_throw_t;
+
+typedef struct{
+  uint8_t begin;
+  uint8_t end;
+  uint8_t length;
+}cylinder_move_t;
 
 typedef struct {
   jevois_color_t robot_color;
@@ -47,11 +47,15 @@ typedef struct {
   uint32_t moving_ts;
   uint32_t drop_ts;
   uint32_t throw_ts;
+  uint32_t eating_ts;
   cylinder_throw_t throw_mode;
+
+  cylinder_move_t next_move;
 
   jevois_color_t ball_color[CYLINDER_NB_POS];
 
   uint8_t tm_state;
+  uint8_t tm_optimal_move;
 }cylinder_t;
 
 
@@ -64,12 +68,15 @@ void cylinder_shutdown(void);
 void cylinder_check_empty(void);
 void cylinder_load_water(void);
 void cylinder_throw_watertower(void);
-void cylinder_thrash_treatment(void);
+void cylinder_trash_treatment(void);
+void cylinder_trash_beginmatch(void);
+void cylinder_throw_offcup(void);
 
 uint8_t cylinder_count_empty_slots(void);
 uint8_t cylinder_count_good_water(void);
 uint8_t cylinder_count_bad_water(void);
 uint8_t cylinder_get_tm_state(void);
+uint8_t cylinder_get_tm_optimal_move(void);
 
 void cylinder_set_robot_color(jevois_color_t color);
 #endif//CYLINDER_H
