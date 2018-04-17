@@ -384,22 +384,22 @@ void go_around(int16_t cx,int16_t cy, float a){
 void _wait_meca_ready(void){
   ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ready");
   for (;;){
+    idle();
     if((robot_state.meca_state == ROME_ENUM_MECA_STATE_READY)){
       ROME_LOG(&rome_paddock,DEBUG,"strat : meca ready");
       return;
     }
-    idle();
   }
 }
 
 void _wait_meca_ground_clear(void){
   ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ground clear");
   for (;;){
+    idle();
     if((robot_state.meca_state == ROME_ENUM_MECA_STATE_GROUND_CLEAR)){
       ROME_LOG(&rome_paddock,DEBUG,"strat : meca ground clear");
       return;
     }
-    idle();
   }
 }
 
@@ -1052,23 +1052,33 @@ order_result_t or_doors = ORDER_FAILURE;
 void strat_test_galipeur(void)
 {
   ROME_LOG(&rome_paddock,INFO,"Galipeur : Strat test");
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+
+  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
   _wait_meca_ready();
+  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_CHECK_EMPTY);
   _wait_meca_ready();
 
   while(1){
-  if (robot_state.cylinder_nb_empty == 0){
+    _wait_meca_ready();
+  if (robot_state.cylinder_nb_empty == robot_state.cylinder_nb_slots){
+    robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
     ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_LOAD_WATER);
-    }
-  else
-    if (robot_state.cylinder_nb_bad != 0){
-      ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_THRASH_TREATMENT);
-    }
-    else{
+  }
+  else{
+    if (robot_state.cylinder_nb_bad == 0){
+      robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
       ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_THROW_WATERTOWER);
     }
-  _wait_meca_ready();
+    else{
+      robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
+      ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_TRASH_TREATMENT);
+    }
+  }
+    idle_delay_ms(100);
   }
 }
 
