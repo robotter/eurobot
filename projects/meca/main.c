@@ -80,9 +80,9 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_MECA_SET_ROBOT_COLOR: {
       uint8_t green = frame->meca_set_robot_color.green;
       if(green) {
-        cylinder_set_robot_color(JEVOIS_COLOR_GREEN);
+        cylinder_set_robot_color(ROME_ENUM_JEVOIS_COLOR_GREEN);
       } else {
-        cylinder_set_robot_color(JEVOIS_COLOR_ORANGE);
+        cylinder_set_robot_color(ROME_ENUM_JEVOIS_COLOR_ORANGE);
       }
       rome_reply_ack(intf, frame);
     } break;
@@ -237,7 +237,7 @@ int main(void)
       rome_handle_input(&rome_strat);
     }
     // update msgs
-    if(uptime - msg_uptime > UPDATE_ROME_US) {
+    if(uptime - msg_uptime > UPDATE_MSG_US) {
       msg_uptime = uptime_us();
       ROME_SEND_MECA_TM_STATE(&rome_strat,cylinder_get_tm_state());
       ROME_SEND_MECA_TM_OPTIMAL_EMPTYING_MOVE(&rome_strat,cylinder_get_tm_optimal_move());
@@ -245,7 +245,11 @@ int main(void)
         CYLINDER_NB_POS,
         cylinder_count_empty_slots(),
         cylinder_count_good_water(),
-        cylinder_count_bad_water());
+        cylinder_count_bad_water(),
+        cylinder.ball_color,
+        CYLINDER_NB_POS);
+      uint16_t a = cylinder_get_position();
+      ROME_SEND_MECA_TM_CYLINDER_POSITION(&rome_strat,-(a-6)*300./1023.*M_PI/180.*1000.);
     }
 
     // check match timer

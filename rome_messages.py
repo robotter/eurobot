@@ -128,6 +128,16 @@ register_messages(
       (Order, 'color_sensor_set_dist_threshold', [('low_threshold','uint16'), ('high_threshold','uint16'), ('consecutive_detect_threshold','uint8')]),
       ]),
 
+    # JeVois camera
+    (0x90, [
+      rome_types.rome_enum('jevois_color', (
+        'none',
+        'orange',
+        'green',
+        )),
+      ('jevois_tm_cylinder_color', [('color','jevois_color')]),
+      ]),
+
     # MECA
     (0xA0, [
       # __ ORDERS __
@@ -159,11 +169,12 @@ register_messages(
           'ready',  # meca ready for new commands
           )),
       ('meca_tm_state'  ,[('state','meca_state')]),
-      ('meca_tm_cylinder_state', [('nb_slots','uint8'),('nb_empty','uint8'),('nb_good','uint8'),('nb_bad','uint8')]),
+      ('meca_tm_cylinder_state', [('nb_slots','uint8'),('nb_empty','uint8'),('nb_good','uint8'),('nb_bad','uint8'),('color','jevois_color[]')]),
       rome_types.rome_enum('emptying_move', (
             'none',
             'watertower',
             'treatment')),
+      ('meca_tm_cylinder_position', [('a','angle')]),
       ('meca_tm_optimal_emptying_move', [('move','emptying_move')]),
       ]),
 

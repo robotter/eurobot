@@ -1,7 +1,7 @@
 #ifndef CYLINDER_H
 #define CYLINDER_H
 
-#include "jevois_cam.h"
+#include <rome/rome.h>
 
 typedef enum{
   CYLINDER_INIT = 0,
@@ -39,7 +39,7 @@ typedef struct{
 }cylinder_move_t;
 
 typedef struct {
-  jevois_color_t robot_color;
+  rome_enum_jevois_color_t robot_color;
   cylinder_state_t state;
 
   uint8_t position;
@@ -52,7 +52,7 @@ typedef struct {
 
   cylinder_move_t next_move;
 
-  jevois_color_t ball_color[CYLINDER_NB_POS];
+  rome_enum_jevois_color_t ball_color[CYLINDER_NB_POS];
 
   uint8_t tm_state;
   uint8_t tm_optimal_move;
@@ -78,5 +78,7 @@ uint8_t cylinder_count_bad_water(void);
 uint8_t cylinder_get_tm_state(void);
 uint8_t cylinder_get_tm_optimal_move(void);
 
-void cylinder_set_robot_color(jevois_color_t color);
+void cylinder_set_robot_color(rome_enum_jevois_color_t color);
+
+uint16_t cylinder_get_position(void);
 #endif//CYLINDER_H

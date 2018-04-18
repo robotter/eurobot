@@ -12,16 +12,16 @@
 #include <timer/timer.h>
 #include <timer/uptime.h>
 
-static jevois_color_t enum_from_char(char c) {
+static rome_enum_jevois_color_t enum_from_char(char c) {
   switch(c) {
     case 'G':
-      return JEVOIS_COLOR_GREEN;
+      return ROME_ENUM_JEVOIS_COLOR_GREEN;
 
     case 'O':
-      return JEVOIS_COLOR_ORANGE;
+      return ROME_ENUM_JEVOIS_COLOR_ORANGE;
 
     default:
-      return JEVOIS_COLOR_NONE;
+      return ROME_ENUM_JEVOIS_COLOR_NONE;
   }
 }
 
@@ -106,10 +106,10 @@ uint16_t jevois_cam_get_entry_height(jevois_cam_t* cam) {
   return cam->entry_height;
 }
 
-jevois_color_t jevois_cam_get_entry_color(jevois_cam_t* cam) {
+rome_enum_jevois_color_t jevois_cam_get_entry_color(jevois_cam_t* cam) {
   return cam->entry_color;
 }
 
-jevois_color_t jevois_cam_get_cylinder_color(jevois_cam_t* cam) {
+rome_enum_jevois_color_t jevois_cam_get_cylinder_color(jevois_cam_t* cam) {
   return cam->cylinder_color;
 }

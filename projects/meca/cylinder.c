@@ -8,7 +8,6 @@
 #include <util/delay.h>
 #include "cylinder.h"
 #include "jevois_cam.h"
-#include <rome/rome.h>
 #include <timer/uptime.h>
 
 extern ax12_t ax12;
@@ -87,6 +86,7 @@ bool ax12_cylinder_in_position(uint16_t position){
   else
     return false;
 }
+
 #endif
 
 #ifdef USE_MX12
@@ -220,31 +220,31 @@ bool cylinder_turbine_move_done(void) {
 #endif
 }
 
-void set_current_slot_color(jevois_color_t jvc){
+void set_current_slot_color(rome_enum_jevois_color_t jvc){
   cylinder.ball_color[cylinder.position] = jvc;
 }
 
-jevois_color_t get_current_slot_color(void){
+rome_enum_jevois_color_t get_current_slot_color(void){
   return cylinder.ball_color[cylinder.position];
 }
 
-int8_t cylinder_get_next_color_slot(jevois_color_t jvc){
+int8_t cylinder_get_next_color_slot(rome_enum_jevois_color_t jvc){
   if (jvc != cylinder.robot_color){
     for( int8_t i = 0; i < CYLINDER_NB_POS; i++){
-      if (cylinder.ball_color[i] == JEVOIS_COLOR_NONE)
+      if (cylinder.ball_color[i] == ROME_ENUM_JEVOIS_COLOR_NONE)
         return i;
     }
   }
   else{
     for( int8_t i = CYLINDER_NB_POS -1; i > 0; i--){
-      if (cylinder.ball_color[i] == JEVOIS_COLOR_NONE)
+      if (cylinder.ball_color[i] == ROME_ENUM_JEVOIS_COLOR_NONE)
         return i;
     }
   }
   return 0;
 }
 
-//static jevois_color_t get_current_slot_color(void){
+//static rome_enum_jevois_color_t get_current_slot_color(void){
 //  return cylinder.ball_color[cylinder.position];
 //}
 
@@ -254,25 +254,25 @@ bool cylinder_is_full(void){
 
 void cylinder_reset_next_move_ball_colors(void){
   for (uint8_t i = 0; i <= cylinder.next_move.length; i++)
-    cylinder.ball_color[cylinder.next_move.begin+i%CYLINDER_NB_POS] = JEVOIS_COLOR_NONE;
+    cylinder.ball_color[cylinder.next_move.begin+i%CYLINDER_NB_POS] = ROME_ENUM_JEVOIS_COLOR_NONE;
 }
 
 void cylinder_reset_ball_colors(void){
   for (uint8_t i = 0; i < CYLINDER_NB_POS; i++)
-    cylinder.ball_color[i] = JEVOIS_COLOR_NONE;
+    cylinder.ball_color[i] = ROME_ENUM_JEVOIS_COLOR_NONE;
 }
 
-jevois_color_t _opposite_color(jevois_color_t color){
-  if (color == JEVOIS_COLOR_ORANGE)
-    return JEVOIS_COLOR_GREEN;
+rome_enum_jevois_color_t _opposite_color(rome_enum_jevois_color_t color){
+  if (color == ROME_ENUM_JEVOIS_COLOR_ORANGE)
+    return ROME_ENUM_JEVOIS_COLOR_GREEN;
 
-  if (color == JEVOIS_COLOR_GREEN)
-    return JEVOIS_COLOR_ORANGE;
+  if (color == ROME_ENUM_JEVOIS_COLOR_GREEN)
+    return ROME_ENUM_JEVOIS_COLOR_ORANGE;
 
-  return JEVOIS_COLOR_NONE;
+  return ROME_ENUM_JEVOIS_COLOR_NONE;
 }
 
-cylinder_move_t next_emptying_move(jevois_color_t color){
+cylinder_move_t next_emptying_move(rome_enum_jevois_color_t color){
   uint8_t idx = 0;
   uint8_t i   = 0;
   uint8_t j   = 0;
@@ -329,7 +329,7 @@ void cylinder_init(void){
   balleater_off();
   deflector_on();
   cylinder.state = CYLINDER_INIT;
-  cylinder.robot_color = JEVOIS_COLOR_GREEN;
+  cylinder.robot_color = ROME_ENUM_JEVOIS_COLOR_GREEN;
   cylinder.moving_ts = uptime_us();
   ax12_cylinder_set_posmode();
   cylinder_reset_ball_colors();
@@ -423,7 +423,7 @@ void cylinder_update(void){
       //wait for a valid camera frame
       if (!jevois_cam_is_valid(&cam))
         break;
-      if (jevois_cam_get_entry_color(&cam) != JEVOIS_COLOR_NONE){
+      if (jevois_cam_get_entry_color(&cam) != ROME_ENUM_JEVOIS_COLOR_NONE){
         cylinder.position = cylinder_get_next_color_slot(jevois_cam_get_entry_color(&cam));
         cylinder.state = CYLINDER_EATING_FIND_EMPTY_ORDER_MOVING;
         balleater_off();
@@ -437,18 +437,18 @@ void cylinder_update(void){
         break;
 
       //if there is no ball in the eater, go taking one
-      if (jevois_cam_get_entry_color(&cam) == JEVOIS_COLOR_NONE)
+      if (jevois_cam_get_entry_color(&cam) == ROME_ENUM_JEVOIS_COLOR_NONE)
         cylinder.state = CYLINDER_BALLEATER_PRE_TAKE;
 
       bool delay = cylinder.moving_ts + CYLINDER_MOVING_DELAY_US < uptime_us();
       if(!delay)
         break;
 
-      bool cylinder_empty = jevois_cam_get_cylinder_color(&cam) == JEVOIS_COLOR_NONE;
+      bool cylinder_empty = jevois_cam_get_cylinder_color(&cam) == ROME_ENUM_JEVOIS_COLOR_NONE;
 
       // cylinder position empty lets roll
       if(cylinder_empty) {
-        set_current_slot_color(JEVOIS_COLOR_NONE);
+        set_current_slot_color(ROME_ENUM_JEVOIS_COLOR_NONE);
         cylinder.drop_ts = uptime_us();
         cylinder.state = CYLINDER_BALLEATER_TAKE;
         break;
@@ -489,7 +489,7 @@ void cylinder_update(void){
         break;
 
       bool entry_empty = jevois_cam_get_entry_height(&cam) < 150;
-      bool cylinder_present = jevois_cam_get_cylinder_color(&cam) != JEVOIS_COLOR_NONE;
+      bool cylinder_present = jevois_cam_get_cylinder_color(&cam) != ROME_ENUM_JEVOIS_COLOR_NONE;
 
       if(entry_empty && cylinder_present) {
         balleater_off();
@@ -661,7 +661,7 @@ void cylinder_throw_offcup(void){
 uint8_t cylinder_count_empty_slots(void){
   uint8_t balls_loaded = 0;
   for (uint8_t i = 0; i < CYLINDER_NB_POS; i++){
-    if (cylinder.ball_color[i] == JEVOIS_COLOR_NONE)
+    if (cylinder.ball_color[i] == ROME_ENUM_JEVOIS_COLOR_NONE)
       balls_loaded ++;
   }
   return balls_loaded;
@@ -693,7 +693,13 @@ uint8_t cylinder_get_tm_optimal_move(void){
   return cylinder.tm_optimal_move;
 }
 
-void cylinder_set_robot_color(jevois_color_t color){
+void cylinder_set_robot_color(rome_enum_jevois_color_t color){
   cylinder.robot_color = color;
 }
 
+uint16_t cylinder_get_position(void){
+  if (cylinder.state < CYLINDER_THROWBALLS)
+    return balleater_pos[cylinder.position];
+  else
+    return turbine_pos[cylinder.position];
+}
