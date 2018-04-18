@@ -17,11 +17,8 @@
 #define SPOT_ELEVATOR_LENGTH 83
 #define GOTO_TIMEOUT_MS  10000
 #define DEFAULT_WAIT_MS  2000
-#define DEFAULT_FOV  (M_PI/3)
 
-#define DEFAULT_DETECTION_WAIT_MS 2000
-
-#define AUTOSET_OFFSET 114
+#define AUTOSET_OFFSET 112
 
 extern rome_intf_t rome_asserv;
 extern rome_intf_t rome_meca;
@@ -41,10 +38,9 @@ typedef enum {
 
 #define ROBOT_SIDE_MAIN (robot_state.team == TEAM_GREEN ? ROBOT_SIDE_RIGHT : ROBOT_SIDE_LEFT)
 #define ROBOT_SIDE_AUX  (robot_state.team == TEAM_GREEN ? ROBOT_SIDE_LEFT : ROBOT_SIDE_RIGHT)
-#define MECA_MAIN (robot_state.team == TEAM_GREEN ? MECA_RIGHT : MECA_LEFT)
-#define MECA_AUX  (robot_state.team == TEAM_GREEN ? MECA_LEFT : MECA_RIGHT)
-#define AUTOSET_MAIN (robot_state.team == TEAM_GREEN ? AUTOSET_RIGHT : AUTOSET_LEFT)
-#define AUTOSET_AUX  (robot_state.team == TEAM_GREEN ? AUTOSET_LEFT : AUTOSET_RIGHT)
+#define ROBOT_SIDE_BALLEATER (ROBOT_SIDE_LEFT)
+#define AUTOSET_MAIN (robot_state.team == TEAM_GREEN ? AUTOSET_LEFT : AUTOSET_RIGHT)
+#define AUTOSET_AUX  (robot_state.team == TEAM_GREEN ? AUTOSET_RIGHT : AUTOSET_LEFT)
 #define KX(x) (robot_kx*(x))
 #define KC(green,purple) (robot_state.team == TEAM_GREEN ? (green) : (purple))
 #define KA(a) (robot_kx*(a))
@@ -105,8 +101,9 @@ bool opponent_detected(void)
 }
 
 #define IN_RANGE(x,min,max) ((x) >= (min) && (x) <= (max))
-#define DEFAULT_DETECTION_FOV 2*M_PI/3
 #define R3D2_OFFSET (0)
+#define DEFAULT_DETECTION_FOV  (M_PI/3)
+#define DEFAULT_DETECTION_WAIT_MS 2000
 
 // Return true if an opponent is detected within an arc
 bool opponent_detected_in_arc(float angle, float fov)
@@ -134,7 +131,7 @@ bool opponent_detected_carrot(int16_t cx, int16_t cy)
   int16_t dx = cx - robot_state.current_pos.x;
   int16_t dy = cy - robot_state.current_pos.y;
   float angle = atan2(dy,dx);
-  return opponent_detected_in_arc(angle, DEFAULT_FOV);
+  return opponent_detected_in_arc(angle, DEFAULT_DETECTION_FOV);
 }
 
 static void set_xya_wait(double x, double y, double a) {
@@ -675,7 +672,7 @@ void strat_init_galipeur(void)
 void strat_prepare_galipeur(void)
 {
   //initalise kx factor
-  robot_kx = robot_state.team == TEAM_GREEN ? 1 : -1;
+  robot_kx = robot_state.team == TEAM_GREEN ? -1 : 1;
 
   //send color to meca
   ROME_SENDWAIT_MECA_SET_ROBOT_COLOR(&rome_meca, robot_state.team == TEAM_GREEN);
@@ -688,16 +685,18 @@ void strat_prepare_galipeur(void)
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
 
-#if 0
-  // autoset robot, Y on pond
-  autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET);
-  // move in front of starting area
-  goto_xya(KX(200), 1210, KA(0));
-  //and autoset X
+
+  // autoset robot
+  set_xya_wait(KX(0), 0, KA(M_PI/2));
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
-#endif
+  goto_xya(KX(1300), 300, KA(M_PI/2));
+  autoset(ROBOT_SIDE_BALLEATER,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
+  goto_xya(KX(1300), 1800, KA(M_PI/3));
+  goto_xya(KX(1250), 1500, KA(-2*M_PI/3));
+
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
+
 }
 
 order_result_t galipeur_close_doors(void){
@@ -899,13 +898,50 @@ void galipeur_bring_back_sand(void){
   goto_traj(end,KA(M_PI/6));
 }
 
+float compute_throw_angle(int16_t x, int16_t y){
+  return (KX(-M_PI/3+atan2(KX(1350)-KX(x),2200-y)));
+
+}
+
 void strat_run_galipeur(void)
 {
   ROME_LOG(&rome_paddock,DEBUG,"Go !!!");
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
+  // check the state of the cylinder
+  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
+  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_CHECK_EMPTY);
+  _wait_meca_ground_clear();
+
 #if 1
+  //go near a water dispenser
+  goto_xya(KX(930),220,KA(-2*M_PI/3));
+  //unlock dispenser
+  goto_xya(KX(890),170,KA(-2*M_PI/3));
+
+  //load water
+  while(robot_state.cylinder_nb_empty != 0){
+    _wait_meca_ready();
+    robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
+    ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_LOAD_WATER);
+    idle_delay_ms(50);
+  }
+
+  goto_xya(KX(920),220,KA(-2*M_PI/3));
+  goto_xya(KX(1250),150,KA(-2*M_PI/3));
+  autoset(ROBOT_SIDE_BALLEATER,AUTOSET_DOWN, 0, AUTOSET_OFFSET);
+  goto_xya(KX(1250),150,KA(-2*M_PI/3));
+  goto_xya(KX(1300),300,KA(M_PI/2));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
+  goto_xya(KX(1300),300,KA(M_PI/2));
+
+  //throw water
+  goto_xya(KX(1100), 1160, compute_throw_angle(1100,1160));
+  ROME_SENDWAIT_MECA_SET_THROW_POWER(&rome_meca,1950);
+  _wait_meca_ready();
+  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
+  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_THROW_WATERTOWER);
 
 #else
 
@@ -1051,8 +1087,10 @@ order_result_t or_doors = ORDER_FAILURE;
 
 void strat_test_galipeur(void)
 {
+
+#if 0
   ROME_LOG(&rome_paddock,INFO,"Galipeur : Strat test");
-  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
 
   robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
@@ -1080,6 +1118,7 @@ void strat_test_galipeur(void)
   }
     idle_delay_ms(100);
   }
+#endif
 }
 
 /****************************************************************************/
