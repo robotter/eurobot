@@ -156,6 +156,8 @@ register_messages(
           'throw_offcup',
           )),
       (Order, 'meca_cmd', [('cmd','meca_command')]),
+      (Order, 'meca_set_throw_power', [('pwr', 'uint16')]),
+      (Order, 'meca_set_trash_power', [('pwr', 'uint16')]),
       # generic analog servo commands
       (Order, 'meca_set_servo', [('id','uint8'),('value','uint16')]),
 

@@ -156,8 +156,8 @@ void deflector_off(void) { servo_set(2,3000); }
 
 void turbine_off(void) { deflector_on(); servo_set(1,1300); }
 void turbine_full(void){ deflector_off(); servo_set(1,2500); }
-void turbine_watertower(void){ deflector_off(); servo_set(1,2100); }
-void turbine_treatment(void){  deflector_on();  servo_set(1,1800); }
+void turbine_watertower(void){ deflector_off(); servo_set(1,cylinder.throw_power); }
+void turbine_treatment(void){  deflector_on();  servo_set(1,cylinder.trash_power); }
 void turbine_low(void){ deflector_off(); servo_set(1,1650); }
 
 void balleater_off(void) { servo_set(0,2455); }
@@ -335,6 +335,9 @@ void cylinder_init(void){
   cylinder_reset_ball_colors();
   cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
   cylinder.tm_optimal_move = ROME_ENUM_EMPTYING_MOVE_NONE;
+  //set default turbine power
+  cylinder.throw_power = 2100;
+  cylinder.trash_power = 1800;
 }
 
 void cylinder_update(void){
@@ -702,4 +705,14 @@ uint16_t cylinder_get_position(void){
     return balleater_pos[cylinder.position];
   else
     return turbine_pos[cylinder.position];
+}
+
+void cylinder_set_throw_power(uint16_t pwr){
+  if (pwr < 2500)
+    cylinder.throw_power = pwr;
+}
+
+void cylinder_set_trash_power(uint16_t pwr){
+  if (pwr < 2500)
+    cylinder.trash_power = pwr;
 }

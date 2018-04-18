@@ -86,6 +86,14 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       }
       rome_reply_ack(intf, frame);
     } break;
+    case ROME_MID_MECA_SET_THROW_POWER:
+      cylinder_set_throw_power(frame->meca_set_throw_power.pwr);
+      rome_reply_ack(intf, frame);
+      break;
+    case ROME_MID_MECA_SET_TRASH_POWER:
+      cylinder_set_throw_power(frame->meca_set_trash_power.pwr);
+      rome_reply_ack(intf, frame);
+      break;
     default:
       break;
   }
