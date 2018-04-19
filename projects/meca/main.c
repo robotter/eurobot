@@ -37,33 +37,38 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
 
     case ROME_MID_MECA_CMD: {
       ROME_LOGF(&rome_strat, DEBUG, "MECA: cmd %d",frame->meca_cmd.cmd);
-      void (*func)(void);
       switch(frame->meca_cmd.cmd) {
         case ROME_ENUM_MECA_COMMAND_CHECK_EMPTY:
-          func = cylinder_check_empty;
+          cylinder_check_empty();
+          break;
+        case ROME_ENUM_MECA_COMMAND_PREPARE_LOAD_WATER:
+          cylinder_load_water(false);
           break;
         case ROME_ENUM_MECA_COMMAND_LOAD_WATER:
-          func = cylinder_load_water;
+          cylinder_load_water(true);
+          break;
+        case ROME_ENUM_MECA_COMMAND_PREPARE_THROW_WATERTOWER:
+          cylinder_throw_watertower(false);
           break;
         case ROME_ENUM_MECA_COMMAND_THROW_WATERTOWER:
-          func = cylinder_throw_watertower;
+          cylinder_throw_watertower(true);
+          break;
+        case ROME_ENUM_MECA_COMMAND_PREPARE_TRASH_TREATMENT:
+          cylinder_trash_treatment(false);
           break;
         case ROME_ENUM_MECA_COMMAND_TRASH_TREATMENT:
-          func = cylinder_trash_treatment;
+          cylinder_trash_treatment(true);
           break;
         case ROME_ENUM_MECA_COMMAND_TRASH_BEGINMATCH:
-          func = cylinder_trash_beginmatch;
+          cylinder_trash_beginmatch();
           break;
         case ROME_ENUM_MECA_COMMAND_THROW_OFFCUP:
-          func = cylinder_throw_offcup;
+          cylinder_throw_offcup();
           break;
         case ROME_ENUM_MECA_COMMAND_NONE:
         default:
-          func = NULL;
           break;
       }
-      if(func)
-        func();
       rome_reply_ack(intf, frame);
     } break;
 

@@ -6,23 +6,28 @@
 typedef enum{
   CYLINDER_INIT = 0,
   CYLINDER_IDLE,
-  CYLINDER_CHECK_EMPTY_PREPARE,
+
+  CYLINDER_CHECK_EMPTY_PREPARE = 10,
   CYLINDER_CHECK_EMPTY,
   CYLINDER_CHECK_EMPTY_ORDER_MOVING,
-  CYLINDER_CHECK_EMPTY_MOVING, //5
+  CYLINDER_CHECK_EMPTY_MOVING,
+
+  CYLINDER_TAKEBALLS = 20,
   CYLINDER_BALLEATER_PRE_TAKE,
   CYLINDER_BALLEATER_WAIT_EATING,
   CYLINDER_BALLEATER_TAKE,
   CYLINDER_BALLEATER_POST_TAKE,
-  CYLINDER_EATING_FIND_EMPTY, //10
+
+  CYLINDER_EATING_FIND_EMPTY = 30,
   CYLINDER_EATING_FIND_EMPTY_ORDER_MOVING,
   CYLINDER_EATING_FIND_EMPTY_MOVING,
-  CYLINDER_THROWBALLS, //20
+
+  CYLINDER_THROWBALLS = 40,
   CYLINDER_THROWBALLS_PREPARE_ORDER_MOVE,
   CYLINDER_THROWBALLS_PREPARE_MOVING,
   CYLINDER_THROWBALLS_ORDER_TURN,
   CYLINDER_THROWBALLS_TURNING,
-  CYLINDER_THROWBALLS_STOPPING, //25
+  CYLINDER_THROWBALLS_STOPPING,
 }cylinder_state_t;
 
 typedef enum{
@@ -43,6 +48,7 @@ typedef struct {
   cylinder_state_t state;
 
   uint8_t position;
+  bool exec;
 
   uint32_t moving_ts;
   uint32_t drop_ts;
@@ -68,9 +74,9 @@ void cylinder_init(void);
 void cylinder_shutdown(void);
 
 void cylinder_check_empty(void);
-void cylinder_load_water(void);
-void cylinder_throw_watertower(void);
-void cylinder_trash_treatment(void);
+void cylinder_load_water(bool exec);
+void cylinder_throw_watertower(bool exec);
+void cylinder_trash_treatment(bool exec);
 void cylinder_trash_beginmatch(void);
 void cylinder_throw_offcup(void);
 

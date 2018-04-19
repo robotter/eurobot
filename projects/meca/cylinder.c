@@ -471,6 +471,11 @@ void cylinder_update(void){
       // no break
     }
 
+    case CYLINDER_TAKEBALLS:
+      cylinder.position = cylinder_get_next_color_slot(jevois_cam_get_entry_color(&cam));
+      cylinder.state = CYLINDER_EATING_FIND_EMPTY_ORDER_MOVING;
+      //no break
+
     case CYLINDER_EATING_FIND_EMPTY_ORDER_MOVING:
       if(!cylinder_balleater_move())
         break;
@@ -479,8 +484,11 @@ void cylinder_update(void){
 
     case CYLINDER_EATING_FIND_EMPTY_MOVING:
       if(cylinder_balleater_move_done()) {
-        cylinder.state = CYLINDER_EATING_FIND_EMPTY;
         cylinder.moving_ts = uptime_us();
+        if (cylinder.exec)
+          cylinder.state = CYLINDER_EATING_FIND_EMPTY;
+        else
+          cylinder_set_idle();
       }
       break;
 
@@ -529,6 +537,10 @@ void cylinder_update(void){
     case CYLINDER_THROWBALLS_PREPARE_MOVING:
       if (!cylinder_turbine_move_done())
         break;
+      if (!cylinder.exec){
+        cylinder_set_idle();
+        break;
+      }
       //switch on turbine depending on the throw mode
       switch (cylinder.throw_mode){
         case CYLINDER_THROW_WATERTOWER:
@@ -611,31 +623,43 @@ void cylinder_check_empty(void){
   }
 }
 
-void cylinder_load_water(void){
+void cylinder_load_water(bool exec){
+  cylinder.exec = exec;
   if (cylinder.state == CYLINDER_IDLE){
-    cylinder.state = CYLINDER_BALLEATER_PRE_TAKE;
-    cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+    cylinder.state = CYLINDER_TAKEBALLS;
+    if (exec)
+      cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+    else
+      cylinder.tm_state = ROME_ENUM_MECA_STATE_GROUND_CLEAR;
   }
 }
 
-void cylinder_throw_watertower(void){
+void cylinder_throw_watertower(bool exec){
+  cylinder.exec = exec;
   if (cylinder.state == CYLINDER_IDLE){
     cylinder.next_move = next_emptying_move(cylinder.robot_color);
     if (cylinder.next_move.length != 0){
       cylinder.state = CYLINDER_THROWBALLS;
       cylinder.throw_mode = CYLINDER_THROW_WATERTOWER;
-      cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+      if (exec)
+        cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+      else
+        cylinder.tm_state = ROME_ENUM_MECA_STATE_GROUND_CLEAR;
     }
   }
 }
 
-void cylinder_trash_treatment(void){
+void cylinder_trash_treatment(bool exec){
+  cylinder.exec = exec;
   if (cylinder.state == CYLINDER_IDLE){
     cylinder.next_move = next_emptying_move(_opposite_color(cylinder.robot_color));
     if (cylinder.next_move.length != 0){
       cylinder.state = CYLINDER_THROWBALLS;
       cylinder.throw_mode = CYLINDER_THROW_TREATMENT;
-      cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+      if (exec)
+        cylinder.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+      else
+        cylinder.tm_state = ROME_ENUM_MECA_STATE_GROUND_CLEAR;
     }
   }
 }
