@@ -26,7 +26,10 @@
 #define UARTC0_ENABLED
 #define UARTD0_ENABLED
 #define UARTE1_ENABLED
+
 #define UARTF0_ENABLED
+//#define UARTF0_BAUDRATE 115200
+//#define UARTF0_BSCALE -6
 
 /** @brief Interrupt level (an \ref intlvl_t value)
  * @note Global configuration only.
