@@ -81,7 +81,7 @@ bool ax12_cylinder_in_position(uint16_t position){
   //int16_t read_load = _get_ax12_load(CYLINDER_AX12_ID);
 
   int16_t diff = (int16_t)position - (int16_t) read_pos;
-  if ( ((diff >=0) && (diff < 5)) ||  ((diff < 0) && (diff >- 5)) )
+  if ( ((diff >=0) && (diff < CYLINDER_AX12_ARRIVED_WINDOW)) ||  ((diff < 0) && (diff >- CYLINDER_AX12_ARRIVED_WINDOW)) )
     return true;
   else
     return false;
