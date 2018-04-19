@@ -261,8 +261,10 @@ int main(void)
         cylinder_count_bad_water(),
         cylinder.ball_color,
         CYLINDER_NB_POS);
-      uint16_t a = cylinder_get_position();
-      ROME_SEND_MECA_TM_CYLINDER_POSITION(&rome_strat,-(a-6)*300./1023.*M_PI/180.*1000.);
+      //convert ax12 angle to milli radians
+      int16_t a = ( cylinder_get_position() - cylinder_get_position_zero() )
+        *(300./1023.*M_PI/180.*1000.);
+      ROME_SEND_MECA_TM_CYLINDER_POSITION(&rome_strat, a );
     }
 
     // check match timer

@@ -89,6 +89,7 @@ uint8_t cylinder_get_tm_optimal_move(void);
 void cylinder_set_robot_color(rome_enum_jevois_color_t color);
 
 uint16_t cylinder_get_position(void);
+uint16_t cylinder_get_position_zero(void);
 void cylinder_set_throw_power(uint16_t pwr);
 void cylinder_set_trash_power(uint16_t pwr);
 #endif//CYLINDER_H

@@ -724,6 +724,10 @@ void cylinder_set_robot_color(rome_enum_jevois_color_t color){
   cylinder.robot_color = color;
 }
 
+uint16_t cylinder_get_position_zero(void){
+  return balleater_pos[0];
+}
+
 uint16_t cylinder_get_position(void){
   if (cylinder.state < CYLINDER_THROWBALLS)
     return balleater_pos[cylinder.position];
