@@ -472,7 +472,8 @@ void cylinder_update(void){
     }
 
     case CYLINDER_TAKEBALLS:
-      cylinder.position = cylinder_get_next_color_slot(jevois_cam_get_entry_color(&cam));
+      //first ball in dispenser should be a good one
+      cylinder.position = cylinder_get_next_color_slot(cylinder.robot_color);
       cylinder.state = CYLINDER_EATING_FIND_EMPTY_ORDER_MOVING;
       //no break
 
