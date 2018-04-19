@@ -393,7 +393,8 @@ void _wait_meca_ground_clear(void){
   ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ground clear");
   for (;;){
     idle();
-    if((robot_state.meca_state == ROME_ENUM_MECA_STATE_GROUND_CLEAR)){
+    if((robot_state.meca_state == ROME_ENUM_MECA_STATE_GROUND_CLEAR ||
+      robot_state.meca_state == ROME_ENUM_MECA_STATE_READY)){
       ROME_LOG(&rome_paddock,DEBUG,"strat : meca ground clear");
       return;
     }
@@ -656,6 +657,7 @@ void strat_init_galipeur(void)
 
   // initialize meca
   ROME_LOG(&rome_paddock,INFO,"Init meca");
+  ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
   // set R3D2 parameters
   //ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,0,25);
 
@@ -685,14 +687,29 @@ void strat_prepare_galipeur(void)
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
 
-
   // autoset robot
   set_xya_wait(KX(0), 0, KA(M_PI/2));
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
   goto_xya(KX(1300), 300, KA(M_PI/2));
   autoset(ROBOT_SIDE_BALLEATER,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
   goto_xya(KX(1300), 1800, KA(M_PI/3));
+
+  // check the state of the cylinder
+  _wait_meca_ready();
+  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
+  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_CHECK_EMPTY);
+
+  //go in front of starting area
   goto_xya(KX(1250), 1500, KA(-2*M_PI/3));
+
+  if (robot_state.cylinder_nb_empty != 0){
+    _wait_meca_ready();
+    robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
+    ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_TRASH_TREATMENT);
+  }
+
+  //wait for meca to end all orders before shutting down asserv
+  _wait_meca_ready();
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
@@ -903,22 +920,30 @@ float compute_throw_angle(int16_t x, int16_t y){
 
 }
 
+void update_score(uint16_t points){
+  robot_state.points += points;
+  ROME_LOGF(&rome_paddock,INFO,"score : %u", robot_state.points);
+}
+
 void strat_run_galipeur(void)
 {
   ROME_LOG(&rome_paddock,DEBUG,"Go !!!");
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
-  // check the state of the cylinder
-  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
-  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_CHECK_EMPTY);
-  _wait_meca_ground_clear();
 
 #if 1
-  //go near a water dispenser
-  goto_xya(KX(930),220,KA(-2*M_PI/3));
-  //unlock dispenser
-  goto_xya(KX(890),170,KA(-2*M_PI/3));
+  _wait_meca_ready();
+  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
+  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_PREPARE_LOAD_WATER);
+  _wait_meca_ground_clear();
+  //go near a water dispenser and unlock it
+  int16_t traj[] = {
+    KX(930),220,
+    KX(890),170};
+  goto_traj(traj, KA(-2*M_PI/3));
+  //yeepee we scored !
+  update_score(10);
 
   //load water
   while(robot_state.cylinder_nb_empty != 0){
