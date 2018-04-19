@@ -174,6 +174,11 @@ static void update_battery(void)
 
 }
 
+static void send_messages(void)
+{
+  ROME_SEND_STRAT_TM_SCORE(&rome_paddock, robot_state.points);
+}
+
 /// Scheduler function called at match end
 static void match_end(void)
 {
@@ -252,6 +257,7 @@ int main(void)
   uptime_init();
   TIMER_SET_CALLBACK_US(E0, 'B', 50e3, INTLVL_HI, update_battery);
   idle_set_callback(rome_update, update_rome_interfaces);
+  idle_set_callback(rome_telemetry, send_messages);
 
   // if voltage is low, blink red led and don't start anything
   if(voltage < BATTERY_ALERT_LIMIT) {
@@ -267,6 +273,7 @@ int main(void)
 
   // initialize asserv and meca, fold arms, ...
   portpin_outset(&LED_R_PP);
+  robot_state.points = 0;
   strat_init();
   portpin_outclr(&LED_R_PP);
   robot_state.team = strat_select_team();

@@ -65,6 +65,9 @@ typedef struct {
     bool left;
     bool right;
   }bumpers;
+
+  //points count
+  uint16_t points;
 } robot_state_t;
 
 extern robot_state_t robot_state;

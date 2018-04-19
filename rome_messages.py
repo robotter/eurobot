@@ -108,6 +108,7 @@ register_messages(
       # __ TELEMETRY __
       # robot main battery voltage (in mv)
       ('strat_tm_battery', [('voltage','uint16')]),
+      ('strat_tm_score',  [('points','uint16')]),
       ]),
 
     # R3D2
