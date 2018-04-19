@@ -249,7 +249,7 @@ int8_t cylinder_get_next_color_slot(rome_enum_jevois_color_t jvc){
 //}
 
 bool cylinder_is_full(void){
-  return (cylinder_count_empty_slots() == CYLINDER_NB_POS);
+  return (cylinder_count_empty_slots() == 0);
 }
 
 void cylinder_reset_next_move_ball_colors(void){
@@ -314,7 +314,7 @@ cylinder_move_t next_emptying_move(rome_enum_jevois_color_t color){
       idx ++;
   }
 
-  ROME_LOGF(&rome_strat, DEBUG,"meca next move : %u from %u to %u", max_move.length, max_move.begin, max_move.end);
+  ROME_LOGF(&rome_strat, DEBUG,"meca next (%u) move : %u from %u to %u", color, max_move.length, max_move.begin, max_move.end);
 
   return max_move;
 }
@@ -460,7 +460,7 @@ void cylinder_update(void){
       //update current slot color in case the stored information was false ...
       set_current_slot_color(jevois_cam_get_cylinder_color(&cam));
       //... and check if there still are empty spots
-      if (cylinder_count_empty_slots() == 0){
+      if (cylinder_is_full()){
         cylinder_set_idle();
         break;
       }
