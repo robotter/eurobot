@@ -42,8 +42,8 @@ typedef enum {
   TABLE_SIDE_DOWN,
 } table_side_t;
 
-#define TABLE_SIDE_MAIN (robot_state.team == TEAM_GREEN ? TABLE_SIDE_RIGHT : TABLE_SIDE_LEFT)
-#define TABLE_SIDE_AUX (robot_state.team == TEAM_GREEN ? TABLE_SIDE_LEFT : TABLE_SIDE_RIGHT)
+#define TABLE_SIDE_MAIN (robot_state.team == TEAM_GREEN ? TABLE_SIDE_LEFT : TABLE_SIDE_RIGHT)
+#define TABLE_SIDE_AUX (robot_state.team == TEAM_GREEN ? TABLE_SIDE_RIGHT : TABLE_SIDE_LEFT)
 
 #define ROBOT_SIDE_MAIN (robot_state.team == TEAM_GREEN ? ROBOT_SIDE_RIGHT : ROBOT_SIDE_LEFT)
 #define ROBOT_SIDE_AUX  (robot_state.team == TEAM_GREEN ? ROBOT_SIDE_LEFT : ROBOT_SIDE_RIGHT)
@@ -85,9 +85,9 @@ float arfast (robot_side_t face, table_side_t side){
     case ROBOT_SIDE_BACK:
       switch(side){
         case TABLE_SIDE_LEFT:
-          return M_PI/2;
-        case TABLE_SIDE_RIGHT:
           return -M_PI/2;
+        case TABLE_SIDE_RIGHT:
+          return M_PI/2;
         case TABLE_SIDE_UP:
           return M_PI;
         case TABLE_SIDE_DOWN:
@@ -112,6 +112,7 @@ typedef enum {
   ORDER_FAILURE,
 } order_result_t;
 
+/// delay for some ms
 void idle_delay_ms(uint32_t time_ms){
   uint32_t start_time_us = uptime_us();
   while((uptime_us() - start_time_us) < (time_ms*1000))
@@ -450,130 +451,6 @@ void _wait_meca_ground_clear(void){
   }
 }
 
-#if 0
-
-void ext_arm_set(int16_t pos)
-{
-  ROME_SENDWAIT_MECA_SET_ARM(&rome_meca, pos);
-}
-
-/// Set arm position
-void ext_arm_raise(void) { ext_arm_set(430); }
-void ext_arm_lower(void) { ext_arm_set(100); }
-void ext_arm_clap(void)  { ext_arm_set(300); }
-void ext_arm_galette_prepare(void)  { ext_arm_set(270); }
-void ext_arm_galette_lift(void)  { ext_arm_set(460); }
-void ext_arm_galette_release(void)  { ext_arm_set(350); }
-
-
-void _meca_discharge_spots(void){
-  _wait_meca_ready();
-  if(robot_state.left_elev.nb_spots > 0){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_DISCHARGE_SPOT_STACK, MECA_LEFT);
-    robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
-  }
-
-  if(robot_state.right_elev.nb_spots > 0){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_DISCHARGE_SPOT_STACK, MECA_RIGHT);
-    robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
-  }
-  _wait_meca_ground_clear();
-}
-
-void _meca_release_spots(void){
-  _wait_meca_ready();
-  if(robot_state.left_elev.nb_spots > 0){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_RELEASE_SPOT_STACK, MECA_LEFT);
-    robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
-  }
-
-  if(robot_state.right_elev.nb_spots > 0){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, ROME_ENUM_MECA_COMMAND_RELEASE_SPOT_STACK, MECA_RIGHT);
-    robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
-  }
-  _wait_meca_ground_clear();
-}
-
-static void _meca_order_blocking_left_right(uint8_t cmd_left, uint8_t cmd_right){
-  _wait_meca_ready();
-  //send orders
-  if (cmd_left){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_left, MECA_LEFT);
-    robot_state.left_elev.state = SPOT_ELEV_S_BUSY;
-  }
-  if (cmd_right){
-    ROME_SENDWAIT_MECA_CMD(&rome_meca, cmd_right, MECA_RIGHT);
-    robot_state.right_elev.state = SPOT_ELEV_S_BUSY;
-  }
-  //wait for meca to compute orders...
-  _wait_meca_ground_clear();
-}
-
-static void _meca_order_blocking_main_aux(uint8_t cmd_main, uint8_t cmd_aux){
-  if(robot_state.team == TEAM_GREEN)
-    _meca_order_blocking_left_right(cmd_aux,cmd_main);
-  else if(robot_state.team == TEAM_PURPLE)
-    _meca_order_blocking_left_right(cmd_main,cmd_aux);
-}
-
-#define _meca_order_blocking_ma(m,a) _meca_order_blocking_main_aux(ROME_ENUM_MECA_COMMAND_##m,ROME_ENUM_MECA_COMMAND_##a)
-#define _meca_order_blocking_both(cmd) _meca_order_blocking_left_right(ROME_ENUM_MECA_COMMAND_##cmd,ROME_ENUM_MECA_COMMAND_##cmd)
-
-#define CLAW_X 70
-#define CLAW_Y -200
-#define CLAW_APPROACH 50
-#define CLAW_PUSH_SPOT -100
-
-order_result_t go_pick_spot_wait(int16_t x, int16_t y, spot_elevator_t side, uint16_t timeout_ms){
-  ROME_LOGF(&rome_paddock,DEBUG,"spot :%d,%d",x,y);
-
-  int16_t dx; 
-  if ((side == MECA_RIGHT && robot_state.team == TEAM_GREEN)
-    ||(side == MECA_LEFT && robot_state.team == TEAM_PURPLE)){
-    _meca_order_blocking_ma(PREPARE_PICK_SPOT,NONE);
-    dx = KX(CLAW_X);
-    }
-  else{
-    _meca_order_blocking_ma(NONE,PREPARE_PICK_SPOT);
-    dx = -KX(CLAW_X);
-    }
-  int16_t rx = robot_state.current_pos.x ;
-  int16_t ry = robot_state.current_pos.y ;
-  int16_t rs_x = x - rx;
-  int16_t rs_y = y - ry;
- 
-  double beta = atan2(rs_y,rs_x);
-
-  double alpha = beta - 3*M_PI/2;
-
-  // spot position in robot frame
-  int16_t dy = (CLAW_Y - CLAW_APPROACH);
-  ROME_LOGF(&rome_paddock,DEBUG,"dxdy :%d,%d",dx,dy);
-  // spot position in table frame
-  int16_t tdx = dx*cos(alpha) - dy*sin(alpha);
-  int16_t tdy = dx*sin(alpha) + dy*cos(alpha);
-  goto_xya_wait(rx,ry,beta+M_PI/2,timeout_ms);
-  goto_xya_wait(x-tdx,y-tdy,beta+M_PI/2,timeout_ms);
-
-  // spot position in robot frame
-  dy = CLAW_Y - CLAW_PUSH_SPOT;
-  ROME_LOGF(&rome_paddock,DEBUG,"dxdy :%d,%d",dx,dy);
-  // spot position in table frame
-  tdx = dx*cos(alpha) - dy*sin(alpha);
-  tdy = dx*sin(alpha) + dy*cos(alpha);
-  _wait_meca_ready();
-  goto_xya_wait(x-tdx,y-tdy,beta+M_PI/2,timeout_ms);
-  if ((side == MECA_RIGHT && robot_state.team == TEAM_GREEN)
-    ||(side == MECA_LEFT && robot_state.team == TEAM_PURPLE)){
-    _meca_order_blocking_ma(PICK_SPOT,NONE);
-    }
-  else{
-    _meca_order_blocking_ma(NONE,PICK_SPOT);
-    }
-  return ORDER_SUCCESS;
-}
-#endif
-
 /// Do an autoset
 void autoset(robot_side_t robot_side, autoset_side_t table_side, float x, float y)
 {
@@ -581,17 +458,6 @@ void autoset(robot_side_t robot_side, autoset_side_t table_side, float x, float 
   robot_state.asserv.autoset = 0;
   while(!robot_state.asserv.autoset) {
     //TODO avoid opponent
-    idle();
-  }
-}
-
-/// delay for some ms
-void strat_delay_ms(uint32_t ms) {
-  uint32_t tend = uptime_us() + 1000*ms;
-  for(;;) {
-    if(uptime_us() >= tend) {
-      return;
-    }
     idle();
   }
 }
@@ -695,6 +561,9 @@ void strat_wait_start(void)
 #endif
 }
 
+bool galipeur_cylinder_is_empty(void){
+  return (robot_state.cylinder_nb_empty == robot_state.cylinder_nb_slots);
+}
 
 void strat_init_galipeur(void)
 {
@@ -737,11 +606,14 @@ void strat_prepare_galipeur(void)
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
 
   // autoset robot
+  // x in starting area
   set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
-  goto_xya(KX(1000), 300, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  autoset(ROBOT_SIDE_BALLEATER,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
-  goto_xya(KX(1000), 1800, arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_UP));
+  goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  // y on building area
+  goto_xya(KX(1000), 300, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
+  goto_xya(KX(1000), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
 
   // check the state of the cylinder
   _wait_meca_ready();
@@ -751,10 +623,10 @@ void strat_prepare_galipeur(void)
   //go in front of starting area
   goto_xya(KX(1250), 1500, arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
 
-  if (robot_state.cylinder_nb_empty != 0){
+  if (!galipeur_cylinder_is_empty()){
     _wait_meca_ready();
     robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
-    ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_TRASH_TREATMENT);
+    ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_TRASH_BEGINMATCH);
   }
 
   //wait for meca to end all orders before shutting down asserv
@@ -788,7 +660,7 @@ void galipeur_set_speed(robot_speed_t s){
       break;
     case RS_FAST:
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 3, 0.1);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 80, 0.1);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 80, 0.05);
       break;
     default:
       break;
@@ -810,48 +682,24 @@ typedef enum{
   DISPENSER_FAR,
 } dispenser_t;
 
-order_result_t take_water(dispenser_t dispenser){
+order_result_t galipeur_take_water(dispenser_t dispenser){
   order_result_t or;
 
-  int16_t near_pos = 890;
-  int16_t far_pos = -1330;
-  int16_t balleater_depth = AUTOSET_OFFSET + 20 + 14;
-  int16_t approach_depth = balleater_depth + 60;
-  int16_t approach_side = 80;
+  //save the amount of water we already have to check if we managed to "open" a dispenser
+  uint8_t nb_empty = robot_state.cylinder_nb_empty;
 
-  int16_t approach_x, approach_y;
+  //dispenser positions
+  int16_t near_pos = 2000-840;
+  int16_t far_pos = -(1500-610);
+
+  //balleater configuration
+  int16_t balleater_depth = AUTOSET_OFFSET + 40;
+  int16_t approach_depth = balleater_depth + 60;
+  int16_t approach_side = 150;
+
   int16_t traj1[4];
   int16_t traj2[2];
   float angle;
-
-  switch(dispenser){
-    case DISPENSER_NEAR:
-      //dispenser near is alongside Y axis
-      approach_x = 1200;
-      approach_y = near_pos;
-      traj1[0] = KX(1500-approach_depth);
-      traj1[1] = near_pos + approach_side;
-      traj1[2] = KX(1500-balleater_depth);
-      traj1[3] = near_pos;
-      angle = arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_MAIN);
-      traj2[0] = KX(1500-300);
-      traj2[1] = near_pos;
-      break;
-    case DISPENSER_FAR:
-      //dispenser near is alongside X axis
-      approach_x = KX(far_pos);
-      approach_y = 300;
-      traj1[0] = KX(far_pos+approach_side);
-      traj1[1] = approach_depth;
-      traj1[2] = KX(far_pos);
-      traj1[3] = balleater_depth;
-      angle = arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_DOWN);
-      traj2[0] = KX(far_pos);
-      traj2[1] = 300;
-      break;
-    default:
-      return ORDER_FAILURE;
-  }
 
   //prepare meca to take water
   _wait_meca_ready();
@@ -860,18 +708,49 @@ order_result_t take_water(dispenser_t dispenser){
   _wait_meca_ground_clear();
 
   galipeur_set_speed(RS_FAST);
-  or = goto_xya(approach_x, approach_y, angle);
+
+  switch(dispenser){
+    case DISPENSER_NEAR:{
+      //dispenser near is alongside Y axis
+      traj1[0] = KX(1500-approach_depth);
+      traj1[1] = near_pos + approach_side;
+      traj1[2] = KX(1500-balleater_depth);
+      traj1[3] = near_pos;
+      angle = arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_MAIN);
+      traj2[0] = KX(1500-300);
+      traj2[1] = near_pos;
+      //send first position order
+      or = goto_xya(1200, near_pos + approach_side, angle);
+      break;
+    }
+    case DISPENSER_FAR:{
+      //dispenser near is alongside X axis
+      traj1[0] = KX(far_pos+approach_side);
+      traj1[1] = approach_depth;
+      traj1[2] = KX(far_pos);
+      traj1[3] = balleater_depth;
+      angle = arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_DOWN);
+      traj2[0] = KX(far_pos);
+      traj2[1] = 300;
+      //send first position order
+      int16_t traj[] = {
+        KX(far_pos),600,
+        KX(far_pos + approach_side), 300};
+      or = goto_traj(traj, angle);
+      break;
+    }
+    default:
+      return ORDER_FAILURE;
+  }
+
   if (or!= ORDER_SUCCESS)
     return or;
 
-  galipeur_set_speed(RS_NORMAL);
+  galipeur_set_speed(RS_SLOW);
   //go to dispenser
   or = goto_traj(traj1, angle);
   if (or!= ORDER_SUCCESS)
     return or;
-
-  //yeepee we scored !
-  update_score(10);
 
   //take the water
   _wait_meca_ready();
@@ -879,13 +758,18 @@ order_result_t take_water(dispenser_t dispenser){
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_LOAD_WATER);
   _wait_meca_ground_clear();
 
+  galipeur_set_speed(RS_FAST);
   //just go back a little bit
   or = goto_traj(traj2, angle);
+
+  //if the water in cylinder changed, we scored !
+  if (nb_empty != robot_state.cylinder_nb_empty)
+    update_score(10);
 
   return or;
 }
 
-order_result_t throw_water_watertower(void){
+order_result_t galipeur_throw_water_watertower(void){
   order_result_t or;
   galipeur_set_speed(RS_FAST);
 
@@ -907,7 +791,7 @@ order_result_t throw_water_watertower(void){
 }
 
 
-order_result_t trash_water_treatment(void){
+order_result_t galipeur_trash_water_treatment(void){
   order_result_t or;
   galipeur_set_speed(RS_FAST);
 
@@ -943,21 +827,26 @@ void strat_run_galipeur(void)
   order_result_t or_throw_water_far = ORDER_FAILURE;
   order_result_t or_trash_water_far = ORDER_FAILURE;
 
-  or_take_water_near = take_water(DISPENSER_NEAR);
+#if 1
+  or_take_water_near = galipeur_take_water(DISPENSER_NEAR);
 
-  while (robot_state.cylinder_nb_empty != 0){
+  while (!galipeur_cylinder_is_empty()){
     if (robot_state.cylinder_nb_good !=0)
-      or_throw_water_near = throw_water_watertower();
+      or_throw_water_near = galipeur_throw_water_watertower();
+    //wait to be sure that cylinder counts are updated
+    idle_delay_ms(200);
   }
+#endif
+  or_take_water_far = galipeur_take_water(DISPENSER_FAR);
 
-  or_take_water_far = take_water(DISPENSER_FAR);
-
-  while (robot_state.cylinder_nb_empty != 0){
+  while (!galipeur_cylinder_is_empty()){
     if (robot_state.cylinder_nb_bad !=0)
-      or_trash_water_far = trash_water_treatment();
+      or_trash_water_far = galipeur_trash_water_treatment();
     else
       if (robot_state.cylinder_nb_good !=0)
-        or_throw_water_far = throw_water_watertower();
+        or_throw_water_far = galipeur_throw_water_watertower();
+    //wait to be sure that cylinder counts are updated
+    idle_delay_ms(200);
   }
 
   (void) or_take_water_near;
