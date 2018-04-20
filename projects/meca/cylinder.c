@@ -254,7 +254,7 @@ bool cylinder_is_full(void){
 
 void cylinder_reset_next_move_ball_colors(void){
   for (uint8_t i = 0; i <= cylinder.next_move.length; i++)
-    cylinder.ball_color[cylinder.next_move.begin+i%CYLINDER_NB_POS] = ROME_ENUM_JEVOIS_COLOR_NONE;
+    cylinder.ball_color[(cylinder.next_move.begin+i)%CYLINDER_NB_POS] = ROME_ENUM_JEVOIS_COLOR_NONE;
 }
 
 void cylinder_reset_ball_colors(void){
@@ -666,6 +666,7 @@ void cylinder_trash_treatment(bool exec){
 }
 
 void cylinder_trash_beginmatch(void){
+  cylinder.exec = true;
   if (cylinder.state == CYLINDER_IDLE){
     cylinder.state = CYLINDER_THROWBALLS;
     cylinder.next_move.begin = 2;
@@ -677,6 +678,7 @@ void cylinder_trash_beginmatch(void){
 }
 
 void cylinder_throw_offcup(void){
+  cylinder.exec = true;
   if (cylinder.state == CYLINDER_IDLE){
     cylinder.next_move.begin = 2;
     cylinder.next_move.end = CYLINDER_NB_POS - 1;
