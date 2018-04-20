@@ -34,7 +34,7 @@
 
 // -- match --
 
-#define SETTING_MATCH_DURATION_SECS (89)
+#define SETTING_MATCH_DURATION_SECS (99)
 
 // -- PWM --
 #define SETTING_PWM_FREQUENCY_KHZ (20)

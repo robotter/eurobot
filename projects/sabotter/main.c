@@ -184,7 +184,7 @@ static void match_end(void)
 {
   // count time second by second
   static unsigned int match_time = 0;
-  if(++match_time >= 89) {
+  if(++match_time >= 99) {
     ROME_LOG(&rome_paddock,INFO,"End of match");
     // end of match
     ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
