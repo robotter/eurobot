@@ -577,7 +577,7 @@ void strat_init_galipeur(void)
   ROME_LOG(&rome_paddock,INFO,"Init meca");
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
   // set R3D2 parameters
-  //ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,0,25);
+  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,0,25);
 
   for(;;) {
     update_rome_interfaces();
@@ -586,7 +586,7 @@ void strat_init_galipeur(void)
   }
 
   // set R3D2 parameters
-  //ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
+  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
 }
 
 void strat_prepare_galipeur(void)
