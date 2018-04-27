@@ -278,9 +278,9 @@ int main(void)
   portpin_outclr(&LED_R_PP);
   robot_state.team = strat_select_team();
 
-  strat_prepare();
-
   strat_test();
+
+  strat_prepare();
 
   strat_wait_start();
 

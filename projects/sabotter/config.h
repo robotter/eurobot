@@ -19,7 +19,9 @@
 // R3D2 maximum objects to detect
 #define R3D2_OBJECTS_MAX  2
 // R3D2 distance under which object must be avoided
-#define R3D2_AVOID_DISTANCE  600
+#define R3D2_AVOID_DISTANCE  700
+#define R3D2_AVOID_MOVEBACK  50
+#define R3D2_STOP_DISTANCE  500
 
 // Starting cord: 0 is plugged, 1 in unplugged
 #define STARTING_CORD_PP  PORTPIN(C,1)
