@@ -432,6 +432,8 @@ void go_around(int16_t cx,int16_t cy, float a){
 }
 
 void _wait_meca_ready(void){
+  //force meca state busy
+  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
   ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ready");
   for (;;){
     idle();
@@ -443,6 +445,8 @@ void _wait_meca_ready(void){
 }
 
 void _wait_meca_ground_clear(void){
+  //force meca state busy
+  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
   ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ground clear");
   for (;;){
     idle();
@@ -620,7 +624,6 @@ void strat_prepare_galipeur(void)
 
   // check the state of the cylinder
   _wait_meca_ready();
-  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_CHECK_EMPTY);
 
   //go in front of starting area
@@ -628,7 +631,6 @@ void strat_prepare_galipeur(void)
 
   if (!galipeur_cylinder_is_empty()){
     _wait_meca_ready();
-    robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
     ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_TRASH_BEGINMATCH);
   }
 
@@ -706,14 +708,14 @@ order_result_t galipeur_take_water(dispenser_t dispenser){
 
   //prepare meca to take water
   _wait_meca_ready();
-  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_PREPARE_LOAD_WATER);
   _wait_meca_ground_clear();
 
-  galipeur_set_speed(RS_FAST);
+  galipeur_set_speed(RS_NORMAL);
 
   switch(dispenser){
     case DISPENSER_NEAR:{
+      ROME_LOG(&rome_paddock,DEBUG,"Going to start area dispenser");
       angle = arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_MAIN);
       //send first position order
       or = goto_xya(1200, near_pos + approach_side, angle);
@@ -731,16 +733,25 @@ order_result_t galipeur_take_water(dispenser_t dispenser){
       break;
     }
     case DISPENSER_FAR:{
+      ROME_LOG(&rome_paddock,DEBUG,"Going to opposite dispenser");
       angle = arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_DOWN);
       //send first position order
       int16_t traj[] = {
         KX(far_pos),600,
         KX(-1200), 300};
       or = goto_traj(traj, angle);
-      if (or!= ORDER_SUCCESS)
+      if (or!= ORDER_SUCCESS){
+        ROME_LOG(&rome_paddock,DEBUG,"Aborting opposite dispenser");
+        idle_delay_ms(5000);
+        goto_xya(KX(-far_pos), 1000, angle);
         return or;
+        }
       //we did a very long move, so launch an autoset
       autoset(ROBOT_SIDE_BALLEATER,AUTOSET_DOWN, 0, AUTOSET_OFFSET);
+      or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_DOWN));
+      or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_AUX));
+      autoset(ROBOT_SIDE_BACK,AUTOSET_AUX, KX(-1500+AUTOSET_OFFSET), 0);
+      or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_AUX));
       //prepare next move orders
       //dispenser far is alongside X axis
       traj1[0] = KX(far_pos+approach_side);
@@ -764,11 +775,10 @@ order_result_t galipeur_take_water(dispenser_t dispenser){
 
   //take the water
   _wait_meca_ready();
-  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_LOAD_WATER);
   _wait_meca_ground_clear();
 
-  galipeur_set_speed(RS_FAST);
+  galipeur_set_speed(RS_NORMAL);
   //just go back a little bit
   or = goto_traj(traj2, angle);
 
@@ -780,11 +790,11 @@ order_result_t galipeur_take_water(dispenser_t dispenser){
 }
 
 order_result_t galipeur_throw_water_watertower(void){
+  ROME_LOG(&rome_paddock,DEBUG,"Throwing water in watertower");
   order_result_t or;
-  galipeur_set_speed(RS_FAST);
+  galipeur_set_speed(RS_NORMAL);
 
   _wait_meca_ready();
-  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_PREPARE_THROW_WATERTOWER);
   _wait_meca_ground_clear();
 
@@ -792,7 +802,6 @@ order_result_t galipeur_throw_water_watertower(void){
   or = goto_xya(KX(1100), 1160, compute_throw_angle(1100,1160));
   ROME_SENDWAIT_MECA_SET_THROW_POWER(&rome_meca,1950);
   _wait_meca_ready();
-  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_THROW_WATERTOWER);
   _wait_meca_ground_clear();
   update_score(5*balls_loaded);
@@ -802,31 +811,30 @@ order_result_t galipeur_throw_water_watertower(void){
 
 
 order_result_t galipeur_trash_water_treatment(void){
+  ROME_LOG(&rome_paddock,DEBUG,"Trashing water in treatment area");
   // warning : order to call when we are near the "far" dispenser !
   order_result_t or;
-  galipeur_set_speed(RS_FAST);
+  galipeur_set_speed(RS_NORMAL);
 
   _wait_meca_ready();
-  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_PREPARE_TRASH_TREATMENT);
   _wait_meca_ground_clear();
 
   uint8_t balls_loaded = robot_state.cylinder_nb_bad;
   int16_t traj[] = {
     KX(-700), 500,
-    KX(-500), 250+120,
+    KX(-250), 250+120,
   };
   or = goto_traj(traj, arfast(ROBOT_SIDE_TURBINE,TABLE_SIDE_DOWN));
   _wait_meca_ready();
-  robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_TRASH_TREATMENT);
   _wait_meca_ground_clear();
   update_score(10*balls_loaded);
 
-  or = goto_xya(KX(-500), 500, arfast(ROBOT_SIDE_TURBINE, TABLE_SIDE_DOWN));
-  or = goto_xya(KX(-500), 500, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_DOWN));
-  autoset(ROBOT_SIDE_BALLEATER, AUTOSET_DOWN, 0, 250+AUTOSET_OFFSET);
-  or = goto_xya(KX(-500), 500, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_DOWN));
+  or = goto_xya(KX(-250), 500, arfast(ROBOT_SIDE_TURBINE, TABLE_SIDE_DOWN));
+  or = goto_xya(KX(-250), 500, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+  autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, 250+AUTOSET_OFFSET);
+  or = goto_xya(KX(-250), 500, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
   return or;
 }
 
@@ -842,13 +850,13 @@ void strat_run_galipeur(void)
   order_result_t or_throw_water_far = ORDER_FAILURE;
   order_result_t or_trash_water_far = ORDER_FAILURE;
 
-  bool force_far_dispenser_first = true;
+  bool force_far_dispenser_first = false;
 
-  while ( or_take_water_near  != ORDER_SUCCESS &&
-          or_throw_water_near != ORDER_SUCCESS &&
-          or_take_water_far   != ORDER_SUCCESS &&
-          or_throw_water_far  != ORDER_SUCCESS &&
-          or_trash_water_far  != ORDER_SUCCESS){
+  while (!( or_take_water_near  == ORDER_SUCCESS &&
+            or_throw_water_near == ORDER_SUCCESS &&
+            or_take_water_far   == ORDER_SUCCESS &&
+            or_throw_water_far  == ORDER_SUCCESS &&
+            or_trash_water_far  == ORDER_SUCCESS )  ){
 
     if (force_far_dispenser_first &&
         or_take_water_far != ORDER_SUCCESS){
@@ -857,23 +865,25 @@ void strat_run_galipeur(void)
 
       //once galipeur managed to take water from far dispenser,
       //it must at least to empty the "bad" water before going back
-      while( or_throw_water_far  != ORDER_SUCCESS &&
-             or_trash_water_far  != ORDER_SUCCESS){
-        while (!galipeur_cylinder_is_empty()){
-          if (robot_state.cylinder_nb_bad !=0){
-            or_trash_water_far = galipeur_trash_water_treatment();
-            }
-          else
-            if (robot_state.cylinder_nb_good !=0)
-              or_throw_water_far = galipeur_throw_water_watertower();
-          //wait to be sure that cylinder counts are updated
-          idle_delay_ms(200);
+      while(!galipeur_cylinder_is_empty()){
+        if (robot_state.cylinder_nb_bad !=0){
+          or_trash_water_far = galipeur_trash_water_treatment();
         }
+        else
+          if (robot_state.cylinder_nb_good !=0)
+            or_throw_water_far = galipeur_throw_water_watertower();
+        //wait to be sure that cylinder counts are updated
+        idle_delay_ms(200);
       }
     }
 
-    //if the boolean to select first dispenser was init false, force it true
-    force_far_dispenser_first = true;
+    if (force_far_dispenser_first == true){
+      goto_xya(KX(1200), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+      autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
+      goto_xya(KX(1200), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+    }
+    else
+      force_far_dispenser_first = true;
 
     if (or_take_water_near != ORDER_SUCCESS){
       or_take_water_near = galipeur_take_water(DISPENSER_NEAR);
@@ -886,12 +896,14 @@ void strat_run_galipeur(void)
       }
     }
 
-    goto_xya(KX(1200), 1350, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+    goto_xya(KX(1200), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
     autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
-    goto_xya(KX(1200), 1350, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+    goto_xya(KX(1200), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
 
+    idle_delay_ms(200);
   }
 
+  ROME_LOG(&rome_paddock,INFO,"That's all folks !");
   _delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 0);
