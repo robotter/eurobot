@@ -25,4 +25,8 @@ uint8_t dfplayer_play_track(uint16_t track_id);
 /// return 0 if dfplayer is not busy
 uint8_t dfplayer_is_busy(void);
 
+uint8_t dfplayer_set_equalizer(uint8_t eq);
+
+uint8_t dfplayer_normal_mode(void);
+
 #endif//_DFPLAYER_MINI_H_

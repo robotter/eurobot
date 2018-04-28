@@ -18,10 +18,10 @@ void amplifier_init(void);
 void amplifier_set_gain(amplifier_gain_t gain);
 
 /// update shutdown state (0 => enabled, everything else => disabled)
-void amplifier_set_shutdown(uint8_t state);
+void amplifier_shutdown(uint8_t state);
 
 /// update mute state (0=> enabled, everything else => mute)
-void amplifier_set_mute(uint8_t state);
+void amplifier_mute(uint8_t state);
 
 
 #endif //_AUDIO_AMPLIFIER_H_

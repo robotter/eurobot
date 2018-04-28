@@ -67,21 +67,45 @@ int main(void)
   dfplayer_init();
   amplifier_init();
 
+  dfplayer_specify_volume(10);
+
+  amplifier_shutdown(1);
+  amplifier_mute(1);
+  
+  for(volatile uint32_t i = 0; i<= 320000; i++);
+ 
+  amplifier_shutdown(0);
+  amplifier_mute(0);
+//amplifier_set_gain(GAIN_36DB);
+  uint8_t track_id = 1;
+  
+  for(volatile uint32_t i = 0; i<= 3200000; i++);
+  dfplayer_set_equalizer(2);
+
+
+
   while(1) {
     rome_handle_input(&rome_intf);
     
     if (!dfplayer_is_busy())
-      dfplayer_play();
+    {
+      ROME_LOGF(&rome_intf, INFO, "new track...\n");
+      track_id ++;
 
-    ROME_LOGF(&rome_intf, INFO, "RST.STATUS=%x booting...\n", RST.STATUS);
+      if (track_id>3)
+        track_id = 1;
+
+      dfplayer_play_track(track_id);
+    }
+
 
     portpin_outset(&LED_COM_PP);
     for(volatile uint32_t i = 0; i<= 320000; i++);
-    amplifier_set_shutdown(0);
-    amplifier_set_mute(0);
+    //    dfplayer_pause();
 
     portpin_outclr(&LED_COM_PP);
     for(volatile uint32_t i = 0; i<= 320000; i++);
+    //dfplayer_play();
   }
 
   while(1);

@@ -14,6 +14,8 @@ void dfplayer_init(void)
   portpin_dirclr(&DFPLAYER_BUSY_PP);
  
   dfplayer_set_source(DF_STORAGE_SDFLASH);
+  while(dfplayer_is_busy());
+  dfplayer_normal_mode();
 }
 
 
@@ -119,6 +121,28 @@ uint8_t dfplayer_play_track(uint16_t track_id)
                             .feedback = 0x00,
                             .para1 = (uint8_t)(track_id>>8),
                             .para2 = (uint8_t)(track_id)};
+  dfplayer_send(&frame);
+  return 0;
+}
+
+uint8_t dfplayer_set_equalizer(uint8_t eq)
+{
+  dfplayer_frame_t frame = {.version = 0xff,
+                            .cmd = DF_SET_EQUALIZER,
+                            .feedback = 0x00,
+                            .para1 = 0x00,
+                            .para2 = eq};
+  dfplayer_send(&frame);
+  return 0;
+}
+
+uint8_t dfplayer_normal_mode(void)
+{
+  dfplayer_frame_t frame = {.version = 0xff,
+                            .cmd = DF_NORMAL_WORKING,
+                            .feedback = 0x00,
+                            .para1 = 0x00,
+                            .para2 = 0x00};
   dfplayer_send(&frame);
   return 0;
 }
