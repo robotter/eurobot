@@ -7,6 +7,7 @@
 #include "leds.h"
 #include "dfplayer_mini.h"
 #include "audio_amplifier.h"
+#include "ws2812.h"
 
 rome_intf_t rome_intf;
 
@@ -67,6 +68,8 @@ int main(void)
   dfplayer_init();
   amplifier_init();
 
+  ws2812_init();
+
   dfplayer_specify_volume(10);
 
   amplifier_shutdown(1);
@@ -77,11 +80,18 @@ int main(void)
   amplifier_shutdown(0);
   amplifier_mute(0);
 //amplifier_set_gain(GAIN_36DB);
-  uint8_t track_id = 1;
+  uint8_t track_id = 2;
   
   for(volatile uint32_t i = 0; i<= 3200000; i++);
   dfplayer_set_equalizer(2);
-
+  
+  ws2812_pixel_t pixels[5];
+  for (uint8_t it = 0; it < sizeof(pixels)/sizeof(ws2812_pixel_t);it ++)
+  {
+      pixels[it].r = 0;
+      pixels[it].g = 10*it;
+      pixels[it].b = 0;
+  }
 
 
   while(1) {
@@ -92,7 +102,7 @@ int main(void)
       ROME_LOGF(&rome_intf, INFO, "new track...\n");
       track_id ++;
 
-      if (track_id>3)
+      if (track_id>6)
         track_id = 1;
 
       dfplayer_play_track(track_id);
@@ -102,6 +112,13 @@ int main(void)
     portpin_outset(&LED_COM_PP);
     for(volatile uint32_t i = 0; i<= 320000; i++);
     //    dfplayer_pause();
+    for (uint8_t it = 0; it < sizeof(pixels)/sizeof(ws2812_pixel_t);it ++)
+    {
+      pixels[it].r = 0;
+      pixels[it].g += 10;
+      pixels[it].b = 0;
+      ws2812_sendPixel(&pixels[it]);
+    }
 
     portpin_outclr(&LED_COM_PP);
     for(volatile uint32_t i = 0; i<= 320000; i++);
