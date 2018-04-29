@@ -1021,15 +1021,20 @@ void galipette_rod_release_fish(void)
 
 void strat_init_galipette(void)
 {
-  ROME_LOG(&rome_paddock,INFO,"Strat init");
+  ROME_LOG(&rome_paddock,INFO,"Galipette : Strat init");
   // disable asserv
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+
+  // set R3D2 parameters
+  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,0,25);
   for(;;) {
     idle();
     if(!robot_state.gyro_calibration)
       break;
   }
-  galipette_rod_close();
+
+  // set R3D2 parameters
+  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
 }
 
 void strat_prepare_galipette(void)
@@ -1215,6 +1220,42 @@ void strat_run_galipette(void)
 
 void strat_test_galipette(void)
 {
+#if 1
+  ROME_LOG(&rome_paddock,INFO,"Strat test stuff");
+  for(;;) {
+    update_rome_interfaces();
+    if(!robot_state.gyro_calibration)
+      break;
+  }
+
+  galipette_set_speed(RS_NORMAL);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
+
+  autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, AUTOSET_OFFSET);
+  goto_xya_rel(0,200,0.0);
+  autoset(ROBOT_SIDE_BACK, AUTOSET_LEFT, 0, AUTOSET_OFFSET);
+  goto_xya(200,200,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_LEFT));
+
+  galipette_set_speed(RS_NORMAL);
+
+  uint8_t i = 0;
+  for(;;){
+    goto_xya(200,800,0);
+    idle_delay_ms(1000);
+    goto_xya(200,0,0);
+    i++;
+    if (i > 5){
+      autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, AUTOSET_OFFSET);
+      goto_xya(200,200,0.0);
+      autoset(ROBOT_SIDE_BACK, AUTOSET_LEFT, 0, AUTOSET_OFFSET);
+      goto_xya(-200,200,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_LEFT));
+      i = 0;
+    }
+    else
+      idle_delay_ms(1000);
+  }
+#endif
 }
 
 
