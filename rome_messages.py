@@ -184,5 +184,11 @@ register_messages(
       ('meca_tm_optimal_emptying_move', [('move','emptying_move')]),
       ]),
 
+    # PATHFINDING
+    (0xB0, [
+      ('pathfinding_node', [('i', 'int8'), ('x', 'int16'), ('y', 'int16'), ('neighbors', 'int8[]')]),
+      ('pathfinding_path', [('nodes', 'int8[]')]),
+    ]),
+
   )
 
