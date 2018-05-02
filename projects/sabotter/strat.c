@@ -152,7 +152,7 @@ bool opponent_detected(void)
 
 #define IN_RANGE(x,min,max) ((x) >= (min) && (x) <= (max))
 #define R3D2_OFFSET (0)
-#define DEFAULT_DETECTION_FOV  (M_PI/3)
+#define DEFAULT_DETECTION_FOV  (M_PI/2)
 #define DEFAULT_DETECTION_WAIT_MS 2000
 
 // Return true if an opponent is detected within an arc
