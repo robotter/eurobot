@@ -342,6 +342,7 @@ void cylinder_init(void){
 
 void cylinder_update(void){
   static cylinder_state_t os = 1;
+  static uint32_t lsct = 0;
   if (os != cylinder.state){
     ROME_LOGF(&rome_strat, DEBUG,"meca state : %u",cylinder.state);
     ROME_LOGF(&rome_strat, DEBUG,"meca position : %u",cylinder.position);
@@ -354,8 +355,15 @@ void cylinder_update(void){
       cylinder.ball_color[5],
       cylinder.ball_color[6],
       cylinder.ball_color[7]);
+    //if state changed, the meca is doing something and isn't blocked
+    //idle and init stages are the only exeptions
+    if (cylinder.state != CYLINDER_IDLE && cylinder.state != CYLINDER_INIT)
+      lsct = uptime_us();
   }
   os = cylinder.state;
+
+  if(uptime_us() - lsct > MECA_TIMEOUT_US)
+    cylinder_set_idle();
 
   switch (cylinder.state){
     case CYLINDER_INIT:{
