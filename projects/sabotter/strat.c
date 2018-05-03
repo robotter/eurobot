@@ -49,6 +49,7 @@ typedef enum {
 #define ROBOT_SIDE_AUX  (robot_state.team == TEAM_GREEN ? ROBOT_SIDE_LEFT : ROBOT_SIDE_RIGHT)
 #define ROBOT_SIDE_BALLEATER (ROBOT_SIDE_LEFT)
 #define ROBOT_SIDE_TURBINE (ROBOT_SIDE_RIGHT)
+#define ROBOT_SIDE_CUBE_CLAW (ROBOT_SIDE_LEFT)
 #define AUTOSET_MAIN (robot_state.team == TEAM_GREEN ? AUTOSET_LEFT : AUTOSET_RIGHT)
 #define AUTOSET_AUX  (robot_state.team == TEAM_GREEN ? AUTOSET_RIGHT : AUTOSET_LEFT)
 #define KX(x) (robot_kx*(x))
@@ -954,19 +955,23 @@ void strat_test_galipeur(void)
 
 // enum for galipette servo number assignation
 typedef enum{
-  FISHROD_MOTOR_SPEED = 0,    // PWM that controls the MOTOR speed controler
-  FISHROD_MAGNET_RELEASE =1,   // SERVO that separates the fishs and the magnets
-  FISHROD_ANGLE = 2,          // SERVO that rotates the full fishrod
-  FISHROD_MOTOR_ANGLE = 3,    // SERVO that controls MOTOR angle
-} fishrod_servo_t;
+  NONE = 0,
+  CUBE_CLAW_LEFT = 1,
+  CUBE_CLAW_ELEVATOR = 2,
+  CUBE_CLAW_RIGHT = 3,
+} cube_claw_servo_t;
 
-#define MAGNET_PWM_POS_RELEASE 2400 // magnet servo position to release fish
-#define MAGNET_PWM_POS_CAPTURE 1650 // magnet servo position to capture fish
+#define CUBE_CLAW_LEFT_START 1600
+#define CUBE_CLAW_LEFT_CLOSED 2100
+#define CUBE_CLAW_LEFT_OPENED 3000
 
-#define FISHROD_POS_HIGH    3400    // fishrod servo closed position
-#define FISHROD_POS_MIDDLE  3250    // fishrod servo position to move fish
-#define FISHROD_POS_LOW     2850    // fishrod servo position to capture fish
-#define FISHROD_POS_ULTRA_LOW     2600    // fishrod servo position to release fish
+#define CUBE_CLAW_RIGHT_START 2900
+#define CUBE_CLAW_RIGHT_CLOSED 2400
+#define CUBE_CLAW_RIGHT_OPENED 1500
+
+#define CUBE_CLAW_ELEVATOR_DOWN 1500
+#define CUBE_CLAW_ELEVATOR_MID 3000
+#define CUBE_CLAW_ELEVATOR_UP 4000
 
 #define GALIPETTE_BUMPER_TO_CENTER_DIST 100 // distance from the edge of galipette to the center of the robot (in mm)
 
@@ -992,35 +997,19 @@ void galipette_set_speed(robot_speed_t s){
   }
 }
 
-
-void galipette_rod_prepare_for_fishing(void)
-{
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_CAPTURE);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, FISHROD_POS_LOW);
+void galipette_cube_claw_start(void){
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_START);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_START);
 }
 
-void galipette_rod_close(void)
-{
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_CAPTURE);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, FISHROD_POS_HIGH);
+void galipette_cube_claw_close(void){
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_CLOSED);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_CLOSED);
 }
 
-void galipette_rod_prepare_to_move_fish(void)
-{
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_CAPTURE);
-  // ramp to rise up fish slowly
-  for( uint16_t pos = FISHROD_POS_LOW; pos < FISHROD_POS_MIDDLE; pos += 10)
-  {
-    ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, pos);
-    idle_delay_ms(10);
-  }
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, FISHROD_POS_MIDDLE);
-}
-
-void galipette_rod_release_fish(void)
-{
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_ANGLE, FISHROD_POS_ULTRA_LOW);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, FISHROD_MAGNET_RELEASE, MAGNET_PWM_POS_RELEASE);
+void galipette_cube_claw_open(void){
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_OPENED);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_OPENED);
 }
 
 void strat_init_galipette(void)
@@ -1028,6 +1017,9 @@ void strat_init_galipette(void)
   ROME_LOG(&rome_paddock,INFO,"Galipette : Strat init");
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
+  galipette_cube_claw_start();
 
   // set R3D2 parameters
   ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,0,25);
@@ -1039,192 +1031,51 @@ void strat_init_galipette(void)
 
   // set R3D2 parameters
   ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
+
 }
 
 void strat_prepare_galipette(void)
 {
   galipette_set_speed(RS_NORMAL);
   //initalise kx factor
-  robot_kx = robot_state.team == TEAM_GREEN ? 1 : -1;
+  robot_kx = robot_state.team == TEAM_GREEN ? -1 : 1;
 
-  idle_delay_ms(1000);
+  ROME_LOG(&rome_paddock,DEBUG,"Strat prepare");
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-  goto_xya_rel(KX(-217), 0,0);
 
-  set_xya_wait(KX(1320), 1020, KA(-M_PI/2));
+  set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-GALIPETTE_BUMPER_TO_CENTER_DIST), 0);
+  goto_xya(KX(1200), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  goto_xya(KX(1200), 100, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-GALIPETTE_BUMPER_TO_CENTER_DIST);
+  goto_xya(KX(1200), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  goto_xya(KX(1200), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_AUX));
+
+  galipette_cube_claw_open();
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
-}
-
-// Even if galipeur is a good friend, galipette is very fragile and must take care of her strong big brother !!!
-void galipette_go_away_from_galipeur(void)
-{
-  // fear the galipeur contact and go away from starting area
-  goto_xya(KX(1220), 1020, KA(-M_PI/2));
-}
-
-// forget it !!! bad idea , galipette is only a fish robot, not a buldobot nor a rugbybot ...
-void galipette_push_sand_stack(void)
-{
-  
-  // align with stack,
-  goto_xya(KX(1100), 1100, KA(-M_PI/2 + 2*M_PI/3));
-  
-  // push stack
-  goto_xya(KX(500), 1000, KA(-M_PI/2 + 2*M_PI/3));
-
-  // go forward  (galipette safe radius estimated to 200 mm)
-  // avoid shells 
-  // and prepare to push shell in front of fish
-  int16_t traj_sand_extraction[] = {
-    KX(550) , 1000,
-    KX(550) , 900,
-    KX(320) , 620,
-    KX(550) , 290,
-    KX(760) , 190 };
-  goto_traj(traj_sand_extraction,KA(-M_PI/2 + 2*M_PI/3));
-
-  // push shell with a little angle to avoid the sand border
-  goto_xya_wait(KX(1000), 180, KA(-M_PI/2 + M_PI/24), 5000);
-  goto_xya_wait(KX(750),  190, KA(0), 5000);
-
-  // final connection point : x:750, y:190
-}
-
-void galipette_go_directly_fishing(void)
-{
-  int16_t traj_sand_extraction[] = {
-    KX(1050) , 830,
-    KX(1050) , 180,
-  };
-  goto_traj(traj_sand_extraction,KA(-M_PI/2));
-
-  // in front of aquarium, oriented to take fishes 
-  goto_xya_wait(KX(850),  190, KA(0), 5000);
-}
-
-void galipette_turn_around_shells_and_go_fishing(void)
-{
-  int16_t traj_sand_extraction[] = {
-    KX(1050) , 880,
-    KX(600) , 800,
-    KX(420) , 620,
-    KX(550) , 290,
-    KX(760) , 190,
-  };
-  goto_traj(traj_sand_extraction,KA(0));
-
-  // push shell with a little angle to avoid the sand border
-  goto_xya_wait(KX(1000), 190, KA(-M_PI/2), 5000);
-  goto_xya_wait(KX(750),  190, KA(-M_PI/2), 5000);
-
-  // in front of aquarium, oriented to take fishes 
-  goto_xya_wait(KX(850),  200, KA(0), 5000);
-}
-
-// turn around closest shell and 
-void galipette_bring_back_closest_shell(void)
-{
-   int16_t traj_sand_extraction[] = {
-    KX(1050) , 880,
-    KX(1050) , 600,
-    KX(1280) , 600,
-  };
-  goto_traj(traj_sand_extraction,KA(0));
-
-  goto_xya(KX(1280), 850, 0);
-}
-
-void galipette_return_fish_to_net(void)
-{
-  // go away from table edge and aquarium
-  goto_xya_rel(KX(-30), 200,KA(0));
-
-  // go to net and avoid net fixation
-  goto_xya(KX(350), 200 + GALIPETTE_BUMPER_TO_CENTER_DIST, KA(0));
-
-  // robot may enconter table edge
-  goto_xya_wait(KX(350), 100, KA(0), 2000);
-
-  /*
-  // reset position if system in contact avec table border
-  if ((robot_state.bumpers.left) && (robot_state.bumpers.right)) {
-    ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, robot_state.current_pos.x, 150, robot_state.current_pos.a);
-  }
-*/
-  galipette_rod_release_fish();
-  idle_delay_ms(500);
-  
-  goto_xya_rel(KX(0), 120,KA(0));
-  galipette_rod_prepare_to_move_fish();
-}
-
-void galipette_take_fish(void)
-{
-  // loop fishing
-  for (uint8_t it = 0; it < 10; it ++){
-    // go fishing (half aquarium in the corner of the table)
-    goto_xya(KX(900),  220, KA(0));
-    goto_xya_wait(KX(900),  90, KA(0), 2000);
-   // reset position if system in contact avec table border
-    if (robot_state.bumpers.left && robot_state.bumpers.right) {
-      ROME_SENDWAIT_ASSERV_SET_XYA(&rome_asserv, robot_state.current_pos.x, 100, robot_state.current_pos.a);
-    }
-
-    goto_xya_rel(KX(0), 10, KA(0)); // go away from table
-    galipette_rod_prepare_for_fishing();
-    idle_delay_ms(500);
-
-    goto_xya_rel_wait(KX(-150), 0, KA(0), 2000); 
-    galipette_rod_prepare_to_move_fish();
-    idle_delay_ms(500);
-
-    // go to net and release any fish taken
-    galipette_return_fish_to_net();
-
-    //
-    goto_xya(KX(1000),  220, KA(0)); 
-
-    // go in contact with table
-    goto_xya_wait(KX(1000),  90, KA(0), 2000); 
-  
-    goto_xya_rel(KX(0), 10, KA(0)); // robot must be in contact with table border
-    
-    // go fishing (half aquarium far away from the net)
-    galipette_rod_prepare_for_fishing();
-
-    goto_xya_rel_wait(KX(-100), 0, KA(0), 2000);
-
-    galipette_rod_prepare_to_move_fish();
-    goto_xya_rel(KX(10), 10, KA(0)); // go away from table
-
-    // go to net and release any fish taken
-    galipette_return_fish_to_net();
-
-  }
-
-  while(1); /// TODO REMOVE  THIS HORRIBLE LOOP !!!!!!!!!!!!!!!!!!  
 }
 
 void strat_run_galipette(void)
 {
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  idle_delay_ms(300);
 
+  //TODO : go switching domotic panel first
 
-  galipette_go_away_from_galipeur();
-  //galipette_bring_back_closest_shell();
+  goto_xya(KX(860), 1490, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
+  galipette_cube_claw_close();
+  idle_delay_ms(300);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
 
-  galipette_turn_around_shells_and_go_fishing();
-
-  galipette_take_fish();
 }
 
 void strat_test_galipette(void)
 {
-#if 1
+#if 0
   ROME_LOG(&rome_paddock,INFO,"Strat test stuff");
   for(;;) {
     update_rome_interfaces();
