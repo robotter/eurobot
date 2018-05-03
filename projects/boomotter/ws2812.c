@@ -32,26 +32,31 @@ void sendBit( bool bitVal ) {
 
   if ( bitVal ) {      // 1-bit
 
-    portpin_outset(&WS2812_DATA_PP);
+    //portpin_outset(&WS2812_DATA_PP);
+    PORTA.OUTSET = _BV(0);
 
     DELAY_CYCLES( NS_TO_CYCLES( T1H ) - 2 );
-    portpin_outclr(&WS2812_DATA_PP);
+    //portpin_outclr(&WS2812_DATA_PP);
+    PORTA.OUTCLR = _BV(0);
 
-    DELAY_CYCLES( NS_TO_CYCLES( T1L ) - 10 ); // 1-bit gap less the overhead of the loop
+    DELAY_CYCLES( NS_TO_CYCLES( T1L ) - 10); // 1-bit gap less the overhead of the loop
 
   } else {             // 0-bit
 
     __asm__("cli");
 
-    portpin_outset(&WS2812_DATA_PP);
+    //portpin_outset(&WS2812_DATA_PP);
+    PORTA.OUTSET = _BV(0);
 
-    DELAY_CYCLES( NS_TO_CYCLES( T0H ) - 2 ); // 0-bit width less overhead
-    portpin_outclr(&WS2812_DATA_PP);
+
+    DELAY_CYCLES( NS_TO_CYCLES( T0H ) - 5 ); // 0-bit width less overhead
+    //portpin_outclr(&WS2812_DATA_PP);
+    PORTA.OUTCLR = _BV(0);
+
+
+    DELAY_CYCLES( NS_TO_CYCLES( T0L ) - 50 ); // 0-bit gap less overhead of the loop
 
     __asm__("sei");
-
-    DELAY_CYCLES( NS_TO_CYCLES( T0L ) - 10 ); // 0-bit gap less overhead of the loop
-
   }
 
 

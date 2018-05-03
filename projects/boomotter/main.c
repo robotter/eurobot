@@ -8,6 +8,7 @@
 #include "dfplayer_mini.h"
 #include "audio_amplifier.h"
 #include "ws2812.h"
+#include <util/delay.h>
 
 rome_intf_t rome_intf;
 
@@ -35,6 +36,70 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 
 #endif
 }
+
+#define UPPER_WIDTH   21
+#define UPPER_HEIGHT  6
+#define LOWER_WIDTH   11
+#define LOWER_HEIGHT  10
+
+static void invcpy(ws2812_pixel_t *dst, ws2812_pixel_t*src, size_t len) {
+  for(size_t i=0; i<len; i++) {
+    size_t j = len-i-1;
+    dst[i] = src[j];
+  }
+}
+
+static void screen_to_pixel(ws2812_pixel_t *screen, ws2812_pixel_t *pixels)
+{
+  const size_t SZ = sizeof(ws2812_pixel_t);
+  const size_t UW = UPPER_WIDTH;
+  const size_t LW = LOWER_WIDTH;
+
+  pixels ++;
+  memcpy(pixels, screen, UW*SZ);
+
+  pixels += UW; screen += UW;
+  invcpy(pixels,screen, UW);
+  pixels += UW; screen += UW;
+  memcpy(pixels, screen, UW*SZ);
+
+  pixels += UW; screen += UW;
+  invcpy(pixels,screen, UW);
+  pixels += UW; screen += UW;
+  memcpy(pixels, screen, UW*SZ);
+
+  pixels += UW; screen += UW;
+  invcpy(pixels,screen, UW);
+  pixels += UW; screen += UW;
+  memcpy(pixels, screen, LW*SZ);
+
+  pixels += LW; screen += UW;
+  invcpy(pixels,screen, LW);
+  pixels += LW; screen += UW;
+  memcpy(pixels, screen, LW*SZ);
+
+  pixels += LW; screen += UW;
+  invcpy(pixels,screen, LW);
+  pixels += LW; screen += UW;
+  memcpy(pixels, screen, LW*SZ);
+ 
+  pixels += LW; screen += UW;
+  invcpy(pixels,screen, LW);
+  pixels += LW; screen += UW;
+  memcpy(pixels, screen, LW*SZ);
+
+  pixels += LW; screen += UW;
+  invcpy(pixels,screen, LW);
+  pixels += LW; screen += UW;
+  memcpy(pixels, screen, LW*SZ);
+
+  pixels += LW; screen += UW;
+  invcpy(pixels,screen, LW);
+  pixels += LW; screen += UW;
+  memcpy(pixels, screen, LW*SZ);
+
+}
+
 
 int main(void)
 {
@@ -69,31 +134,30 @@ int main(void)
   amplifier_init();
 
   ws2812_init();
-
-  dfplayer_specify_volume(10);
-
-  amplifier_shutdown(1);
-  amplifier_mute(1);
   
-  for(volatile uint32_t i = 0; i<= 320000; i++);
- 
+  _delay_ms(500);
+  dfplayer_specify_volume(2);
+
   amplifier_shutdown(0);
   amplifier_mute(0);
-//amplifier_set_gain(GAIN_36DB);
-  uint8_t track_id = 2;
+  //amplifier_set_gain(GAIN_36DB);
   
-  for(volatile uint32_t i = 0; i<= 3200000; i++);
-  dfplayer_set_equalizer(2);
+  uint8_t track_id = 1;
+ 
+  ws2812_pixel_t pixels[UPPER_WIDTH*UPPER_HEIGHT+LOWER_WIDTH*LOWER_HEIGHT+1];
+  ws2812_pixel_t screen[UPPER_WIDTH*(UPPER_HEIGHT+LOWER_HEIGHT)];
   
-  ws2812_pixel_t pixels[5];
-  for (uint8_t it = 0; it < sizeof(pixels)/sizeof(ws2812_pixel_t);it ++)
-  {
-      pixels[it].r = 0;
-      pixels[it].g = 10*it;
-      pixels[it].b = 0;
-  }
+
+  memset(pixels, 0, sizeof(pixels));
+  memset(screen, 0, sizeof(screen));
+  
+  const int SH = UPPER_HEIGHT+LOWER_HEIGHT;
+  const int SW = UPPER_WIDTH;
+
+  portpin_outset(&LED_RUN_PP); 
 
 
+  float t=0;
   while(1) {
     rome_handle_input(&rome_intf);
     
@@ -102,29 +166,42 @@ int main(void)
       ROME_LOGF(&rome_intf, INFO, "new track...\n");
       track_id ++;
 
-      if (track_id>6)
+      if (track_id>10)
         track_id = 1;
 
       dfplayer_play_track(track_id);
     }
 
+    t+= 0.1;
+    float a = 0.1+0.4*(0.5 + 0.5*cos(0.1*t));
+    for(int j=0;j<SH;j++)
+    for(int i=0;i<SW;i++) {
+      float r = (0.5 + 0.5*cos(a*i+t+5*cos(t) ))*(0.5 + 0.5*sin(a*j+t+5*sin(t)));
+      float g = (0.5 + 0.5*cos(a*i+t+5*cos(t) ))*(0.5 + 0.5*sin(a*j+t+4*sin(t)));
+      float b = (0.5 + 0.5*cos(a*i+t+4*sin(t) ))*(0.5 + 0.5*sin(a*j+t+4*sin(t)));
+      r = 20*r*r;
+      g = 20*g*g;
+      b = 20*b*b;
+      screen[j*SW+i] = (ws2812_pixel_t) {
+        .r = r,
+        .g = g,
+        .b = b,
+      };
+    }
 
-    portpin_outset(&LED_COM_PP);
-    for(volatile uint32_t i = 0; i<= 320000; i++);
-    //    dfplayer_pause();
-    for (uint8_t it = 0; it < sizeof(pixels)/sizeof(ws2812_pixel_t);it ++)
+    screen_to_pixel(screen, pixels);
+    for (uint16_t it = 0; it < sizeof(pixels)/sizeof(ws2812_pixel_t); it ++)
     {
-      pixels[it].r = 0;
-      pixels[it].g += 10;
-      pixels[it].b = 0;
       ws2812_sendPixel(&pixels[it]);
     }
 
-    portpin_outclr(&LED_COM_PP);
-    for(volatile uint32_t i = 0; i<= 320000; i++);
-    //dfplayer_play();
+
+//    _delay_ms(500);
+//²:w    portpin_outtgl(&LED_RUN_PP);
   }
 
   while(1);
 }
+
+
 

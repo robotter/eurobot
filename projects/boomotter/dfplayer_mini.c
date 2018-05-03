@@ -14,7 +14,7 @@ void dfplayer_init(void)
   portpin_dirclr(&DFPLAYER_BUSY_PP);
  
   dfplayer_set_source(DF_STORAGE_SDFLASH);
-  while(dfplayer_is_busy());
+//  while(dfplayer_is_busy());
   dfplayer_normal_mode();
 }
 
