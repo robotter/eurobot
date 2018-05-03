@@ -621,14 +621,14 @@ void strat_prepare_galipeur(void)
   // y on building area
   goto_xya(KX(1000), 300, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
-  goto_xya(KX(1000), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  goto_xya(KX(1000), 1530, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
 
   // check the state of the cylinder
   _wait_meca_ready();
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_CHECK_EMPTY);
 
   //go in front of starting area
-  goto_xya(KX(1250), 1500, arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
+  goto_xya(KX(1345), 1475, arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
 
   //wait for meca to end checking cylinder
   _wait_meca_ready();
