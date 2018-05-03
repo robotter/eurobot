@@ -553,70 +553,75 @@ static void _htrajectory_update( htrajectory_t *htj )
 
   if( htj->state == STATE_AUTOSET_MOVE )
   {
+    htj->autosetCount++;
+
+    const autoset_configuration_t autoconf =
+      AUTOSET_CONFIGURATIONS[htj->autosetRobotSide];
+    dx = SETTING_AUTOSET_SPEED*cos(autoconf.base);
+    dy = SETTING_AUTOSET_SPEED*sin(autoconf.base);
+
+    float alpha = MIN(1.0, 2.0*htj->autosetCount/SETTING_AUTOSET_ZEROCOUNT);
+
+
 #if defined(GALIPEUR)
+    // set course
+    hrobot_set_motors(dx*alpha, dy*alpha, 0.0);
     // XXX maybe replaced with an advance detector XXX
-    if(true)
+    if( htj->autosetCount > SETTING_AUTOSET_ZEROCOUNT )
 #elif defined(GALIPETTE)
-    if(bumpers_pushed())
-#endif
-    {
-      htj->autosetCount++;
-
-      const autoset_configuration_t autoconf =
-        AUTOSET_CONFIGURATIONS[htj->autosetRobotSide];
-      dx = SETTING_AUTOSET_SPEED*cos(autoconf.base);
-      dy = SETTING_AUTOSET_SPEED*sin(autoconf.base);
-
-      float alpha = MIN(1.0, 2.0*htj->autosetCount/SETTING_AUTOSET_ZEROCOUNT);
-
-      // set course
-      hrobot_set_motors(dx*alpha, dy*alpha, 0.0);
-
-      if( htj->autosetCount > SETTING_AUTOSET_ZEROCOUNT )
-      {
-        // autoset done
-        const autoset_configuration_t autoconf = 
-          AUTOSET_CONFIGURATIONS[htj->autosetRobotSide];
-        switch(htj->autosetTableSide)
-        {
-          case TS_LEFT:
-            htj->autosetInitPos.alpha = autoconf.left;
-            htj->autosetInitPos.x = htj->autosetTargetX;
-            break;
-
-          case TS_RIGHT:
-            htj->autosetInitPos.alpha = autoconf.right;
-            htj->autosetInitPos.x = htj->autosetTargetX;
-            break;
-
-          case TS_UP:
-            htj->autosetInitPos.alpha = autoconf.up;
-            htj->autosetInitPos.y = htj->autosetTargetY;
-            break;
-
-          case TS_DOWN:
-            htj->autosetInitPos.alpha = autoconf.down;
-            htj->autosetInitPos.y = htj->autosetTargetY;
-            break;
-
-          default:
-            return;
-        }
-
-        hposition_set(htj->hrp, htj->autosetInitPos.x,
-                      htj->autosetInitPos.y,
-                      htj->autosetInitPos.alpha);
-        // reset htrajectory carrot
-        htrajectory_reset_carrot(htj);
-        setCarrotXYPosition( htj, htj->carrot );
-        // reactivate robot CSs damn it !
-        robot_cs_activate(htj->rcs, 1);
-        // set trajectory status to stop
-        htj->state = STATE_STOP;
+    if(!bumpers_pushed()){
+      if(bumper_left_pushed())
+        hrobot_set_motors(dx*alpha, dy*alpha, 8000000);
+      else{
+        if(bumper_right_pushed())
+          hrobot_set_motors(dx*alpha, dy*alpha, -800000);
+        else
+          hrobot_set_motors(dx*alpha, dy*alpha, 0.0);
       }
     }
     else
-      htj->autosetCount = 0;
+#endif
+    {
+      // autoset done
+      const autoset_configuration_t autoconf = 
+        AUTOSET_CONFIGURATIONS[htj->autosetRobotSide];
+      switch(htj->autosetTableSide)
+      {
+        case TS_LEFT:
+          htj->autosetInitPos.alpha = autoconf.left;
+          htj->autosetInitPos.x = htj->autosetTargetX;
+          break;
+
+        case TS_RIGHT:
+          htj->autosetInitPos.alpha = autoconf.right;
+          htj->autosetInitPos.x = htj->autosetTargetX;
+          break;
+
+        case TS_UP:
+          htj->autosetInitPos.alpha = autoconf.up;
+          htj->autosetInitPos.y = htj->autosetTargetY;
+          break;
+
+        case TS_DOWN:
+          htj->autosetInitPos.alpha = autoconf.down;
+          htj->autosetInitPos.y = htj->autosetTargetY;
+          break;
+
+        default:
+          return;
+      }
+
+      hposition_set(htj->hrp, htj->autosetInitPos.x,
+                    htj->autosetInitPos.y,
+                    htj->autosetInitPos.alpha);
+      // reset htrajectory carrot
+      htrajectory_reset_carrot(htj);
+      setCarrotXYPosition( htj, htj->carrot );
+      // reactivate robot CSs damn it !
+      robot_cs_activate(htj->rcs, 1);
+      // set trajectory status to stop
+      htj->state = STATE_STOP;
+    }
 
     return;
   }

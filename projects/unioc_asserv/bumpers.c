@@ -30,4 +30,6 @@ bool bumpers_pushed(void)
   return portpin_in(&BUMPER_PIN_L) && portpin_in(&BUMPER_PIN_R);
 }
 
+bool bumper_left_pushed(void) {return portpin_in(&BUMPER_PIN_L);}
+bool bumper_right_pushed(void){return portpin_in(&BUMPER_PIN_R);}
 #endif
