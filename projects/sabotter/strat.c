@@ -971,16 +971,18 @@ typedef enum{
   CUBE_CLAW_RIGHT = 3,
 } cube_claw_servo_t;
 
-#define CUBE_CLAW_LEFT_START 1600
+#define CUBE_CLAW_LEFT_START 1500
 #define CUBE_CLAW_LEFT_CLOSED 2100
 #define CUBE_CLAW_LEFT_OPENED 3000
 
-#define CUBE_CLAW_RIGHT_START 2900
+#define CUBE_CLAW_RIGHT_START 3000
 #define CUBE_CLAW_RIGHT_CLOSED 2400
 #define CUBE_CLAW_RIGHT_OPENED 1500
 
-#define CUBE_CLAW_ELEVATOR_DOWN 1500
-#define CUBE_CLAW_ELEVATOR_MID 3000
+#define CUBE_CLAW_ELEVATOR_DOWN 1300
+#define CUBE_CLAW_ELEVATOR_BUTTON 2600
+#define CUBE_CLAW_ELEVATOR_BUTTON_WITHCUBE 2800
+#define CUBE_CLAW_ELEVATOR_MID 3250
 #define CUBE_CLAW_ELEVATOR_UP 4000
 
 #define GALIPETTE_BUMPER_TO_CENTER_DIST 100 // distance from the edge of galipette to the center of the robot (in mm)
@@ -1028,7 +1030,7 @@ void strat_init_galipette(void)
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
 
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_BUTTON);
   galipette_cube_claw_start();
 
   // set R3D2 parameters
@@ -1057,11 +1059,12 @@ void strat_prepare_galipette(void)
   set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-GALIPETTE_BUMPER_TO_CENTER_DIST), 0);
   goto_xya(KX(1200), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  goto_xya(KX(1200), 100, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  goto_xya(KX(1200), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-GALIPETTE_BUMPER_TO_CENTER_DIST);
   goto_xya(KX(1200), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-  goto_xya(KX(1200), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_AUX));
+  goto_xya(KX(1350), 1800, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
 
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
   galipette_cube_claw_open();
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
@@ -1072,20 +1075,30 @@ void strat_run_galipette(void)
 {
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-  idle_delay_ms(300);
-
-  //TODO : go switching domotic panel first
-
-  goto_xya(KX(860), 1490, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
   galipette_cube_claw_close();
-  idle_delay_ms(300);
+
+  //wait for galipeur departure
+  idle_delay_ms(1000);
+
+  //go switching domotic panel first
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_BUTTON_WITHCUBE);
+
+  int16_t traj[] = {
+      KX(1000), 1700,
+      KX(370), 1700,
+      KX(370), 1820,
+      };
+  goto_traj(traj, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  idle_delay_ms(2000);
+  galipette_cube_claw_open();
+  goto_xya(KX(370), 1460, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_MAIN));
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
 
 }
 
 void strat_test_galipette(void)
 {
-#if 0
+#if 1
   ROME_LOG(&rome_paddock,INFO,"Strat test stuff");
   for(;;) {
     update_rome_interfaces();
@@ -1097,28 +1110,11 @@ void strat_test_galipette(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
 
-  autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, AUTOSET_OFFSET);
-  goto_xya_rel(0,200,0.0);
-  autoset(ROBOT_SIDE_BACK, AUTOSET_LEFT, 0, AUTOSET_OFFSET);
-  goto_xya(200,200,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_LEFT));
-
-  galipette_set_speed(RS_NORMAL);
-
-  uint8_t i = 0;
   for(;;){
-    goto_xya(200,800,0);
-    idle_delay_ms(1000);
-    goto_xya(200,0,0);
-    i++;
-    if (i > 5){
-      autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, AUTOSET_OFFSET);
-      goto_xya(200,200,0.0);
-      autoset(ROBOT_SIDE_BACK, AUTOSET_LEFT, 0, AUTOSET_OFFSET);
-      goto_xya(-200,200,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_LEFT));
-      i = 0;
-    }
-    else
-      idle_delay_ms(1000);
+    goto_xya(500,-500,0);
+    idle_delay_ms(10000);
+    goto_xya(0,0,0);
+    idle_delay_ms(10000);
   }
 #endif
 }
