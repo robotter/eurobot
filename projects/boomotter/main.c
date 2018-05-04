@@ -10,6 +10,8 @@
 #include "ws2812.h"
 #include <util/delay.h>
 
+#include "pic.c"
+
 rome_intf_t rome_intf;
 
 static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
@@ -136,17 +138,14 @@ int main(void)
   ws2812_init();
   
   _delay_ms(500);
-  dfplayer_specify_volume(2);
+  dfplayer_specify_volume(10);
 
   amplifier_shutdown(0);
   amplifier_mute(0);
-  //amplifier_set_gain(GAIN_36DB);
+  amplifier_set_gain(GAIN_26DB);
   
-  uint8_t track_id = 1;
- 
   ws2812_pixel_t pixels[UPPER_WIDTH*UPPER_HEIGHT+LOWER_WIDTH*LOWER_HEIGHT+1];
   ws2812_pixel_t screen[UPPER_WIDTH*(UPPER_HEIGHT+LOWER_HEIGHT)];
-  
 
   memset(pixels, 0, sizeof(pixels));
   memset(screen, 0, sizeof(screen));
@@ -156,33 +155,21 @@ int main(void)
 
   portpin_outset(&LED_RUN_PP); 
 
-
-  float t=0;
+  (void)SW;(void)SH;
   while(1) {
     rome_handle_input(&rome_intf);
     
     if (!dfplayer_is_busy())
     {
-      ROME_LOGF(&rome_intf, INFO, "new track...\n");
-      track_id ++;
-
-      if (track_id>10)
-        track_id = 1;
-
-      dfplayer_play_track(track_id);
+      dfplayer_play_track(10);
     }
 
-    t+= 0.1;
-    float a = 0.1+0.4*(0.5 + 0.5*cos(0.1*t));
     for(int j=0;j<SH;j++)
     for(int i=0;i<SW;i++) {
-      float r = (0.5 + 0.5*cos(a*i+t+5*cos(t) ))*(0.5 + 0.5*sin(a*j+t+5*sin(t)));
-      float g = (0.5 + 0.5*cos(a*i+t+5*cos(t) ))*(0.5 + 0.5*sin(a*j+t+4*sin(t)));
-      float b = (0.5 + 0.5*cos(a*i+t+4*sin(t) ))*(0.5 + 0.5*sin(a*j+t+4*sin(t)));
-      r = 20*r*r;
-      g = 20*g*g;
-      b = 20*b*b;
-      screen[j*SW+i] = (ws2812_pixel_t) {
+      uint8_t r = gimp_image.pixel_data[3*j*SW + 3*i + 0];
+      uint8_t g = gimp_image.pixel_data[3*j*SW + 3*i + 1];
+      uint8_t b = gimp_image.pixel_data[3*j*SW + 3*i + 2];
+      screen[j*SW + i] = (ws2812_pixel_t) {
         .r = r,
         .g = g,
         .b = b,
@@ -196,7 +183,7 @@ int main(void)
     }
 
 
-//    _delay_ms(500);
+    _delay_ms(20);
 //²:w    portpin_outtgl(&LED_RUN_PP);
   }
 
