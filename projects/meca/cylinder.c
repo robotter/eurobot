@@ -295,6 +295,11 @@ cylinder_move_t next_emptying_move(rome_enum_jevois_color_t color){
         if (i == idx)
           break;
       }
+      //if end position is 2, change it to 3 if the color of pos 3 is not the other color
+      if (j == 2){
+        if (cylinder.ball_color[3] != _opposite_color(color))
+          j = 3;
+        }
       //measure color row length, and store the longest
       if (j != 2){
         if (j >= idx)
@@ -362,8 +367,10 @@ void cylinder_update(void){
   }
   os = cylinder.state;
 
-  if(uptime_us() - lsct > MECA_TIMEOUT_US)
+  if(uptime_us() - lsct > MECA_TIMEOUT_US){
+    ROME_LOGF(&rome_strat, DEBUG,"meca state timeout");
     cylinder_set_idle();
+  }
 
   switch (cylinder.state){
     case CYLINDER_INIT:{
@@ -427,6 +434,7 @@ void cylinder_update(void){
     case CYLINDER_BALLEATER_WAIT_EATING:{
       bool delay = cylinder.eating_ts + CYLINDER_EATING_TIMEOUT_US > uptime_us();
       if(!delay){
+        ROME_LOGF(&rome_strat, DEBUG,"meca eating timeout");
         cylinder_set_idle();
         balleater_off();
         break;
@@ -607,6 +615,7 @@ void cylinder_update(void){
 
     case CYLINDER_IDLE:
       cylinder.tm_state = ROME_ENUM_MECA_STATE_READY;
+      lsct = uptime_us();
 
       //compute next move options
       if (cylinder.tm_optimal_move == ROME_ENUM_EMPTYING_MOVE_NONE){
