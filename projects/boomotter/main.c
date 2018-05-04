@@ -9,6 +9,7 @@
 #include "audio_amplifier.h"
 #include "ws2812.h"
 #include <util/delay.h>
+#include <avr/pgmspace.h>
 
 #include "pic.c"
 
@@ -43,6 +44,10 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 #define UPPER_HEIGHT  6
 #define LOWER_WIDTH   11
 #define LOWER_HEIGHT  10
+#define SH (UPPER_HEIGHT+LOWER_HEIGHT)
+#define SW (UPPER_WIDTH)
+#define I(x,y) ((x) + (y)*SW)
+
 
 static void invcpy(ws2812_pixel_t *dst, ws2812_pixel_t*src, size_t len) {
   for(size_t i=0; i<len; i++) {
@@ -102,6 +107,25 @@ static void screen_to_pixel(ws2812_pixel_t *screen, ws2812_pixel_t *pixels)
 
 }
 
+#include "font.h"
+
+void draw_glyph(ws2812_pixel_t * screen, int x, int y, uint8_t c, ws2812_pixel_t color) {
+ 
+  int n = font_pixels_lut[c];
+  if(n < 0) {
+    for(int dy=0;dy<font_height;dy++)
+    for(int dx=0;dx<font_width;dx++) {
+      screen[I(dx,dy)] = 0x7f0000;
+    }
+    return;
+  }
+
+  for(int dy=0;dy<font_height;dy++)
+  for(int dx=0;dx<font_width;dx++) {
+    uint8_t v =pgm_read_byte(&font_pixels[n][dx+font_width*dy]);
+    screen[I(dx,dy)] = v;
+  }
+}
 
 int main(void)
 {
@@ -138,11 +162,11 @@ int main(void)
   ws2812_init();
   
   _delay_ms(500);
-  dfplayer_specify_volume(10);
+  dfplayer_specify_volume(0);
 
   amplifier_shutdown(0);
   amplifier_mute(0);
-  amplifier_set_gain(GAIN_26DB);
+//  amplifier_set_gain(GAIN_26DB);
   
   ws2812_pixel_t pixels[UPPER_WIDTH*UPPER_HEIGHT+LOWER_WIDTH*LOWER_HEIGHT+1];
   ws2812_pixel_t screen[UPPER_WIDTH*(UPPER_HEIGHT+LOWER_HEIGHT)];
@@ -150,40 +174,30 @@ int main(void)
   memset(pixels, 0, sizeof(pixels));
   memset(screen, 0, sizeof(screen));
   
-  const int SH = UPPER_HEIGHT+LOWER_HEIGHT;
-  const int SW = UPPER_WIDTH;
-
   portpin_outset(&LED_RUN_PP); 
 
   (void)SW;(void)SH;
+  int i =0;
   while(1) {
     rome_handle_input(&rome_intf);
     
     if (!dfplayer_is_busy())
     {
-      dfplayer_play_track(10);
+      dfplayer_play_track(1);
     }
-
-    for(int j=0;j<SH;j++)
-    for(int i=0;i<SW;i++) {
-      uint8_t r = gimp_image.pixel_data[3*j*SW + 3*i + 0];
-      uint8_t g = gimp_image.pixel_data[3*j*SW + 3*i + 1];
-      uint8_t b = gimp_image.pixel_data[3*j*SW + 3*i + 2];
-      screen[j*SW + i] = (ws2812_pixel_t) {
-        .r = r,
-        .g = g,
-        .b = b,
-      };
-    }
+    
+    memset(screen, 0, sizeof(screen));
+    i = (i+1)%10;
+    draw_glyph(screen,0,0,'0'+i,0x333333);
 
     screen_to_pixel(screen, pixels);
     for (uint16_t it = 0; it < sizeof(pixels)/sizeof(ws2812_pixel_t); it ++)
     {
-      ws2812_sendPixel(&pixels[it]);
+      ws2812_sendPixel(pixels[it]);
     }
 
 
-    _delay_ms(20);
+    _delay_ms(500);
 //²:w    portpin_outtgl(&LED_RUN_PP);
   }
 
