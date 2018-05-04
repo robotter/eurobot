@@ -21,8 +21,9 @@
 bool match_started = false;
 int32_t match_timer_ms = -1;
 
-// ROME interface
+// ROME interfaces
 rome_intf_t rome_strat;
+rome_intf_t rome_jevois;
 
 jevois_cam_t cam;
 
@@ -102,6 +103,11 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
     default:
       break;
   }
+}
+
+void rome_jevois_handler(rome_intf_t *intf, const rome_frame_t *frame)
+{
+  jevois_cam_process_rome(&cam, frame);
 }
 
 //NOTE: ax12 methods MUST NOT be called with UART interrupts blocked, and from
@@ -229,6 +235,11 @@ int main(void)
   rome_strat.uart = UART_PPP;
   rome_strat.handler = rome_strat_handler;
 
+  rome_intf_init(&rome_jevois);
+  rome_jevois.uart = UART_JEVOIS;
+  rome_jevois.handler = rome_jevois_handler;
+
+
   uint32_t luptime = UINT32_MAX;
   uint32_t msg_uptime = UINT32_MAX;
 
@@ -237,7 +248,7 @@ int main(void)
 
     cylinder_update();
     //update camera
-    jevois_cam_update(&cam);
+    rome_handle_input(&rome_jevois);
 
     // debug info
     //PORTA.OUT = (t++)/1000;

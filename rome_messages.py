@@ -136,8 +136,14 @@ register_messages(
         'orange',
         'green',
         )),
-      ('jevois_tm_cylinder_color', [('color','jevois_color')]),
+      ('jevois_tm_cylinder_cam', [
+        ('entry_color', 'jevois_color'),
+        ('cylinder_color', 'jevois_color'),
+        ('entry_height', 'uint16'),
+        ('entry_area', 'uint32'),
+        ('cylinder_area', 'uint32'),
       ]),
+    ]),
 
     # MECA
     (0xA0, [
