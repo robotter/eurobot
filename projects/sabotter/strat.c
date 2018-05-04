@@ -619,16 +619,18 @@ void strat_prepare_galipeur(void)
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
   goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   // y on building area
-  goto_xya(KX(1000), 300, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  goto_xya(KX(900), 300, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
-  goto_xya(KX(1000), 1530, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
 
   // check the state of the cylinder
   _wait_meca_ready();
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_CHECK_EMPTY);
 
+  //evade the border, leaving space for galipette
+  goto_xya(KX(900), 1600, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+
   //go in front of starting area
-  goto_xya(KX(1345), 1475, arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
+  goto_xya(KX(1300), 1500, arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
 
   //wait for meca to end checking cylinder
   _wait_meca_ready();
@@ -826,12 +828,20 @@ order_result_t galipeur_trash_water_treatment(void){
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_PREPARE_TRASH_TREATMENT);
   _wait_meca_ground_clear();
 
+  //store nb balls for scoring purpose
   uint8_t balls_loaded = robot_state.cylinder_nb_bad;
+
+  //push away the cubes in front of treatment area
   int16_t traj[] = {
     KX(-700), 500,
-    KX(-250), 250+120,
+    KX(-100), 500,
   };
-  or = goto_traj(traj, arfast(ROBOT_SIDE_TURBINE,TABLE_SIDE_DOWN));
+  if (robot_state.team == TEAM_GREEN)
+    or = goto_traj(traj, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  else
+    or = goto_traj(traj, arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_MAIN));
+  //go in position to trash the bad water
+  or = goto_xya(KX(-250),250+120, arfast(ROBOT_SIDE_TURBINE,TABLE_SIDE_DOWN));
   _wait_meca_ready();
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_TRASH_TREATMENT);
   _wait_meca_ground_clear();
@@ -840,7 +850,7 @@ order_result_t galipeur_trash_water_treatment(void){
   or = goto_xya(KX(-250), 500, arfast(ROBOT_SIDE_TURBINE, TABLE_SIDE_DOWN));
   or = goto_xya(KX(-250), 500, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
   autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, 250+AUTOSET_OFFSET);
-  or = goto_xya(KX(-250), 500, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+  or = goto_xya(KX(-250), 1000, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
   return or;
 }
 
