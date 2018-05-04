@@ -5,7 +5,7 @@ include ../../config.mk
 SRCS = main.c servos.c cylinder.c jevois_cam.c
 ASRCS =
 TARGET = main
-MODULES = uart pwm ax12 timer encoder/quadra rome
+MODULES = uart pwm ax12 timer rome
 
 
 ## Target configuration
