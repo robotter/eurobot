@@ -432,14 +432,13 @@ int main(void)
   // remove break
   hrobot_break(0);
 
-
   printf("-- reboot --\n");
   //----------------------------------------------------------------------
   PORTQ.OUT = 6;
   for(;;) {
 
     PORTQ.OUT++;
-   
+
     _delay_ms(10);
     rome_handle_input(&rome);
     rome_handle_input(&rome_r3d2);

@@ -21,11 +21,10 @@ double hrobot_motors_invmatrix_correct[9] = {
   };
 
 #elif defined(GALIPETTE)
-
 double hrobot_motors_invmatrix[9] = {
--1.41996042,  2.47263191, -1.21007914,
- 2.15278572, -0.01418205, -2.16876778,
--0.00961104, -0.01048176,  -0.0100097,
+ -1.327571, 2.731647, -1.281436,
+ 2.233109, 0.092876, -2.405414,
+ -0.016462, -0.015989, -0.015794,
 };
 
 double hrobot_motors_invmatrix_correct[9] = {

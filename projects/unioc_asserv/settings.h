@@ -54,7 +54,7 @@
 #elif defined(GALIPETTE)
 #define SETTING_PID_X_GAIN_P (1400)
 #endif
-#define SETTING_PID_X_GAIN_I (0)
+#define SETTING_PID_X_GAIN_I (10)
 #define SETTING_PID_X_GAIN_D (0)
 
 #define SETTING_PID_X_MAX_IN  (50000)
@@ -70,7 +70,7 @@
 #define SETTING_PID_Y_GAIN_P (1400)
 #endif
 
-#define SETTING_PID_Y_GAIN_I (0)
+#define SETTING_PID_Y_GAIN_I (10)
 #define SETTING_PID_Y_GAIN_D (0)
 
 #define SETTING_PID_Y_MAX_IN  (50000)
