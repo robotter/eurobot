@@ -34,7 +34,7 @@ class Font:
         chars_data = []
         chars_width = []
         prev_i = 0
-        for i in [0]+sep:
+        for i in [0] + sep + [len(sep)]:
             group = rows[prev_i:i]
             if not group:
                 continue
@@ -121,10 +121,28 @@ font_bitmap2 = """\
 -----------------------------------------------------
 """
 
+font_score_chars = "0123456789 ?-"
+font_score_bitmap = """\
+###| # |###|###|# #|###|###|###|###|###|   |###|   |
+# #|## |  #|  #|# #|#  |#  |  #|# #|# #|   |# #|   |
+# #| # |  #|  #|# #|#  |#  |  #|# #|# #|   |  #|   |
+# #| # |  #|  #|# #|#  |#  |  #|# #|# #|   |  #|   |
+# #| # |###|###|###|###|###| # |###|###|   | # | # |
+# #| # |#  |  #|  #|  #|# #| # |# #|  #|   | # |   |
+# #| # |#  |  #|  #|  #|# #| # |# #|  #|   | # |   |
+# #| # |#  |  #|  #|  #|# #| # |# #|  #|   |   |   |
+###|###|###|###|  #|###|###| # |###|###|   | # |   |
+"""
+
 
 def main():
-    font = Font("bitmap", font_chars, font_bitmap2)
-    print(font.gen_c())
+    fonts = [
+        Font("bitmap", font_chars, font_bitmap2),
+        Font("score", font_score_chars, font_score_bitmap),
+    ]
+    for font in fonts:
+        print("")
+        print(font.gen_c())
 
 if __name__ == "__main__":
     main()
