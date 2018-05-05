@@ -13,23 +13,23 @@ void screen_draw(const screen_t screen)
   for(uint8_t i=0; i<(n); i++) ws2812_sendPixel(p[(n)-i-1]); \
   p += (n);
 
-  send_pixels_l2r(UPPER_WIDTH);
-  send_pixels_r2l(UPPER_WIDTH);
-  send_pixels_l2r(UPPER_WIDTH);
-  send_pixels_r2l(UPPER_WIDTH);
-  send_pixels_l2r(UPPER_WIDTH);
-  send_pixels_r2l(UPPER_WIDTH);
+  send_pixels_l2r(SCREEN_UW);
+  send_pixels_r2l(SCREEN_UW);
+  send_pixels_l2r(SCREEN_UW);
+  send_pixels_r2l(SCREEN_UW);
+  send_pixels_l2r(SCREEN_UW);
+  send_pixels_r2l(SCREEN_UW);
 
-  send_pixels_l2r(LOWER_WIDTH); p += UPPER_WIDTH - LOWER_WIDTH;
-  send_pixels_r2l(LOWER_WIDTH); p += UPPER_WIDTH - LOWER_WIDTH;
-  send_pixels_l2r(LOWER_WIDTH); p += UPPER_WIDTH - LOWER_WIDTH;
-  send_pixels_r2l(LOWER_WIDTH); p += UPPER_WIDTH - LOWER_WIDTH;
-  send_pixels_l2r(LOWER_WIDTH); p += UPPER_WIDTH - LOWER_WIDTH;
-  send_pixels_r2l(LOWER_WIDTH); p += UPPER_WIDTH - LOWER_WIDTH;
-  send_pixels_l2r(LOWER_WIDTH); p += UPPER_WIDTH - LOWER_WIDTH;
-  send_pixels_r2l(LOWER_WIDTH); p += UPPER_WIDTH - LOWER_WIDTH;
-  send_pixels_l2r(LOWER_WIDTH); p += UPPER_WIDTH - LOWER_WIDTH;
-  send_pixels_r2l(LOWER_WIDTH);
+  send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+  send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+  send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+  send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+  send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+  send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+  send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+  send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+  send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+  send_pixels_r2l(SCREEN_LW);
 
 #undef send_pixels_l2r
 #undef send_pixels_r2l

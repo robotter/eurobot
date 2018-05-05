@@ -2,10 +2,11 @@ include ../../config.mk
 
 ## Project configuration
 
-SRCS = $(wildcard *.c)
+SRCS = $(filter-out $(wildcard *.inc.c),$(wildcard *.c))
 ASRCS =
 TARGET = main
 MODULES = uart rome
+GEN_FILES = modules/font_bitmap.inc.c
 
 
 ## Target configuration
@@ -25,4 +26,7 @@ CFLAGS += -g -Wextra -Werror
 LDFLAGS += -g
 
 include $(AVARIX_DIR)/mk/project.mk
+
+$(gen_dir)/modules/font_bitmap.inc.c: gen_font_bitmap.py
+	./$< > $@
 
