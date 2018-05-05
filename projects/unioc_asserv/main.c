@@ -433,13 +433,78 @@ int main(void)
   hrobot_break(0);
 
 
+  #define B 20000000
   printf("-- reboot --\n");
   //----------------------------------------------------------------------
   PORTQ.OUT = 6;
-  for(;;) {
 
+  // along -X
+  /*
+  int32_t x = -B;
+  int32_t y = -0.05*B;
+  int32_t r = +8e4;
+  */
+  // along +X
+  /*
+  int32_t x = B;
+  int32_t y = -0*B;
+  int32_t r = -8e4;
+  */
+  // along +Y
+/*
+  int32_t x = 0*B;
+  int32_t y = B;
+  int32_t r = +16e4;
+*/
+  // along -Y
+  /*
+  int32_t x = 0*B;
+  int32_t y = -B;
+  int32_t r = -16e4;
+*/
+
+  // along +R
+  /*
+  int32_t x = 0;
+  int32_t y = 0;
+  int32_t r = -13e5;
+*/
+  /*
+  int t = 0;
+  int dt = 6;
+  int16_t lv[3] = {0};
+  int32_t svs[3] = {0};
+  */
+  for(;;) {
+  /*
+    _PRESCALE(100, t++);
+    if(t < 2) {
+      hrobot_set_motors(x/10,y/10,r/10);
+    }
+    else if(t < dt) {
+      hrobot_set_motors(x,y,r);
+    }
+    else if(t < dt+2) {
+      hrobot_set_motors(x/2,y/2,r/2);
+    }
+    else {
+      hrobot_set_motors(0,0,0);
+    }
+
+    motor_encoders_update();
+    int16_t *v = motor_encoders_get_value();
+    svs[0] += v[0] - lv[0];
+    svs[1] += v[1] - lv[1];
+    svs[2] += v[2] - lv[2];
+    memcpy(lv,v,sizeof(lv));
+
+    _PRESCALE(100,
+      _DWZ(
+        ROME_LOGF(&rome, DEBUG, "encoders %ld %ld %ld",svs[0],svs[1],svs[2]);
+      )
+    );
+    */
     PORTQ.OUT++;
-   
     _delay_ms(10);
     rome_handle_input(&rome);
     rome_handle_input(&rome_r3d2);
