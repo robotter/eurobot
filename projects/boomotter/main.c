@@ -4,14 +4,15 @@
 #include <uart/uart.h>
 #include <clock/clock.h>
 #include <rome/rome.h>
+#include <util/delay.h>
+#include <avr/pgmspace.h>
 #include "leds.h"
 #include "dfplayer_mini.h"
 #include "audio_amplifier.h"
 #include "ws2812.h"
-#include <util/delay.h>
-#include <avr/pgmspace.h>
+#include "screen.h"
 
-#include "pic.c"
+//#include "pic.c"
 
 rome_intf_t rome_intf;
 
@@ -40,76 +41,10 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 #endif
 }
 
-#define UPPER_WIDTH   21
-#define UPPER_HEIGHT  6
-#define LOWER_WIDTH   11
-#define LOWER_HEIGHT  10
-#define SH (UPPER_HEIGHT+LOWER_HEIGHT)
-#define SW (UPPER_WIDTH)
-#define I(x,y) ((x) + (y)*SW)
-
-
-static void invcpy(ws2812_pixel_t *dst, ws2812_pixel_t*src, size_t len) {
-  for(size_t i=0; i<len; i++) {
-    size_t j = len-i-1;
-    dst[i] = src[j];
-  }
-}
-
-static void screen_to_pixel(ws2812_pixel_t *screen, ws2812_pixel_t *pixels)
-{
-  const size_t SZ = sizeof(ws2812_pixel_t);
-  const size_t UW = UPPER_WIDTH;
-  const size_t LW = LOWER_WIDTH;
-
-  pixels ++;
-  memcpy(pixels, screen, UW*SZ);
-
-  pixels += UW; screen += UW;
-  invcpy(pixels,screen, UW);
-  pixels += UW; screen += UW;
-  memcpy(pixels, screen, UW*SZ);
-
-  pixels += UW; screen += UW;
-  invcpy(pixels,screen, UW);
-  pixels += UW; screen += UW;
-  memcpy(pixels, screen, UW*SZ);
-
-  pixels += UW; screen += UW;
-  invcpy(pixels,screen, UW);
-  pixels += UW; screen += UW;
-  memcpy(pixels, screen, LW*SZ);
-
-  pixels += LW; screen += UW;
-  invcpy(pixels,screen, LW);
-  pixels += LW; screen += UW;
-  memcpy(pixels, screen, LW*SZ);
-
-  pixels += LW; screen += UW;
-  invcpy(pixels,screen, LW);
-  pixels += LW; screen += UW;
-  memcpy(pixels, screen, LW*SZ);
- 
-  pixels += LW; screen += UW;
-  invcpy(pixels,screen, LW);
-  pixels += LW; screen += UW;
-  memcpy(pixels, screen, LW*SZ);
-
-  pixels += LW; screen += UW;
-  invcpy(pixels,screen, LW);
-  pixels += LW; screen += UW;
-  memcpy(pixels, screen, LW*SZ);
-
-  pixels += LW; screen += UW;
-  invcpy(pixels,screen, LW);
-  pixels += LW; screen += UW;
-  memcpy(pixels, screen, LW*SZ);
-
-}
 
 #include "font.h"
 
-void draw_glyph(ws2812_pixel_t * screen, int x, int y, uint8_t c, ws2812_pixel_t color) {
+void draw_glyph(pixel_t *screen, int x, int y, uint8_t c, pixel_t color) {
  
   int n = font_pixels_lut[c];
   if(n < 0) {
@@ -168,37 +103,26 @@ int main(void)
   amplifier_mute(0);
 //  amplifier_set_gain(GAIN_26DB);
   
-  ws2812_pixel_t pixels[UPPER_WIDTH*UPPER_HEIGHT+LOWER_WIDTH*LOWER_HEIGHT+1];
-  ws2812_pixel_t screen[UPPER_WIDTH*(UPPER_HEIGHT+LOWER_HEIGHT)];
-
-  memset(pixels, 0, sizeof(pixels));
+  screen_t screen;
   memset(screen, 0, sizeof(screen));
   
   portpin_outset(&LED_RUN_PP); 
 
-  (void)SW;(void)SH;
   int i =0;
   while(1) {
     rome_handle_input(&rome_intf);
     
-    if (!dfplayer_is_busy())
-    {
+    if(!dfplayer_is_busy()) {
       dfplayer_play_track(1);
     }
-    
+
     memset(screen, 0, sizeof(screen));
     i = (i+1)%10;
     draw_glyph(screen,0,0,'0'+i,0x333333);
 
-    screen_to_pixel(screen, pixels);
-    for (uint16_t it = 0; it < sizeof(pixels)/sizeof(ws2812_pixel_t); it ++)
-    {
-      ws2812_sendPixel(pixels[it]);
-    }
-
+    screen_draw(screen);
 
     _delay_ms(500);
-//²:w    portpin_outtgl(&LED_RUN_PP);
   }
 
   while(1);
