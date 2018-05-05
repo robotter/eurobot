@@ -6,7 +6,7 @@
 
 void dfplayer_send(dfplayer_frame_t *frame);
 void dfplayer_populate_buffer(dfplayer_frame_t *frame, uint8_t *buf, uint8_t buf_size);
-uint8_t dfplayer_set_source(dfplayer_storage_src_t src);
+void dfplayer_set_source(dfplayer_storage_src_t src);
 
 
 void dfplayer_init(void)
@@ -55,7 +55,7 @@ void dfplayer_populate_buffer(dfplayer_frame_t *frame, uint8_t *buf, uint8_t buf
   }
 }
 
-uint8_t dfplayer_set_source(dfplayer_storage_src_t src)
+void dfplayer_set_source(dfplayer_storage_src_t src)
 {
   dfplayer_frame_t frame = {.version = 0xff,
                             .cmd = DF_SET_STORAGE_SOURCE,
@@ -63,11 +63,9 @@ uint8_t dfplayer_set_source(dfplayer_storage_src_t src)
                             .para1 = 0,
                             .para2 = (uint8_t)src};
   dfplayer_send(&frame);
-  return 0;
-
 }
 
-uint8_t dfplayer_specify_volume(uint8_t volume)
+void dfplayer_set_volume(uint8_t volume)
 {
   if (volume > 30)
     volume = 30;
@@ -78,10 +76,9 @@ uint8_t dfplayer_specify_volume(uint8_t volume)
                             .para1 = 0,
                             .para2 = volume};
   dfplayer_send(&frame);
-  return 0;
 }
 
-uint8_t dfplayer_pause(void)
+void dfplayer_pause(void)
 {
   dfplayer_frame_t frame = {.version = 0xff,
                             .cmd = DF_PAUSE,
@@ -89,10 +86,9 @@ uint8_t dfplayer_pause(void)
                             .para1 = 0x00,
                             .para2 = 0x00};
   dfplayer_send(&frame);
-  return 0;
 }
 
-uint8_t dfplayer_play(void)
+void dfplayer_play(void)
 {
   dfplayer_frame_t frame = {.version = 0xff,
                             .cmd = DF_PLAY,
@@ -100,10 +96,9 @@ uint8_t dfplayer_play(void)
                             .para1 = 0x00,
                             .para2 = 0x00};
   dfplayer_send(&frame);
-  return 0;
 }
 
-uint8_t dfplayer_reset(void)
+void dfplayer_reset(void)
 {
   dfplayer_frame_t frame = {.version = 0xff,
                             .cmd = DF_RESET_MODULE,
@@ -111,10 +106,9 @@ uint8_t dfplayer_reset(void)
                             .para1 = 0x00,
                             .para2 = 0x00};
   dfplayer_send(&frame);
-  return 0;
 }
 
-uint8_t dfplayer_play_track(uint16_t track_id)
+void dfplayer_play_track(uint16_t track_id)
 {
   dfplayer_frame_t frame = {.version = 0xff,
                             .cmd = DF_READ_TRACK,
@@ -122,10 +116,9 @@ uint8_t dfplayer_play_track(uint16_t track_id)
                             .para1 = (uint8_t)(track_id>>8),
                             .para2 = (uint8_t)(track_id)};
   dfplayer_send(&frame);
-  return 0;
 }
 
-uint8_t dfplayer_set_equalizer(uint8_t eq)
+void dfplayer_set_equalizer(uint8_t eq)
 {
   dfplayer_frame_t frame = {.version = 0xff,
                             .cmd = DF_SET_EQUALIZER,
@@ -133,10 +126,9 @@ uint8_t dfplayer_set_equalizer(uint8_t eq)
                             .para1 = 0x00,
                             .para2 = eq};
   dfplayer_send(&frame);
-  return 0;
 }
 
-uint8_t dfplayer_normal_mode(void)
+void dfplayer_normal_mode(void)
 {
   dfplayer_frame_t frame = {.version = 0xff,
                             .cmd = DF_NORMAL_WORKING,
@@ -144,10 +136,9 @@ uint8_t dfplayer_normal_mode(void)
                             .para1 = 0x00,
                             .para2 = 0x00};
   dfplayer_send(&frame);
-  return 0;
 }
 
-uint8_t dfplayer_is_busy(void)
+bool dfplayer_is_busy(void)
 {
-  return portpin_in(&DFPLAYER_BUSY_PP) == false;
+  return !portpin_in(&DFPLAYER_BUSY_PP);
 }

@@ -2,31 +2,32 @@
 #define _DFPLAYER_MINI_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "dfplayer_mini_config.h"
 
 /// Initialize the dfplayer mini
 void dfplayer_init(void);
 
 /// specify volume
-uint8_t dfplayer_specify_volume(uint8_t volume);
+void dfplayer_set_volume(uint8_t volume);
 
 /// pause play
-uint8_t dfplayer_pause(void);
+void dfplayer_pause(void);
 
 /// play current track
-uint8_t dfplayer_play(void);
+void dfplayer_play(void);
 
 /// reset dfplayer mini
-uint8_t dfplayer_reset(void);
+void dfplayer_reset(void);
 
 /// play one specific track
-uint8_t dfplayer_play_track(uint16_t track_id);
+void dfplayer_play_track(uint16_t track_id);
 
-/// return 0 if dfplayer is not busy
-uint8_t dfplayer_is_busy(void);
+/// Return true if dfplayer is busy
+bool dfplayer_is_busy(void);
 
-uint8_t dfplayer_set_equalizer(uint8_t eq);
+void dfplayer_set_equalizer(uint8_t eq);
 
-uint8_t dfplayer_normal_mode(void);
+void dfplayer_normal_mode(void);
 
 #endif//_DFPLAYER_MINI_H_

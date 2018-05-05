@@ -162,7 +162,7 @@ int main(void)
   ws2812_init();
   
   _delay_ms(500);
-  dfplayer_specify_volume(0);
+  dfplayer_set_volume(0);
 
   amplifier_shutdown(0);
   amplifier_mute(0);

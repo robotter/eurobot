@@ -2,6 +2,7 @@
 #define _DFPLAYER_MINI_DEFS_H_
 
 #include <avarix.h>
+#include <stdint.h>
 
 typedef enum{
     DF_NEXT       = 0x01,
