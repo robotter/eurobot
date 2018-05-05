@@ -105,6 +105,13 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
 void rome_jevois_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
   jevois_cam_process_rome(&cam, frame);
+
+  //send to strat (and then paddock) one message every 100ms
+  static uint32_t lmt = 0;
+  if (uptime_us() - lmt > 100000){
+    rome_send(&rome_strat, frame);
+    lmt = uptime_us();
+  }
 }
 
 //NOTE: ax12 methods MUST NOT be called with UART interrupts blocked, and from

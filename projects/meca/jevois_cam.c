@@ -9,7 +9,7 @@ void jevois_cam_process_rome(jevois_cam_t *cam, const rome_frame_t *frame) {
     case ROME_MID_JEVOIS_TM_CYLINDER_CAM: {
       cam->received_ts = uptime_us();
       cam->entry_color = frame->jevois_tm_cylinder_cam.entry_color;
-      cam->cylinder_color = frame->jevois_tm_cylinder_cam.entry_color;
+      cam->cylinder_color = frame->jevois_tm_cylinder_cam.cylinder_color;
       cam->entry_height = frame->jevois_tm_cylinder_cam.entry_height;
     } break;
 
