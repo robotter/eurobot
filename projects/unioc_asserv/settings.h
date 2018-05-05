@@ -82,7 +82,7 @@
 // --
 
 #define SETTING_PID_A_GAIN_P (2500)
-#define SETTING_PID_A_GAIN_I (0)
+#define SETTING_PID_A_GAIN_I (10)
 #define SETTING_PID_A_GAIN_D (0)
 
 #define SETTING_PID_A_MAX_IN  (50000)

@@ -52,7 +52,8 @@ typedef enum
 
   STATE_AUTOSET_HEADING,
   STATE_AUTOSET_HEADING_WAIT,
-  STATE_AUTOSET_MOVE
+  STATE_AUTOSET_MOVE,
+  STATE_AUTOSET_MOVE_WAIT,
 
 }htrajectory_state_t;
 
@@ -109,6 +110,7 @@ typedef struct
   double autosetTargetY;
   hrobot_vector_t autosetInitPos;
   uint8_t autosetHeadingWaitCount;
+  uint8_t autosetMovingWaitCount;
 
   vect_xy_t lpos;
   double la;

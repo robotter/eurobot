@@ -413,7 +413,7 @@ int main(void)
 
     // exit calibration if sqsd is low enough
 #if defined(GALIPETTE)
-    if(offset_sqsd < 160.0)
+    if(offset_sqsd < 100.0)
 #else
     if(offset_sqsd < 50.0)
 #endif

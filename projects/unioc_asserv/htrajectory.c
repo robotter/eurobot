@@ -562,26 +562,44 @@ static void _htrajectory_update( htrajectory_t *htj )
 
     float alpha = MIN(1.0, 2.0*htj->autosetCount/SETTING_AUTOSET_ZEROCOUNT);
 
-
 #if defined(GALIPEUR)
     // set course
     hrobot_set_motors(dx*alpha, dy*alpha, 0.0);
     // XXX maybe replaced with an advance detector XXX
-    if( htj->autosetCount > SETTING_AUTOSET_ZEROCOUNT )
-#elif defined(GALIPETTE)
-    if(!bumpers_pushed()){
-      if(bumper_left_pushed())
-        hrobot_set_motors(dx*alpha, dy*alpha, 8000000);
-      else{
-        if(bumper_right_pushed())
-          hrobot_set_motors(dx*alpha, dy*alpha, -800000);
-        else
-          hrobot_set_motors(dx*alpha, dy*alpha, 0.0);
-      }
+    if( htj->autosetCount > SETTING_AUTOSET_ZEROCOUNT ) {
+      hrobot_set_motors(0,0,0);
+      htj->autosetMovingWaitCount = 0;
+      htj->state = STATE_AUTOSET_MOVE_WAIT;
+      return;
     }
-    else
+#elif defined(GALIPETTE)
+    if(bumpers_pushed()) {
+      hrobot_set_motors(0,0,0);
+      htj->autosetMovingWaitCount = 0;
+      htj->state = STATE_AUTOSET_MOVE_WAIT;
+      return;
+    }
+    else {
+      if(bumper_left_pushed()) {
+        hrobot_set_motors(dx*alpha/10, dy*alpha/10, 800000);
+      }
+      else{
+        if(bumper_right_pushed()) {
+          hrobot_set_motors(dx*alpha/10, dy*alpha/10, -800000);
+        }
+        else {
+          hrobot_set_motors(dx*alpha, dy*alpha, 0.0);
+        }
+      }
+
+      return;
+    }
 #endif
-    {
+  } // STATE_AUTOSET_MOVE
+
+  if( htj->state == STATE_AUTOSET_MOVE_WAIT ) {
+    htj->autosetMovingWaitCount++;
+    if(htj->autosetMovingWaitCount > 50) {
       // autoset done
       const autoset_configuration_t autoconf = 
         AUTOSET_CONFIGURATIONS[htj->autosetRobotSide];
@@ -622,7 +640,6 @@ static void _htrajectory_update( htrajectory_t *htj )
       // set trajectory status to stop
       htj->state = STATE_STOP;
     }
-
     return;
   }
 
