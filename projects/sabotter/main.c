@@ -33,6 +33,7 @@
 #include "common.h"
 #include "config.h"
 #include "battery_monitor.h"
+#include <pathfinding/pathfinding.h>
 
 // battery monitoring
 BATTMON_t battery;
@@ -42,6 +43,8 @@ rome_intf_t rome_asserv;
 rome_intf_t rome_meca;
 rome_intf_t rome_paddock;
 
+//pathfinding structure
+pathfinding_t pathfinder;
 
 // message handlers
 
@@ -198,6 +201,15 @@ static void match_end(void)
   }
 }
 
+void rome_send_pathfinding_graph(const pathfinding_t *finder)
+{
+  for(uint8_t i=0; i<finder->nodes_size; i++) {
+    const pathfinding_node_t *node = &finder->nodes[i];
+    ROME_SEND_PATHFINDING_NODE(&rome_paddock, i, node->x, node->y, node->neighbors, node->neighbors_size);
+  }
+}
+
+
 
 int main(void)
 {
@@ -271,6 +283,10 @@ int main(void)
     }
   }
 
+  //initialize pathfinding
+  pathfinding_set_nodes(&pathfinder, pathfinding_graph);
+  rome_send_pathfinding_graph(&pathfinder);
+
   // initialize asserv and meca, fold arms, ...
   portpin_outset(&LED_R_PP);
   robot_state.points = 0;
@@ -278,9 +294,9 @@ int main(void)
   portpin_outclr(&LED_R_PP);
   robot_state.team = strat_select_team();
 
-  strat_test();
-
   strat_prepare();
+
+  strat_test();
 
   strat_wait_start();
 

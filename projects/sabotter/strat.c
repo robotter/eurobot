@@ -9,6 +9,7 @@
 #include <rome/rome.h>
 #include "strat.h"
 #include "config.h"
+#include <pathfinding/pathfinding.h>
 
 #define ANGLE_TYPE__ float
 #include "modulo.inc.h"
@@ -20,6 +21,13 @@
 extern rome_intf_t rome_asserv;
 extern rome_intf_t rome_meca;
 extern rome_intf_t rome_paddock;
+
+extern pathfinding_t pathfinder;
+
+void rome_send_pathfinding_path(const pathfinding_t *finder)
+{
+  ROME_SEND_PATHFINDING_PATH(&rome_paddock, finder->path, finder->path_size);
+}
 
 robot_state_t robot_state;
 // we don't put 'kx' on robot_state to allow it to be static
@@ -311,7 +319,7 @@ static order_result_t goto_xya_synced_wait(int16_t x, int16_t y, float a, uint16
 
 /// Execute trajectory, avoid opponents
 #define goto_traj_wait(xy,a,w) goto_traj_n_wait((xy), sizeof(xy)/sizeof(int16_t), (a), (w))
-static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t timeout_ms)
+order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t timeout_ms)
 {
   uint8_t path_i = 0;
   uint32_t start_time_us = uptime_us();
@@ -331,19 +339,72 @@ static order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return ORDER_SUCCESS;
       }
-      path_i = robot_state.asserv.path_i;
-      detection_path_t dp = opponent_detected_carrot(xy[2*path_i],xy[2*path_i+1]);
+      detection_path_t dp = opponent_detected_carrot(xy[2*robot_state.asserv.path_i],xy[2*robot_state.asserv.path_i+1]);
       if(dp == DETECTION_PATH_BLOCKED) {
         return ORDER_DETECTION;
       }
       if(dp == DETECTION_PATH_CLEARED) {
         //resend order
+        path_i = robot_state.asserv.path_i;
         break;
       }
       idle();
     }
   }
 }
+
+///Execute pathfinding type trajectory
+order_result_t goto_pathfinding_node(uint8_t goal, float angle){
+  for(;;){
+    //update obstacles
+    //first is our other robot, the others are the detected robots
+    pathfinding_obstacle_t obstacles[R3D2_OBJECTS_MAX+1];
+
+    //TODO : add galipette.eur position to obstacles
+    obstacles[0].x = 0;
+    obstacles[0].y = 0;
+    obstacles[0].r = 0;
+
+    //compute absolute position of other robots
+    for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
+      r3d2_object_t *object = &robot_state.r3d2.objects[i];
+      if (object->detected) {
+        float da = float_modulo__(object->a+robot_state.current_pos.a+R3D2_OFFSET, 0, 2*M_PI);
+        obstacles[i+1].x = robot_state.current_pos.x + object->r*cos(da);
+        obstacles[i+1].y = robot_state.current_pos.y + object->r*sin(da);
+        obstacles[i+1].r = 300;
+        ROME_LOGF(&rome_paddock,DEBUG,"obstacle ra %f %f",object->r,da);
+        ROME_LOGF(&rome_paddock,DEBUG,"obstacle xy %d %d",obstacles[i].x,obstacles[i].y);
+      }
+      else {
+        obstacles[i+1].x = 0;
+        obstacles[i+1].y = 0;
+        obstacles[i+1].r = 0;
+      }
+    }
+    pathfinder.obstacles = obstacles;
+    pathfinder.obstacles_size = sizeof(obstacles)/sizeof(*obstacles);
+
+    //search for a path
+    uint8_t start = pathfinding_nearest_node(&pathfinder,
+                                  robot_state.current_pos.x,
+                                  robot_state.current_pos.y);
+    pathfinding_search(&pathfinder, start, goal);
+    ROME_LOGF(&rome_paddock, INFO, "path found (%u)", pathfinder.path_size);
+
+    //send the trajectory to asserv, but do not go to nearest node
+    int16_t traj[pathfinder.path_size * 2];
+    for(int i=1; i < pathfinder.path_size; i++){
+      traj[2*i] = pathfinder.nodes[pathfinder.path[i]].x;
+      traj[2*i+1] = pathfinder.nodes[pathfinder.path[i]].y;
+    }
+
+    goto_traj(traj, angle);
+
+  }
+  return ORDER_SUCCESS;
+}
+
 
 /// Go to given position, with robot panning and scanning, avoid opponents
 void goto_xya_panning(int16_t x, int16_t y, float pan_angle)

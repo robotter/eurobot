@@ -381,38 +381,36 @@ void strat_run(void)
 
 void strat_test(void)
 {
-#if 0
+#if 1
   ROME_LOG(&rome_paddock,INFO,"Strat test stuff");
   for(;;) {
-    update_rome_interfaces();
+    idle();
     if(!robot_state.gyro_calibration)
       break;
   }
-
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
-  autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, AUTOSET_OFFSET);
-  goto_xya_rel(0,250,0.0);
-  autoset(ROBOT_SIDE_BACK, AUTOSET_RIGHT, 0, AUTOSET_OFFSET);
-  goto_xya(-250,250,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_RIGHT));
 
   set_speed(RS_NORMAL);
+  #if 0
+  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ORANGE_BEE,
+                        arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
 
-  uint8_t i = 0;
-  for(;;){
-    goto_xya(-250,1000,0.0);
-    goto_xya(-250,200,0.0);
-    i++;
-    if (i > 5){
-      autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, AUTOSET_OFFSET);
-      goto_xya(-250,250,0.0);
-      autoset(ROBOT_SIDE_BACK, AUTOSET_RIGHT, 0, AUTOSET_OFFSET);
-      goto_xya(-250,250,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_RIGHT));
-      i = 0;
-    }
-    else
-      idle_delay_ms(2000);
+  #else
+  int16_t traj[] = {
+    1000,1000,
+    1200,300,
+    };
+  goto_traj(traj,arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
+  #endif
+
+  idle_delay_ms(5000);
+  goto_xya(KX(1300), 1500, arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
+
+  for(;;) {
+    idle();
   }
+
 #endif
 }
 
