@@ -1,4 +1,3 @@
-#include <avr/io.h>
 #include <avarix.h>
 #include <avarix/intlvl.h>
 #include <avarix/portpin.h>
@@ -8,10 +7,9 @@
 #include <ax12/ax12.h>
 #include <timer/timer.h>
 #include <timer/uptime.h>
-#include <math.h>
+#include <idle/idle.h>
 #include <rome/rome.h>
 #include "config.h"
-#include "telemetry.h"
 #include <pwm/motor.h>
 #include "servos.h"
 #include "cylinder.h"
@@ -19,7 +17,7 @@
 
 // match timer
 bool match_started = false;
-int32_t match_timer_ms = -1;
+uint32_t match_timer_ms = 0;
 
 // ROME interfaces
 rome_intf_t rome_strat;
@@ -29,7 +27,6 @@ jevois_cam_t cam;
 
 void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
-
   switch(frame->mid) {
     case ROME_MID_START_TIMER: {
       match_started = true;
@@ -178,14 +175,48 @@ ax12_t ax12 = {
 
 void update_match_timer(void)
 {
-  // update match timer
-  if(match_started) {
-    match_timer_ms += UPDATE_MATCH_TIMER_TICK_US/1000;
+  if(!match_started) {
+    return;
   }
 
-  // downlink match timer telemetry
-  TM_DL_MATCH_TIMER(match_timer_ms/1000);
+  match_timer_ms += UPDATE_MATCH_TIMER_TICK_US/1000;
+
+  if(match_timer_ms > 1000 * (uint32_t)MATCH_DURATION_SECS) {
+    portpin_outset(&LED_AN_PP(0));
+    cylinder_shutdown();
+  }
 }
+
+void update_rome_strat(void)
+{
+  portpin_outtgl(&LED_COM_PP);
+  rome_handle_input(&rome_strat);
+}
+
+void update_rome_jevois(void)
+{
+  rome_handle_input(&rome_jevois);
+}
+
+void send_telemetry(void)
+{
+  ROME_SEND_MECA_TM_STATE(&rome_strat,cylinder_get_tm_state());
+  ROME_SEND_MECA_TM_OPTIMAL_EMPTYING_MOVE(&rome_strat,cylinder_get_tm_optimal_move());
+  ROME_SEND_MECA_TM_CYLINDER_STATE(&rome_strat,
+    CYLINDER_NB_POS,
+    cylinder_count_empty_slots(),
+    cylinder_count_good_water(),
+    cylinder_count_bad_water(),
+    cylinder.ball_color,
+    CYLINDER_NB_POS);
+  //convert ax12 angle to milli radians
+  int16_t a = ( cylinder_get_position() - cylinder_get_position_zero() )
+    *(300./1023.*M_PI/180.*1000.);
+  ROME_SEND_MECA_TM_CYLINDER_POSITION(&rome_strat, a );
+
+  ROME_SEND_MECA_TM_MATCH_TIMER(&rome_strat, match_timer_ms/1000);
+}
+
 
 int main(void)
 {
@@ -213,7 +244,7 @@ int main(void)
 
   // initialize uarts
   uart_init();
-  uart_fopen(UART_PPP);
+  uart_fopen(UART_STRAT);
   portpin_dirset(&AX12_DIR_PP);
 
   servos_init();
@@ -224,66 +255,27 @@ int main(void)
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
-  //uptime
   uptime_init();
   TIMER_SET_CALLBACK_US(E0, 'B', UPDATE_MATCH_TIMER_TICK_US, INTLVL_HI, update_match_timer);
+
+  idle_set_callback(rome_strat_update, update_rome_strat);
+  idle_set_callback(rome_telemetry, send_telemetry);
+  idle_set_callback(rome_jevois_update, update_rome_jevois);
+  idle_set_callback(cylinder_update, cylinder_update);
 
   cylinder_init();
 
   // Initialize ROME
   rome_intf_init(&rome_strat);
-  rome_strat.uart = UART_PPP;
+  rome_strat.uart = UART_STRAT;
   rome_strat.handler = rome_strat_handler;
 
   rome_intf_init(&rome_jevois);
   rome_jevois.uart = UART_JEVOIS;
   rome_jevois.handler = rome_jevois_handler;
 
-
-  uint32_t luptime = UINT32_MAX;
-  uint32_t msg_uptime = UINT32_MAX;
-
-  // main loop
   for(;;) {
-
-    cylinder_update();
-    //update camera
-    rome_handle_input(&rome_jevois);
-
-    // debug info
-    //PORTA.OUT = (t++)/1000;
-    uint32_t uptime = uptime_us();
-
-    // update rome
-    if(uptime - luptime > UPDATE_ROME_US) {
-      luptime = uptime;
-      portpin_outtgl(&LED_COM_PP);
-      rome_handle_input(&rome_strat);
-    }
-    // update msgs
-    if(uptime - msg_uptime > UPDATE_MSG_US) {
-      msg_uptime = uptime_us();
-      ROME_SEND_MECA_TM_STATE(&rome_strat,cylinder_get_tm_state());
-      ROME_SEND_MECA_TM_OPTIMAL_EMPTYING_MOVE(&rome_strat,cylinder_get_tm_optimal_move());
-      ROME_SEND_MECA_TM_CYLINDER_STATE(&rome_strat,
-        CYLINDER_NB_POS,
-        cylinder_count_empty_slots(),
-        cylinder_count_good_water(),
-        cylinder_count_bad_water(),
-        cylinder.ball_color,
-        CYLINDER_NB_POS);
-      //convert ax12 angle to milli radians
-      int16_t a = ( cylinder_get_position() - cylinder_get_position_zero() )
-        *(300./1023.*M_PI/180.*1000.);
-      ROME_SEND_MECA_TM_CYLINDER_POSITION(&rome_strat, a );
-    }
-
-    // check match timer
-    if(match_timer_ms > 1000*(int32_t)MATCH_DURATION_SECS) {
-      portpin_outset(&LED_AN_PP(0));
-      cylinder_shutdown();
-    }
-
+    idle();
   }
 }
 

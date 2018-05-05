@@ -1,31 +1,16 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-/*
- * TCD0: balloon servomotor
- * TCF0: scheduling (timer module)
- */
-
-
 #define MATCH_DURATION_SECS (99)
 
-/// Perlimpinpin node address
-#define PPP_ADDR  0x12
-
+#define UART_STRAT  uartF0
 #define UART_JEVOIS uartF1
 #define UART_AX12  uartC1
-#define UART_PPP  uartF0
-#define UART_COLOR_SENSOR_LEFT   uartF1
-#define UART_COLOR_SENSOR_RIGHT    uartD1
 
 // Tick period of match timer, in microseconds
 #define UPDATE_MATCH_TIMER_TICK_US  10000
 // Interrupt level of tick interrupt
 #define MATCH_TIMER_INTLVL  INTLVL_HI
-
-// rome update in us
-#define UPDATE_ROME_US 10000
-#define UPDATE_MSG_US  100000
 
 // AX-12 recv timeout, in microseconds
 #define AX12_TIMEOUT_US  40000
