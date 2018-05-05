@@ -146,12 +146,11 @@ void hrobot_break(uint8_t state)
   }
 }
 
-void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega)
+void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega, int16_t motors[3])
 {
   uint8_t k,i;
   float dp[3];
   float v[3];
-  int16_t motors[3];
 
   v[0] = vx/(float)RCS_MM_TO_CSUNIT;
   v[1] = vy/(float)RCS_MM_TO_CSUNIT;
@@ -171,12 +170,7 @@ void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega)
   // for each motor
   for(i=0;i<3;i++)
   {
-    float v = dp[i];
-    v *= motors_scales[i];
-    if(v > 32767) v = 32767;
-    if(v < -32768) v = -32768;
     motors[i] = (int16_t)v;
-    pwm_motor_set(system.pwms+i, (int16_t)v);
   }
   
   // update telemetry

@@ -56,6 +56,6 @@ void hrobot_break(uint8_t brake );
   *@param vy robot speed y coordinate
   *@param omega robot angular velocity
   */
-void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega);
+void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega, int16_t motors[3]);
 
 #endif/*_HROBOT_MANAGER_H_*/

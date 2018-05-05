@@ -34,10 +34,16 @@
 
 #include "telemetry.h"
 
+#include "scales.h"
+
 // control system managers
 struct cs csm_x;
 struct cs csm_y;
 struct cs csm_angle;
+
+struct cs csm_motor0;
+struct cs csm_motor1;
+struct cs csm_motor2;
 
 // quadramp
 struct quadramp_filter qramp_angle;
@@ -46,6 +52,10 @@ struct quadramp_filter qramp_angle;
 struct pid_filter pid_x;
 struct pid_filter pid_y;
 struct pid_filter pid_angle;
+
+struct pid_filter pid_motor0;
+struct pid_filter pid_motor1;
+struct pid_filter pid_motor2;
 
 void robot_cs_init(robot_cs_t* rcs)
 {
@@ -63,6 +73,10 @@ void robot_cs_init(robot_cs_t* rcs)
 	pid_init(&pid_x);
 	pid_init(&pid_y);
 	pid_init(&pid_angle);
+
+  pid_init(&pid_motor0);
+  pid_init(&pid_motor1);
+  pid_init(&pid_motor2);
 
 	pid_set_gains(&pid_x, SETTING_PID_X_GAIN_P,
                         SETTING_PID_X_GAIN_I,
@@ -88,6 +102,30 @@ void robot_cs_init(robot_cs_t* rcs)
                            SETTING_PID_A_MAX_OUT);
   pid_set_out_shift(&pid_angle, SETTING_PID_A_SHIFT);
   
+  pid_set_gains(&pid_motor0, SETTING_PID_MOTOR0_GAIN_P,
+                             SETTING_PID_MOTOR0_GAIN_I,
+                             SETTING_PID_MOTOR0_GAIN_D);
+  pid_set_maximums(&pid_motor0, SETTING_PID_MOTOR0_MAX_IN,
+                          SETTING_PID_MOTOR0_MAX_I,
+                          SETTING_PID_MOTOR0_MAX_OUT);
+  pid_set_out_shift(&pid_motor0, SETTING_PID_MOTOR0_SHIFT);
+
+  pid_set_gains(&pid_motor1, SETTING_PID_MOTOR1_GAIN_P,
+                             SETTING_PID_MOTOR1_GAIN_I,
+                             SETTING_PID_MOTOR1_GAIN_D);
+  pid_set_maximums(&pid_motor1, SETTING_PID_MOTOR1_MAX_IN,
+                          SETTING_PID_MOTOR1_MAX_I,
+                          SETTING_PID_MOTOR1_MAX_OUT);
+  pid_set_out_shift(&pid_motor1, SETTING_PID_MOTOR1_SHIFT);
+
+  pid_set_gains(&pid_motor2, SETTING_PID_MOTOR2_GAIN_P,
+                             SETTING_PID_MOTOR2_GAIN_I,
+                             SETTING_PID_MOTOR2_GAIN_D);
+  pid_set_maximums(&pid_motor2, SETTING_PID_MOTOR2_MAX_IN,
+                          SETTING_PID_MOTOR2_MAX_I,
+                          SETTING_PID_MOTOR2_MAX_OUT);
+  pid_set_out_shift(&pid_motor2, SETTING_PID_MOTOR2_SHIFT);
+
   // quadramp
   quadramp_set_1st_order_vars(&qramp_angle,
                                 SETTING_QRAMP_A_SPEED, SETTING_QRAMP_A_SPEED);
@@ -98,26 +136,44 @@ void robot_cs_init(robot_cs_t* rcs)
 	cs_init(&csm_x);
 	cs_init(&csm_y);
 	cs_init(&csm_angle);
+  cs_init(&csm_motor0);
+  cs_init(&csm_motor1);
+  cs_init(&csm_motor2);
 
 	cs_set_consign_filter(&csm_x,     NULL, NULL); 
 	cs_set_consign_filter(&csm_y,     NULL, NULL); 
   cs_set_consign_filter(&csm_angle, &quadramp_do_filter, &qramp_angle);
+  cs_set_consign_filter(&csm_motor0, NULL, NULL);
+  cs_set_consign_filter(&csm_motor1, NULL, NULL);
+  cs_set_consign_filter(&csm_motor2, NULL, NULL);
 
 	cs_set_correct_filter(&csm_x,     &pid_do_filter, &pid_x);
 	cs_set_correct_filter(&csm_y,     &pid_do_filter, &pid_y);
 	cs_set_correct_filter(&csm_angle, &pid_do_filter, &pid_angle);
+  cs_set_correct_filter(&csm_motor0, &pid_do_filter, &pid_motor0);
+  cs_set_correct_filter(&csm_motor1, &pid_do_filter, &pid_motor1);
+  cs_set_correct_filter(&csm_motor2, &pid_do_filter, &pid_motor2);
 
 	cs_set_feedback_filter(&csm_x,     NULL, NULL);
 	cs_set_feedback_filter(&csm_y,     NULL, NULL);
 	cs_set_feedback_filter(&csm_angle, NULL, NULL);
+  cs_set_feedback_filter(&csm_motor0, NULL, NULL);
+  cs_set_feedback_filter(&csm_motor1, NULL, NULL);
+  cs_set_feedback_filter(&csm_motor2, NULL, NULL);
 
 	cs_set_process_out(&csm_x, &get_robot_x, rcs);
 	cs_set_process_out(&csm_y, &get_robot_y, rcs);
 	cs_set_process_out(&csm_angle, &get_robot_a, rcs);
+	cs_set_process_out(&csm_motor0, &get_motor0_encoder_speed, rcs);
+	cs_set_process_out(&csm_motor1, &get_motor1_encoder_speed, rcs);
+	cs_set_process_out(&csm_motor2, &get_motor2_encoder_speed, rcs);
 
 	cs_set_process_in(&csm_x, NULL, NULL);
 	cs_set_process_in(&csm_y, NULL, NULL);
 	cs_set_process_in(&csm_angle, NULL, NULL);
+	cs_set_process_in(&csm_motor0, &set_motor, system.pwms+0);
+	cs_set_process_in(&csm_motor1, &set_motor, system.pwms+1);
+	cs_set_process_in(&csm_motor2, &set_motor, system.pwms+2);
 }
 
 void robot_cs_activate(robot_cs_t* rcs, uint8_t active)
@@ -126,7 +182,9 @@ void robot_cs_activate(robot_cs_t* rcs, uint8_t active)
   INTLVL_DISABLE_BLOCK(INTLVL_LO) {
     if(!active) { 
       // clear previous motors consign
-      hrobot_set_motors(0, 0, 0);
+      pwm_motor_set(system.pwms+0,0);
+      pwm_motor_set(system.pwms+1,0);
+      pwm_motor_set(system.pwms+2,0);
     }
     else
       rcs->reactivated = 1;
@@ -169,6 +227,10 @@ void robot_cs_update(void* dummy)
     pid_reset(&pid_x);
     pid_reset(&pid_y);
     pid_reset(&pid_angle);
+
+    pid_reset(&pid_motor0);
+    pid_reset(&pid_motor1);
+    pid_reset(&pid_motor2);
 
     consign = cs_get_consign(&csm_angle);
     qramp_angle.previous_var = 0;
@@ -213,8 +275,19 @@ void robot_cs_update(void* dummy)
   vy_r = vx_t*_sa + vy_t*_ca;
 
   // set second level consigns
-  hrobot_set_motors(vx_r, vy_r, omegaz_t);
-                              
+  int16_t motors[3];
+  hrobot_set_motors(vx_r, vy_r, omegaz_t, motors);
+
+  // set low level consigns
+  cs_set_consign(&csm_motor0, motors[0]);
+  cs_set_consign(&csm_motor1, motors[1]);
+  cs_set_consign(&csm_motor2, motors[2]);
+
+  // compute control system second level (m0,m1,m2)
+  cs_manage(&csm_x);
+  cs_manage(&csm_y);
+  cs_manage(&csm_angle);
+
 }
 
 void robot_cs_set_xy_consigns( robot_cs_t* rcs,
@@ -263,4 +336,27 @@ int32_t get_robot_a(void* dummy)
   hposition_get(rcs->hpm, &hvec);
 
   return (hvec.alpha * RCS_RAD_TO_CSUNIT);
+}
+
+void set_motor(void *dummy, int32_t v) {
+  pwm_motor_t* pwm = dummy;
+
+  if(v > 32767) v = 32767;
+  if(v < -32768) v = -32768;
+  pwm_motor_set(pwm, (int16_t)v);
+} 
+
+int32_t get_motor0_encoder_speed(void *dummy) {
+  robot_cs_t* rcs = dummy;
+  return hposition_get_encoders_speed(rcs->hpm, 0);
+}
+
+int32_t get_motor1_encoder_speed(void *dummy) {
+  robot_cs_t* rcs = dummy;
+  return hposition_get_encoders_speed(rcs->hpm, 1);
+}
+
+int32_t get_motor2_encoder_speed(void *dummy) {
+  robot_cs_t* rcs = dummy;
+  return hposition_get_encoders_speed(rcs->hpm, 2);
 }

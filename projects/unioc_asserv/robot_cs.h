@@ -90,4 +90,12 @@ int32_t get_robot_y(void*);
 /**@brief Accessor used by CSM to access robot angle */
 int32_t get_robot_a(void*);
 
+/**@brief Setter used by CSM to push pwms to motors */
+void set_motor(void*,int32_t);
+
+/**@brief Getter used by CSM to get motor speed */
+int32_t get_motor0_encoder_speed(void*);
+int32_t get_motor1_encoder_speed(void*);
+int32_t get_motor2_encoder_speed(void*);
+
 #endif/*ROBOT_CS_H*/

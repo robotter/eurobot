@@ -70,6 +70,7 @@ void hposition_init( hrobot_position_t* hpos )
     hpos->position.x = 0.0; 
     hpos->position.y = 0.0; 
     hpos->position.alpha = 0.0; 
+    memset(hpos->dvectors,0,sizeof(hpos->dvectors));
   }
   hpos->firstUpdate = 1;
   return;
@@ -126,6 +127,14 @@ void hposition_get( hrobot_position_t *hpos, hrobot_vector_t *hvec)
   return;
 }
 
+int16_t hposition_get_encoders_speed(hrobot_position_t* hpos, uint8_t i) {
+  int16_t dv;
+  INTLVL_DISABLE_BLOCK(INTLVL_LO) {
+    dv = hpos->dvectors[i];
+  }
+  return dv;
+}
+
 void hposition_update(void *dummy)
 {
   uint8_t i,k;
@@ -137,6 +146,7 @@ void hposition_update(void *dummy)
   
   int16_t *vectors  = NULL;
   int16_t *pvectors = NULL;
+  int16_t dvectors[3] = {0};
   double *matrix    = NULL;
   // access motor encoders values
   motor_encoders_update();
@@ -168,6 +178,7 @@ void hposition_update(void *dummy)
   {
     // compute speed in encoder coordinates
     v = vectors[i] - pvectors[i];
+    dvectors[i] = v;
     // update previous ADNS vectors
     pvectors[i] = vectors[i];
  
@@ -206,6 +217,7 @@ void hposition_update(void *dummy)
     hpos->position.x = vec.x;
     hpos->position.y = vec.y;
     hpos->position.alpha = vec.alpha;
+    memcpy(hpos->dvectors, dvectors, sizeof(hpos->dvectors));
   }
 
   // update telemetry

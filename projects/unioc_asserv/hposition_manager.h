@@ -59,6 +59,8 @@ typedef struct
   hrobot_vector_t position;
   // Previous step motor encoders vectors
   int16_t pvectors[6];
+  // store encoders delta
+  int16_t dvectors[3];
   // Is it first time update 
   uint8_t firstUpdate;
 
@@ -88,6 +90,10 @@ void hposition_get_a( hrobot_position_t *hpos, double *pa );
 /**@brief Return robot position
   */
 void hposition_get( hrobot_position_t*, hrobot_vector_t* );
+
+/**@brief Return motor encoder speed
+ */
+int16_t hposition_get_encoders_speed(hrobot_position_t*, uint8_t i);
 
 /**@brief Update robot position
   */
