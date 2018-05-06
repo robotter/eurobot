@@ -88,6 +88,11 @@ int main(void)
 
   portpin_outset(&LED_RUN_PP); 
 
+  const char *scrolling_text = "DEBUG TEAM  ";
+  const uint8_t scrolling_text_width = draw_text(0, &font_base, 0, 0, scrolling_text, 0);
+  int8_t pos = 0;
+  int8_t color_shift = 0;
+  uint8_t color_dir = 1;
   while(1) {
     rome_handle_input(&rome_intf);
 
@@ -96,10 +101,30 @@ int main(void)
     }
 
     texture_clear(screen);
-    draw_text(screen, &font_bitmap, 0, 0, "BUGS", 0x3f003f);
+    const draw_rect_t upper_rect = { 0, 0, SCREEN_UW, SCREEN_UH };
+
+    draw_text(screen, &font_base, pos, 0, scrolling_text, 0xffff00);
+    if(pos < 0) {
+      draw_text(screen, &font_base, pos + scrolling_text_width, 0, scrolling_text, 0xffff00);
+    }
+    pixel_t blending_color = (1U << color_shift) | ((uint16_t)1U << (color_shift + 8)) | ((uint32_t)1U << (color_shift + 16));
+    blend_texture_mul(screen, &upper_rect, blending_color);
     display_screen(screen);
 
-    _delay_ms(500);
+    if(--pos <= -scrolling_text_width) {
+      pos = 0;
+    }
+
+    color_shift += color_dir;
+    if(color_shift >= 8) {
+      color_shift = 7;
+      color_dir = -1;
+    } else if(color_shift < 2) {
+      color_shift = 2;
+      color_dir = 1;
+    }
+
+    _delay_ms(100);
   }
 
   while(1);

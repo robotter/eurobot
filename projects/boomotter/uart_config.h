@@ -8,9 +8,13 @@
 // MP3
 #define UARTD0_ENABLED
 #define UARTD0_BAUDRATE  9600
+#define UARTD0_RX_BUF_SIZE  64
+#define UARTD0_TX_BUF_SIZE  64
 
 // Communication
 #define UARTC0_ENABLED
+#define UARTC0_RX_BUF_SIZE  250
+#define UARTC0_TX_BUF_SIZE  64
 
 
 #define UART_INTLVL  INTLVL_HI

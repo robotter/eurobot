@@ -40,7 +40,7 @@ void draw_pixels(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const
   const draw_rect_t bb = bound_to_texture(tex, x, y, w, h);
   for(uint8_t dy = bb.y0; dy < bb.y1; dy++) {
     for(uint8_t dx = bb.x0; dx < bb.x1; dx++) {
-      *TEXTURE_PIXEL(tex, x+dx, y+dy) = pixels[y * w + x];
+      *TEXTURE_PIXEL(tex, x+dx, y+dy) = pixels[dy * w + dx];
     }
   }
 }
@@ -49,7 +49,7 @@ void draw_pixels_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, c
   const draw_rect_t bb = bound_to_texture(tex, x, y, w, h);
   for(uint8_t dy = bb.y0; dy < bb.y1; dy++) {
     for(uint8_t dx = bb.x0; dx < bb.x1; dx++) {
-      *TEXTURE_PIXEL(tex, x+dx, y+dy) = pgm_read_dword(&pixels[y * w + x]);
+      *TEXTURE_PIXEL(tex, x+dx, y+dy) = pgm_read_dword(&pixels[dy * w + dx]);
     }
   }
 }
@@ -58,7 +58,7 @@ void draw_pixels_color(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h,
   const draw_rect_t bb = bound_to_texture(tex, x, y, w, h);
   for(uint8_t dy = bb.y0; dy < bb.y1; dy++) {
     for(uint8_t dx = bb.x0; dx < bb.x1; dx++) {
-      *TEXTURE_PIXEL(tex, x+dx, y+dy) = blend_gray_mul(color, values[y * w + x]);
+      *TEXTURE_PIXEL(tex, x+dx, y+dy) = blend_gray_mul(color, values[dy * w + dx]);
     }
   }
 }
@@ -68,6 +68,22 @@ void draw_pixels_color_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_
   for(uint8_t dy = bb.y0; dy < bb.y1; dy++) {
     for(uint8_t dx = bb.x0; dx < bb.x1; dx++) {
       *TEXTURE_PIXEL(tex, x+dx, y+dy) = blend_gray_mul(color, pgm_read_byte(&values[dy * w + dx]));
+    }
+  }
+}
+
+void draw_rect(texture_t *tex, const draw_rect_t *rect, pixel_t color) {
+  for(uint8_t y = rect->y0; y < rect->y1; y++) {
+    for(uint8_t x = rect->x0; x < rect->x1; x++) {
+      *TEXTURE_PIXEL(tex, x, y) = color;
+    }
+  }
+}
+
+void blend_texture_mul(texture_t *tex, const draw_rect_t *rect, pixel_t color) {
+  for(uint8_t y = rect->y0; y < rect->y1; y++) {
+    for(uint8_t x = rect->x0; x < rect->x1; x++) {
+      *TEXTURE_PIXEL(tex, x, y) = blend_mul(*TEXTURE_PIXEL(tex, x, y), color);
     }
   }
 }
