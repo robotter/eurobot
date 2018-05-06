@@ -67,7 +67,7 @@ void draw_pixels_color_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_
   const draw_rect_t bb = bound_to_texture(tex, x, y, w, h);
   for(uint8_t dy = bb.y0; dy < bb.y1; dy++) {
     for(uint8_t dx = bb.x0; dx < bb.x1; dx++) {
-      *TEXTURE_PIXEL(tex, x+dx, y+dy) = blend_gray_mul(color, pgm_read_byte(&values[y * w + x]));
+      *TEXTURE_PIXEL(tex, x+dx, y+dy) = blend_gray_mul(color, pgm_read_byte(&values[dy * w + dx]));
     }
   }
 }
@@ -85,13 +85,6 @@ uint8_t draw_char(texture_t *tex, const font_t *font, int8_t x, int8_t y, char c
   if(tex) {
     const uint16_t offset = pgm_read_word(&font->glyphs[c - ' '].offset);
     draw_pixels_color_pgm(tex, x, y, width, font->height, font->data + offset, color);
-    const draw_rect_t bb = bound_to_texture(tex, x, y, width, font->height);
-    for(uint8_t dy = bb.y0; dy < bb.y1; dy++) {
-      for(uint8_t dx = bb.x0; dx < bb.x1; dx++) {
-        uint8_t v = pgm_read_byte(&font->data[offset + dy * width + dx]);
-        *TEXTURE_PIXEL(tex, x+dx, y+dy) = v ? color : 0;
-      }
-    }
   }
   return width;
 
@@ -110,10 +103,13 @@ unknown:
 }
 
 uint8_t draw_text(texture_t *screen, const font_t *font, int8_t x, int8_t y, const char *c, pixel_t color) {
+  if(!*c) {
+    return 0;
+  }
   const uint8_t x0 = x;
   for(; *c; c++) {
     x += 1 + draw_char(screen, font, x, y, *c, color);
   }
-  return x - x0;
+  return x - x0 - 1;
 }
 

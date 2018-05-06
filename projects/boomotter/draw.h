@@ -17,9 +17,9 @@ typedef uint32_t pixel_t;
 
 /// Blend color and gray, multiple
 inline pixel_t blend_gray_mul(pixel_t color, uint8_t gray) {
-  const uint8_t r = ((uint16_t)(color >> 16) * gray) >> 8;
-  const uint8_t g = ((uint16_t)(color >> 8) * gray) >> 8;
-  const uint8_t b = ((uint16_t)(color >> 0) * gray) >> 8;
+  const uint8_t r = ((uint8_t)(color >> 16) * (uint16_t)gray) >> 8;
+  const uint8_t g = ((uint8_t)(color >> 8) * (uint16_t)gray) >> 8;
+  const uint8_t b = ((uint8_t)(color >> 0) * (uint16_t)gray) >> 8;
   return ((uint32_t)r << 16) | ((uint16_t)g << 8) | b;
 }
 
@@ -56,13 +56,15 @@ typedef struct {
 
 /// Bound an area by to fit in a texture
 inline draw_rect_t bound_to_texture(const texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h) {
-  draw_rect_t rect = {
-    .x0 = x < 0 ? 0 : x,
-    .y0 = y < 0 ? 0 : y,
-    .x1 = x + w <= tex->width ? x + w : tex->width,
-    .y1 = y + h <= tex->height ? y + h : tex->height,
+  if(x >= (int8_t)tex->width || y > (int8_t)tex->height) {
+    return (draw_rect_t){ 0, 0, 0, 0 };  // completely out of texture
+  }
+  return (draw_rect_t){
+    .x0 = x < 0 ? -x : 0,
+    .y0 = y < 0 ? -y : 0,
+    .x1 = x + w <= tex->width ? w : tex->width - x,
+    .y1 = y + h <= tex->height ? h : tex->height - y,
   };
-  return rect;
 }
 
 

@@ -96,7 +96,7 @@ int main(void)
     }
 
     texture_clear(screen);
-    draw_text(screen, &font_bitmap, 0, 0, "BUGS", 0x333333);
+    draw_text(screen, &font_bitmap, 0, 0, "BUGS", 0x3f003f);
     display_screen(screen);
 
     _delay_ms(500);
