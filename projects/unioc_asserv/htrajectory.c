@@ -596,6 +596,7 @@ static void _htrajectory_update( htrajectory_t *htj )
       return;
     }
 #endif
+    return;
   } // STATE_AUTOSET_MOVE
 
   if( htj->state == STATE_AUTOSET_MOVE_WAIT ) {
