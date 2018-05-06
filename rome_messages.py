@@ -1,5 +1,17 @@
 from rome.frame import register_messages, Order, rome_types
 
+rome_types.rome_enum('device', {
+  'galipeur_strat': 10,
+  'galipeur_asserv': 11,
+  'galipeur_meca': 12,
+  'galipeur_r3d2': 13,
+  'galipette_strat': 20,
+  'galipette_asserv': 21,
+  'galipette_meca': 22,
+  'galipette_r3d2': 23,
+  'boomotter': 30,
+})
+
 register_messages(
     (0x10, [
       (Order, 'start_timer', []),
@@ -103,13 +115,13 @@ register_messages(
 
       ]),
 
-    # STRATEGY
+    # COMMON
     (0x60, [
-      # __ TELEMETRY __
       # robot main battery voltage (in mv)
-      ('strat_tm_battery', [('voltage','uint16')]),
-      ('strat_tm_score',  [('points','uint16')]),
-      ]),
+      ('tm_battery', [('device', 'device'), ('voltage','uint16')]),
+      ('tm_score',  [('device', 'device'), ('points','uint16')]),
+      ('tm_match_timer', [('device', 'device'), ('seconds','int16')]),
+    ]),
 
     # R3D2
     (0x70, [

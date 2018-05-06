@@ -15,6 +15,9 @@
 #include "cylinder.h"
 #include "jevois_cam.h"
 
+#define ROME_DEVICE  ROME_ENUM_DEVICE_GALIPEUR_MECA
+
+
 // match timer
 bool match_started = false;
 uint32_t match_timer_ms = 0;
@@ -221,7 +224,7 @@ void send_telemetry(void)
     *(300./1023.*M_PI/180.*1000.);
   ROME_SEND_MECA_TM_CYLINDER_POSITION(&rome_strat, a );
 
-  ROME_SEND_MECA_TM_MATCH_TIMER(&rome_strat, match_timer_ms/1000);
+  ROME_SEND_TM_MATCH_TIMER(&rome_strat, ROME_DEVICE, match_timer_ms/1000);
 }
 
 

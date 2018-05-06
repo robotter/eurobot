@@ -43,6 +43,12 @@ rome_intf_t rome_asserv;
 rome_intf_t rome_meca;
 rome_intf_t rome_paddock;
 
+#if (defined GALIPEUR)
+# define ROME_DEVICE  ROME_ENUM_DEVICE_GALIPEUR_STRAT
+#elif (defined GALIPETTE)
+# define ROME_DEVICE  ROME_ENUM_DEVICE_GALIPETTE_STRAT
+#endif
+
 //pathfinding structure
 pathfinding_t pathfinder;
 
@@ -170,7 +176,7 @@ static void update_battery(void)
     BATTMON_monitor(&battery);
     uint16_t voltage = battery.FilterMemory;
     // send telemetry message
-    ROME_SEND_STRAT_TM_BATTERY(&rome_paddock, voltage);
+    ROME_SEND_TM_BATTERY(&rome_paddock, ROME_DEVICE, voltage);
     PORTA.DIRSET = 0x0E;
     PORTA.OUTTGL = 0x0E;
   }
@@ -179,7 +185,7 @@ static void update_battery(void)
 
 static void send_messages(void)
 {
-  ROME_SEND_STRAT_TM_SCORE(&rome_paddock, robot_state.points);
+  ROME_SEND_TM_SCORE(&rome_paddock, ROME_DEVICE, robot_state.points);
 }
 
 /// Scheduler function called at match end
