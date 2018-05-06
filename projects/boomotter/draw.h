@@ -12,29 +12,25 @@
 #define SCREEN_W  (SCREEN_UW)  // Screen total width
 #define SCREEN_H  (SCREEN_UW+SCREEN_LH)  // Screen total height
 
-/// A single screen pixel (-RGB)
-typedef uint32_t pixel_t;
+/// A single screen pixel
+typedef struct {
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+} pixel_t;
+
+#define RGB(r,g,b) ((pixel_t){(r),(g),(b)})
+#define GRAY(v) ((pixel_t){(v),(v),(v)})
+
 
 /// Blend a single pixel with gray, multiply
-inline pixel_t blend_gray_mul(pixel_t color, uint8_t gray) {
-  const uint8_t r = ((uint8_t)(color >> 16) * (uint16_t)gray) >> 8;
-  const uint8_t g = ((uint8_t)(color >> 8) * (uint16_t)gray) >> 8;
-  const uint8_t b = ((uint8_t)(color >> 0) * (uint16_t)gray) >> 8;
-  return ((uint32_t)r << 16) | ((uint16_t)g << 8) | b;
+inline pixel_t blend_gray_mul(pixel_t c, uint8_t gray) {
+  return RGB(((uint16_t)c.r * gray) >> 8, ((uint16_t)c.g * gray) >> 8, ((uint16_t)c.b * gray) >> 8);
 }
 
 /// Blend two pixels, multiply
 inline pixel_t blend_mul(pixel_t c1, pixel_t c2) {
-  const uint8_t r1 = c1 >> 16;
-  const uint8_t r2 = c2 >> 16;
-  const uint8_t r = ((uint16_t)r1 * r2) >> 8;
-  const uint8_t g1 = c1 >> 8;
-  const uint8_t g2 = c2 >> 8;
-  const uint8_t g = ((uint16_t)g1 * g2) >> 8;
-  const uint8_t b1 = c1 >> 0;
-  const uint8_t b2 = c2 >> 0;
-  const uint8_t b = ((uint16_t)b1 * b2) >> 8;
-  return ((uint32_t)r << 16) | ((uint16_t)g << 8) | b;
+  return RGB(((uint16_t)c1.r * c2.r) >> 8, ((uint16_t)c1.g * c2.g) >> 8, ((uint16_t)c1.b * c2.b) >> 8);
 }
 
 

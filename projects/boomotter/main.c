@@ -89,7 +89,7 @@ int main(void)
   portpin_outset(&LED_RUN_PP); 
 
   const char *scrolling_text = "DEBUG TEAM  ";
-  const uint8_t scrolling_text_width = draw_text(0, &font_base, 0, 0, scrolling_text, 0);
+  const uint8_t scrolling_text_width = draw_text(0, &font_base, 0, 0, scrolling_text, GRAY(0));
   int8_t pos = 0;
   int8_t color_shift = 0;
   uint8_t color_dir = 1;
@@ -103,11 +103,11 @@ int main(void)
     texture_clear(screen);
     const draw_rect_t upper_rect = { 0, 0, SCREEN_UW, SCREEN_UH };
 
-    draw_text(screen, &font_base, pos, 0, scrolling_text, 0xffff00);
+    draw_text(screen, &font_base, pos, 0, scrolling_text, RGB(0xff, 0xff, 0));
     if(pos < 0) {
-      draw_text(screen, &font_base, pos + scrolling_text_width, 0, scrolling_text, 0xffff00);
+      draw_text(screen, &font_base, pos + scrolling_text_width, 0, scrolling_text, RGB(0xff, 0xff, 0));
     }
-    pixel_t blending_color = (1U << color_shift) | ((uint16_t)1U << (color_shift + 8)) | ((uint32_t)1U << (color_shift + 16));
+    pixel_t blending_color = RGB(1U << color_shift, 1U << color_shift, 0);
     blend_texture_mul(screen, &upper_rect, blending_color);
     display_screen(screen);
 
@@ -123,8 +123,9 @@ int main(void)
       color_shift = 2;
       color_dir = 1;
     }
+    color_shift = 6;
 
-    _delay_ms(100);
+    _delay_ms(70);
   }
 
   while(1);

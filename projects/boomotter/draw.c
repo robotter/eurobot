@@ -4,13 +4,19 @@
 
 
 void display_screen(const texture_t *tex) {
-  ws2812_sendPixel(0);
+  ws2812_send_pixel(0, 0, 0);
   const pixel_t *p = tex->pixels;
 
 #define send_pixels_l2r(n) \
-  for(uint8_t i=0; i<(n); i++) ws2812_sendPixel(*p++);
+  for(uint8_t i=0; i<(n); i++) { \
+    ws2812_send_pixel(p->r, p->g, p->b); \
+    p++; \
+  }
 #define send_pixels_r2l(n) \
-  for(uint8_t i=0; i<(n); i++) ws2812_sendPixel(p[(n)-i-1]); \
+  for(uint8_t i=0; i<(n); i++) { \
+    const pixel_t *p2 = p + (n) - i - 1; \
+    ws2812_send_pixel(p2->r, p2->g, p2->b); \
+  } \
   p += (n);
 
   send_pixels_l2r(SCREEN_UW);
@@ -49,7 +55,11 @@ void draw_pixels_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, c
   const draw_rect_t bb = bound_to_texture(tex, x, y, w, h);
   for(uint8_t dy = bb.y0; dy < bb.y1; dy++) {
     for(uint8_t dx = bb.x0; dx < bb.x1; dx++) {
-      *TEXTURE_PIXEL(tex, x+dx, y+dy) = pgm_read_dword(&pixels[dy * w + dx]);
+      const pixel_t *pixel = &pixels[dy * w + dx];
+      const uint8_t r = pgm_read_byte(&pixel->r);
+      const uint8_t g = pgm_read_byte(&pixel->g);
+      const uint8_t b = pgm_read_byte(&pixel->b);
+      *TEXTURE_PIXEL(tex, x+dx, y+dy) = RGB(r, g, b);
     }
   }
 }
@@ -111,7 +121,7 @@ unknown:
     const draw_rect_t bb = bound_to_texture(tex, x, y, width, font->height);
     for(uint8_t dy = bb.y0; dy < bb.y1; dy++) {
       for(uint8_t dx = bb.x0; dx < bb.x1; dx++) {
-        *TEXTURE_PIXEL(tex, x+dx, y+dy) = 0x7f0000;
+        *TEXTURE_PIXEL(tex, x+dx, y+dy) = RGB(0x7f, 0, 0);
       }
     }
   }

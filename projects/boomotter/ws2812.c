@@ -77,11 +77,8 @@ void ws2812_init(void)
   portpin_dirset(&WS2812_DATA_PP);
 }
 
-void ws2812_sendPixel( ws2812_pixel_t pixel)
+void ws2812_send_pixel(uint8_t r, uint8_t g, uint8_t b)
 {
-  uint8_t r = pixel>>16;
-  uint8_t g = pixel>>8;
-  uint8_t b = pixel>>0;
   sendByte(g); // Neopixel wants colors in green-then-red-then-blue order
   sendByte(r);
   sendByte(b);
