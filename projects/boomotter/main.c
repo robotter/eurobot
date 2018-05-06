@@ -5,6 +5,9 @@
 #include <clock/clock.h>
 #include <rome/rome.h>
 #include <util/delay.h>
+#include <timer/timer.h>
+#include <timer/uptime.h>
+#include "battery.h"
 #include "leds.h"
 #include "dfplayer_mini.h"
 #include "audio_amplifier.h"
@@ -12,6 +15,7 @@
 #include "draw.h"
 #include "font_bitmap.inc.c"
 
+#define BATTERY_ALERT_LIMIT  10000
 
 rome_intf_t rome_intf;
 
@@ -41,6 +45,21 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 }
 
 
+static bool battery_discharged = false;
+
+static void update_battery(void)
+{
+  static uint8_t it=0; it++;
+  if(it > 10) {
+    it = 0;
+    uint16_t voltage = battery_get_value();
+    battery_discharged = voltage < BATTERY_ALERT_LIMIT;
+    ROME_SEND_STRAT_TM_BATTERY(&rome_intf, voltage);
+  }
+}
+
+
+
 int main(void)
 {
   portpin_dirset(&LED_RUN_PP);
@@ -61,6 +80,8 @@ int main(void)
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
+  battery_init();
+
   rome_intf_init(&rome_intf);
   rome_intf.uart = uartC0;
   rome_intf.handler = rome_handler;
@@ -70,10 +91,16 @@ int main(void)
 
   portpin_outclr(&LED_ERROR_PP);
 
+  timer_init();
+  uptime_init();
+
   dfplayer_init();
   amplifier_init();
 
   ws2812_init();
+
+  update_battery(); // make sure to update battery at startup
+  TIMER_SET_CALLBACK_US(E0, 'B', 50e3, INTLVL_HI, update_battery);
 
   _delay_ms(500);
   dfplayer_set_volume(0);
@@ -109,6 +136,11 @@ int main(void)
     }
     pixel_t blending_color = RGB(1U << color_shift, 1U << color_shift, 0);
     blend_texture_mul(screen, &upper_rect, blending_color);
+
+    // if battery is low, display a red rectangle
+    if(battery_discharged) {
+      draw_rect(screen, &(draw_rect_t){0, 0, 6, 6}, RGB(0x30, 0, 0));
+    }
     display_screen(screen);
 
     if(--pos <= -scrolling_text_width) {
