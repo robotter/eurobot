@@ -8,7 +8,7 @@
 
 /// Linear transformation of the raw ADC value
 ///@{
-#define BATTERY_VOLTAGE_COEF  72000.0
-#define BATTERY_VOLTAGE_OFFSET   10000.0
+#define BATTERY_VOLTAGE_COEF  6.61
+#define BATTERY_VOLTAGE_OFFSET   3495
 ///@}
 

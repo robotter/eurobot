@@ -23,6 +23,6 @@ uint16_t battery_get_value(void)
   uint16_t adc_value = BATTERY_ADC.CH0.RES - 205;
 
   // convert to battery voltage
-  return (uint32_t)adc_value * BATTERY_VOLTAGE_COEF + BATTERY_VOLTAGE_OFFSET;
+  return (float)adc_value * BATTERY_VOLTAGE_COEF + BATTERY_VOLTAGE_OFFSET;
 }
 
