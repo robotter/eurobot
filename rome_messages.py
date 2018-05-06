@@ -208,5 +208,9 @@ register_messages(
       ('pathfinding_path', [('nodes', 'int8[]')]),
     ]),
 
+    # BOOMOTTER
+    (0xB8, [
+      ('boomotter_tm_battery', [('voltage','uint16')]),
+    ]),
   )
 
