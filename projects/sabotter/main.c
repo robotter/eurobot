@@ -146,6 +146,9 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_RESET: {
       software_reset();
     } break;
+    case ROME_MID_STRAT_TEST:  {
+      strat_test();
+    }break;
     default:
       break;
   }
@@ -301,8 +304,6 @@ int main(void)
   robot_state.team = strat_select_team();
 
   strat_prepare();
-
-  strat_test();
 
   strat_wait_start();
 

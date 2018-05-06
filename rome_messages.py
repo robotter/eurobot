@@ -121,6 +121,8 @@ register_messages(
       ('tm_battery', [('device', 'device'), ('voltage','uint16')]),
       ('tm_score',  [('device', 'device'), ('points','uint16')]),
       ('tm_match_timer', [('device', 'device'), ('seconds','int16')]),
+
+      (Order,'strat_test', [('active','bool')]),
     ]),
 
     # R3D2
