@@ -9,9 +9,7 @@
 #include "dfplayer_mini.h"
 #include "audio_amplifier.h"
 #include "ws2812.h"
-#include "screen.h"
-
-#include "fonts.h"
+#include "draw.h"
 #include "font_bitmap.inc.c"
 
 
@@ -40,46 +38,6 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 #else
 
 #endif
-}
-
-
-/// Draw a glyph, return its width
-uint8_t draw_glyph(pixel_t *screen, const font_t *font, int x, int y, char c, pixel_t color) {
-  if(c < FONT_FIRST_CHAR || c > FONT_LAST_CHAR) {
-    goto unknown;
-  }
-  uint8_t width = pgm_read_byte(&font->glyphs[c - ' '].width);
-  if(width == 0) {
-    goto unknown;
-  }
-
-  uint16_t offset = pgm_read_word(&font->glyphs[c - ' '].offset);
-  for(int dy = 0; dy < font->height; dy++) {
-    for(int dx = 0; dx < width; dx++) {
-      uint8_t v = pgm_read_byte(&font->data[offset + dy * width + dx]);
-      screen[SCREEN_PIXEL(x+dx,y+dy)] = v ? color : 0;
-    }
-  }
-  return width;
-
-unknown:
-  // draw red rectangle
-  width = 4;
-  for(int y = 0; y < font->height; y++) {
-    for(int x = 0; x < width; x++) {
-      screen[SCREEN_PIXEL(x,y)] = 0x7f0000;
-    }
-  }
-  return width;
-}
-
-/// Write text, return its width
-uint8_t draw_text(pixel_t *screen, const font_t *font, int x, int y, const char *c, pixel_t color) {
-  const uint8_t x0 = x;
-  for(; *c; c++) {
-    x += 1 + draw_glyph(screen, font, x, y, *c, color);
-  }
-  return x - x0;
 }
 
 
@@ -124,9 +82,9 @@ int main(void)
   amplifier_mute(0);
 //  amplifier_set_gain(GAIN_26DB);
 
-  screen_t screen;
-  memset(screen, 0, sizeof(screen));
-  screen_draw(screen);
+  SCREEN_TEXTURE_DECL(screen);
+  texture_clear(screen);
+  display_screen(screen);
 
   portpin_outset(&LED_RUN_PP); 
 
@@ -137,9 +95,9 @@ int main(void)
       dfplayer_play_track(1);
     }
 
-    memset(screen, 0, sizeof(screen));
+    texture_clear(screen);
     draw_text(screen, &font_bitmap, 0, 0, "BUGS", 0x333333);
-    screen_draw(screen);
+    display_screen(screen);
 
     _delay_ms(500);
   }
