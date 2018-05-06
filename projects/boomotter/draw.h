@@ -47,6 +47,15 @@ inline void texture_clear(texture_t *tex) {
 void display_screen(const texture_t *tex);
 
 
+/// Draw pixels to a texture
+void draw_pixels(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const pixel_t *pixels);
+
+/// Draw a texture to a texture
+inline void draw_texture(texture_t *dst, int8_t x, int8_t y, const texture_t *src) {
+  draw_pixels(dst, x, y, src->width, src->height, src->pixels);
+}
+
+
 #define FONT_FIRST_CHAR ' '
 #define FONT_LAST_CHAR 0x7e
 

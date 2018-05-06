@@ -36,6 +36,19 @@ void display_screen(const texture_t *tex) {
 }
 
 
+void draw_pixels(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const pixel_t *pixels) {
+  const uint8_t y0 = y < 0 ? 0 : y;
+  const uint8_t x0 = x < 0 ? 0 : x;
+  const uint8_t y1 = y + h <= tex->height ? y + h : tex->height;
+  const uint8_t x1 = x + w <= tex->width ? x + w : tex->width;
+  for(uint8_t dy = y0; dy < y1; dy++) {
+    for(uint8_t dx = x0; dx < x1; dx++) {
+      *TEXTURE_PIXEL(tex, x+dx, y+dy) = pixels[y * w + x];
+    }
+  }
+}
+
+
 uint8_t draw_char(texture_t *tex, const font_t *font, int8_t x, int8_t y, char c, pixel_t color) {
   if(c < FONT_FIRST_CHAR || c > FONT_LAST_CHAR) {
     goto unknown;
