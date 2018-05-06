@@ -19,6 +19,8 @@ void display_screen(const texture_t *tex) {
   } \
   p += (n);
 
+  __asm__("cli");
+
   send_pixels_l2r(SCREEN_UW);
   send_pixels_r2l(SCREEN_UW);
   send_pixels_l2r(SCREEN_UW);
@@ -36,6 +38,8 @@ void display_screen(const texture_t *tex) {
   send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
   send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
   send_pixels_r2l(SCREEN_LW);
+
+  __asm__("cli");
 
 #undef send_pixels_l2r
 #undef send_pixels_r2l
