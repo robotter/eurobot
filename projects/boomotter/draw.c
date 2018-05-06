@@ -36,7 +36,7 @@ void display_screen(const texture_t *tex) {
 }
 
 
-uint8_t draw_char(texture_t *tex, const font_t *font, int x, int y, char c, pixel_t color) {
+uint8_t draw_char(texture_t *tex, const font_t *font, int8_t x, int8_t y, char c, pixel_t color) {
   if(c < FONT_FIRST_CHAR || c > FONT_LAST_CHAR) {
     goto unknown;
   }
@@ -46,9 +46,13 @@ uint8_t draw_char(texture_t *tex, const font_t *font, int x, int y, char c, pixe
   }
 
   if(tex) {
+    const uint8_t y0 = y < 0 ? 0 : y;
+    const uint8_t x0 = x < 0 ? 0 : x;
+    const uint8_t y1 = y + font->height <= tex->height ? y + font->height : tex->height;
+    const uint8_t x1 = x + width <= tex->width ? x + width : tex->width;
     uint16_t offset = pgm_read_word(&font->glyphs[c - ' '].offset);
-    for(int dy = 0; dy < font->height; dy++) {
-      for(int dx = 0; dx < width; dx++) {
+    for(uint8_t dy = y0; dy < y1; dy++) {
+      for(uint8_t dx = x0; dx < x1; dx++) {
         uint8_t v = pgm_read_byte(&font->data[offset + dy * width + dx]);
         *TEXTURE_PIXEL(tex, x+dx, y+dy) = v ? color : 0;
       }
@@ -60,8 +64,12 @@ unknown:
   // draw red rectangle
   width = 4;
   if(tex) {
-    for(int dy = 0; dy < font->height; dy++) {
-      for(int dx = 0; dx < width; dx++) {
+    const uint8_t y0 = y < 0 ? 0 : y;
+    const uint8_t x0 = x < 0 ? 0 : x;
+    const uint8_t y1 = y + font->height <= tex->height ? y + font->height : tex->height;
+    const uint8_t x1 = x + width <= tex->width ? x + width : tex->width;
+    for(uint8_t dy = y0; dy < y1; dy++) {
+      for(uint8_t dx = x0; dx < x1; dx++) {
         *TEXTURE_PIXEL(tex, x+dx, y+dy) = 0x7f0000;
       }
     }
@@ -69,7 +77,7 @@ unknown:
   return width;
 }
 
-uint8_t draw_text(texture_t *screen, const font_t *font, int x, int y, const char *c, pixel_t color) {
+uint8_t draw_text(texture_t *screen, const font_t *font, int8_t x, int8_t y, const char *c, pixel_t color) {
   const uint8_t x0 = x;
   for(; *c; c++) {
     x += 1 + draw_char(screen, font, x, y, *c, color);

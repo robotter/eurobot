@@ -69,14 +69,16 @@ typedef struct {
 
 /** @brief Draw a single character, return its width
  *
+ * Glyph is cropped to texture boundaries.
  * If screen is NULL, only return the width to draw.
  */
-uint8_t draw_char(texture_t *screen, const font_t *font, int x, int y, char c, pixel_t color);
+uint8_t draw_char(texture_t *screen, const font_t *font, int8_t x, int8_t y, char c, pixel_t color);
 
 /** @brief Draw text, return its width
  *
+ * Text is cropped to texture boundaries
  * If screen is NULL, only return the width to draw.
  */
-uint8_t draw_text(texture_t *screen, const font_t *font, int x, int y, const char *c, pixel_t color);
+uint8_t draw_text(texture_t *screen, const font_t *font, int8_t x, int8_t y, const char *c, pixel_t color);
 
 #endif
