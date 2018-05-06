@@ -15,6 +15,15 @@
 /// A single screen pixel (-RGB)
 typedef uint32_t pixel_t;
 
+/// Blend color and gray, multiple
+inline pixel_t blend_gray_mul(pixel_t color, uint8_t gray) {
+  const uint8_t r = ((uint16_t)(color >> 16) * gray) >> 8;
+  const uint8_t g = ((uint16_t)(color >> 8) * gray) >> 8;
+  const uint8_t b = ((uint16_t)(color >> 0) * gray) >> 8;
+  return ((uint32_t)r << 16) | ((uint16_t)g << 8) | b;
+}
+
+
 /// Texture where to draw
 typedef struct {
   uint8_t width;
@@ -39,6 +48,23 @@ inline void texture_clear(texture_t *tex) {
 /// Pointer to a texture's pixel
 #define TEXTURE_PIXEL(t,x,y)  (&(t)->pixels[(y) * (t)->width + (x)])
 
+/// Rectangle, used for cropping
+typedef struct {
+  uint8_t x0, y0;
+  uint8_t x1, y1;
+} draw_rect_t;
+
+/// Bound an area by to fit in a texture
+inline draw_rect_t bound_to_texture(const texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h) {
+  draw_rect_t rect = {
+    .x0 = x < 0 ? 0 : x,
+    .y0 = y < 0 ? 0 : y,
+    .x1 = x + w <= tex->width ? x + w : tex->width,
+    .y1 = y + h <= tex->height ? y + h : tex->height,
+  };
+  return rect;
+}
+
 
 /** @brief Display a screen of pixels on leds
  *
@@ -49,6 +75,15 @@ void display_screen(const texture_t *tex);
 
 /// Draw pixels to a texture
 void draw_pixels(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const pixel_t *pixels);
+
+/// Draw PROGMEM pixels to a texture
+void draw_pixels_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const pixel_t *pixels);
+
+/// Blend gray map to a texture
+void draw_pixels_color(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const uint8_t *values, pixel_t color);
+
+/// Blend PROGMEM gray map to a texture
+void draw_pixels_color_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const uint8_t *values, pixel_t color);
 
 /// Draw a texture to a texture
 inline void draw_texture(texture_t *dst, int8_t x, int8_t y, const texture_t *src) {
