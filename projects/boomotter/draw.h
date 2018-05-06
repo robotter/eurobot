@@ -19,27 +19,29 @@ typedef struct {
   uint8_t b;
 } pixel_t;
 
-#define RGB(r,g,b) ((pixel_t){(r),(g),(b)})
-#define GRAY(v) ((pixel_t){(v),(v),(v)})
-
-
-/// Blend a single pixel with gray, multiply
-inline pixel_t blend_gray_mul(pixel_t c, uint8_t gray) {
-  return RGB(((uint16_t)c.r * gray) >> 8, ((uint16_t)c.g * gray) >> 8, ((uint16_t)c.b * gray) >> 8);
-}
-
-/// Blend two pixels, multiply
-inline pixel_t blend_mul(pixel_t c1, pixel_t c2) {
-  return RGB(((uint16_t)c1.r * c2.r) >> 8, ((uint16_t)c1.g * c2.g) >> 8, ((uint16_t)c1.b * c2.b) >> 8);
-}
-
-
 /// Texture where to draw
 typedef struct {
   uint8_t width;
   uint8_t height;
   pixel_t pixels[];
 } __attribute__((__packed__)) texture_t;
+
+
+/// Rectangle, used for cropping
+typedef struct {
+  uint8_t x0, y0;
+  uint8_t x1, y1;
+} draw_rect_t;
+
+/// Blending a color in place
+typedef void (*blend_color_t)(pixel_t *p, pixel_t color);
+/// Blending a gray in place
+typedef void (*blend_gray_t)(pixel_t *p, uint8_t gray);
+
+
+#define RGB(r,g,b) ((pixel_t){(r),(g),(b)})
+#define GRAY(v) ((pixel_t){(v),(v),(v)})
+
 
 /// Declare a texture with given size on the stack
 #define TEXTURE_DECL(name,w,h)  \
@@ -50,24 +52,17 @@ typedef struct {
 /// Declare a texture for a whole screen
 #define SCREEN_TEXTURE_DECL(name)  TEXTURE_DECL(name,SCREEN_W,SCREEN_H)
 
-/// Clear a texture with zeroes
-inline void texture_clear(texture_t *tex) {
-  memset(tex->pixels, 0, tex->width * tex->height * sizeof(*tex->pixels));
-}
-
 /// Pointer to a texture's pixel
 #define TEXTURE_PIXEL(t,x,y)  (&(t)->pixels[(y) * (t)->width + (x)])
 
-/// Rectangle, used for cropping
-typedef struct {
-  uint8_t x0, y0;
-  uint8_t x1, y1;
-} draw_rect_t;
+
+#define RECT(x0,y0,x1,y1)  ((draw_rect_t){(x0),(y0),(x1),(y1)})
+
 
 /// Bound an area by to fit in a texture
 inline draw_rect_t bound_to_texture(const texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h) {
   if(x >= (int8_t)tex->width || y >= (int8_t)tex->height) {
-    return (draw_rect_t){ 0, 0, 0, 0 };  // completely out of texture
+    return RECT(0, 0, 0, 0);  // completely out of texture
   }
   return (draw_rect_t){
     .x0 = x < 0 ? -x : 0,
@@ -84,6 +79,11 @@ inline draw_rect_t bound_to_texture(const texture_t *tex, int8_t x, int8_t y, ui
  */
 void display_screen(const texture_t *tex);
 
+/// Clear a texture with zeroes
+inline void texture_clear(texture_t *tex) {
+  memset(tex->pixels, 0, tex->width * tex->height * sizeof(*tex->pixels));
+}
+
 
 /// Draw pixels to a texture
 void draw_pixels(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const pixel_t *pixels);
@@ -92,10 +92,10 @@ void draw_pixels(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const
 void draw_pixels_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const pixel_t *pixels);
 
 /// Blend gray map to a texture
-void draw_pixels_color(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const uint8_t *values, pixel_t color);
+void blend_pixels_gray(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const uint8_t *values, blend_gray_t blender);
 
 /// Blend PROGMEM gray map to a texture
-void draw_pixels_color_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const uint8_t *values, pixel_t color);
+void blend_pixels_gray_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const uint8_t *values, blend_gray_t blender);
 
 /// Draw a texture to a texture
 inline void draw_texture(texture_t *dst, int8_t x, int8_t y, const texture_t *src) {
@@ -105,11 +105,13 @@ inline void draw_texture(texture_t *dst, int8_t x, int8_t y, const texture_t *sr
 /// Draw a filled rectangle on a texture
 void draw_rect(texture_t *tex, const draw_rect_t *rect, pixel_t color);
 
-/** @brief Blend a texture with given color, multiply
+/// Blend to a texture
+
+/** @brief Blend rectange a texture with given color, multiply
  *
- * @note \a rect must be withing texture boundaries.
+ * @note \a rect must be within texture boundaries.
  */
-void blend_texture_mul(texture_t *tex, const draw_rect_t *rect, pixel_t color);
+void blend_rect(texture_t *tex, const draw_rect_t *rect, pixel_t color, blend_color_t blender);
 
 
 #define FONT_FIRST_CHAR ' '
@@ -132,18 +134,35 @@ typedef struct {
 } font_t;
 
 
-/** @brief Draw a single character, return its width
+/// Compute the width of a character
+uint8_t get_char_width(const font_t *font, char c);
+/// Compute the width of a string
+uint8_t get_text_width(const font_t *font, const char *text);
+
+/** @brief Blend a single character, return its width
  *
  * Glyph is cropped to texture boundaries.
- * If screen is NULL, only return the width to draw.
  */
-uint8_t draw_char(texture_t *screen, const font_t *font, int8_t x, int8_t y, char c, pixel_t color);
+uint8_t blend_char(texture_t *tex, const font_t *font, int8_t x, int8_t y, char c, blend_gray_t blender);
 
-/** @brief Draw text, return its width
+/** @brief Blend text, return its width
  *
  * Text is cropped to texture boundaries
- * If screen is NULL, only return the width to draw.
  */
-uint8_t draw_text(texture_t *screen, const font_t *font, int8_t x, int8_t y, const char *c, pixel_t color);
+uint8_t blend_text(texture_t *tex, const font_t *font, int8_t x, int8_t y, const char *c, blend_gray_t blender);
+
+
+/// Define an inline color blender
+#define BLEND_COLOR(block_) ({ \
+    void callback_(pixel_t *p, pixel_t c) block_ \
+    callback_; \
+})
+
+/// Blend gray, set value
+void blend_gray_set(pixel_t *p, uint8_t gray);
+/// Blend gray, multiply
+void blend_gray_mul(pixel_t *p, uint8_t gray);
+/// Blend color, multiply
+void blend_color_mul(pixel_t *p, pixel_t c);
 
 #endif

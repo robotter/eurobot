@@ -68,20 +68,20 @@ void draw_pixels_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, c
   }
 }
 
-void draw_pixels_color(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const uint8_t *values, pixel_t color) {
+void blend_pixels_gray(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const uint8_t *values, blend_gray_t blender) {
   const draw_rect_t bb = bound_to_texture(tex, x, y, w, h);
   for(uint8_t dy = bb.y0; dy < bb.y1; dy++) {
     for(uint8_t dx = bb.x0; dx < bb.x1; dx++) {
-      *TEXTURE_PIXEL(tex, x+dx, y+dy) = blend_gray_mul(color, values[dy * w + dx]);
+      blender(TEXTURE_PIXEL(tex, x+dx, y+dy), values[dy * w + dx]);
     }
   }
 }
 
-void draw_pixels_color_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const uint8_t *values, pixel_t color) {
+void blend_pixels_gray_pgm(texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h, const uint8_t *values, blend_gray_t blender) {
   const draw_rect_t bb = bound_to_texture(tex, x, y, w, h);
   for(uint8_t dy = bb.y0; dy < bb.y1; dy++) {
     for(uint8_t dx = bb.x0; dx < bb.x1; dx++) {
-      *TEXTURE_PIXEL(tex, x+dx, y+dy) = blend_gray_mul(color, pgm_read_byte(&values[dy * w + dx]));
+      blender(TEXTURE_PIXEL(tex, x+dx, y+dy), pgm_read_byte(&values[dy * w + dx]));
     }
   }
 }
@@ -94,16 +94,38 @@ void draw_rect(texture_t *tex, const draw_rect_t *rect, pixel_t color) {
   }
 }
 
-void blend_texture_mul(texture_t *tex, const draw_rect_t *rect, pixel_t color) {
+void blend_rect(texture_t *tex, const draw_rect_t *rect, pixel_t color, blend_color_t blender) {
   for(uint8_t y = rect->y0; y < rect->y1; y++) {
     for(uint8_t x = rect->x0; x < rect->x1; x++) {
-      *TEXTURE_PIXEL(tex, x, y) = blend_mul(*TEXTURE_PIXEL(tex, x, y), color);
+      blender(TEXTURE_PIXEL(tex, x, y), color);
     }
   }
 }
 
 
-uint8_t draw_char(texture_t *tex, const font_t *font, int8_t x, int8_t y, char c, pixel_t color) {
+#define BAD_CHAR_WIDTH  4
+
+uint8_t get_char_width(const font_t *font, char c) {
+  if(c < FONT_FIRST_CHAR || c > FONT_LAST_CHAR) {
+    return BAD_CHAR_WIDTH;
+  }
+  uint8_t width = pgm_read_byte(&font->glyphs[c - ' '].width);
+  return width == 0 ? BAD_CHAR_WIDTH : width;
+}
+
+uint8_t get_text_width(const font_t *font, const char *c) {
+  if(!*c) {
+    return 0;
+  }
+  uint8_t x = 0;
+  for(; *c; c++) {
+    x += 1 + get_char_width(font, *c);
+  }
+  return x - 1;
+}
+
+
+uint8_t blend_char(texture_t *tex, const font_t *font, int8_t x, int8_t y, char c, blend_gray_t blender) {
   if(c < FONT_FIRST_CHAR || c > FONT_LAST_CHAR) {
     goto unknown;
   }
@@ -114,32 +136,45 @@ uint8_t draw_char(texture_t *tex, const font_t *font, int8_t x, int8_t y, char c
 
   if(tex) {
     const uint16_t offset = pgm_read_word(&font->glyphs[c - ' '].offset);
-    draw_pixels_color_pgm(tex, x, y, width, font->height, font->data + offset, color);
+    blend_pixels_gray_pgm(tex, x, y, width, font->height, font->data + offset, blender);
   }
   return width;
 
 unknown:
   // draw red rectangle
-  width = 4;
+  width = BAD_CHAR_WIDTH;
   if(tex) {
     const draw_rect_t bb = bound_to_texture(tex, x, y, width, font->height);
-    for(uint8_t dy = bb.y0; dy < bb.y1; dy++) {
-      for(uint8_t dx = bb.x0; dx < bb.x1; dx++) {
-        *TEXTURE_PIXEL(tex, x+dx, y+dy) = RGB(0x7f, 0, 0);
-      }
-    }
+    draw_rect(tex, &bb, RGB(0x7f, 0, 0));
   }
   return width;
 }
 
-uint8_t draw_text(texture_t *screen, const font_t *font, int8_t x, int8_t y, const char *c, pixel_t color) {
+uint8_t blend_text(texture_t *tex, const font_t *font, int8_t x, int8_t y, const char *c, blend_gray_t blender) {
   if(!*c) {
     return 0;
   }
   const uint8_t x0 = x;
   for(; *c; c++) {
-    x += 1 + draw_char(screen, font, x, y, *c, color);
+    x += 1 + blend_char(tex, font, x, y, *c, blender);
   }
   return x - x0 - 1;
+}
+
+
+void blend_gray_set(pixel_t *p, uint8_t gray) {
+  *p = RGB(gray, gray, gray);
+}
+
+void blend_gray_mul(pixel_t *p, uint8_t gray) {
+  p->r = ((uint16_t)p->r * gray) >> 8;
+  p->g = ((uint16_t)p->g * gray) >> 8;
+  p->b = ((uint16_t)p->b * gray) >> 8;
+}
+
+void blend_color_mul(pixel_t *p, pixel_t c) {
+  p->r = ((uint16_t)p->r * c.r) >> 8;
+  p->g = ((uint16_t)p->g * c.g) >> 8;
+  p->b = ((uint16_t)p->b * c.b) >> 8;
 }
 

@@ -119,11 +119,9 @@ int main(void)
   portpin_outset(&LED_RUN_PP); 
 
   const char *scrolling_text = "DEBUG TEAM  ";
-  const uint8_t scrolling_text_width = draw_text(0, &font_base, 0, 0, scrolling_text, GRAY(0));
+  const uint8_t scrolling_text_width = get_text_width(&font_base, scrolling_text);
   int8_t pos = 0;
-  int8_t color_shift = 0;
-  uint8_t color_dir = 1;
-  while(1) {
+  for(;;) {
     rome_handle_input(&rome_intf);
 
     if(!dfplayer_is_busy()) {
@@ -133,12 +131,20 @@ int main(void)
     texture_clear(screen);
     const draw_rect_t upper_rect = { 0, 0, SCREEN_UW, SCREEN_UH };
 
-    draw_text(screen, &font_base, pos, 0, scrolling_text, RGB(0xff, 0xff, 0));
+    blend_text(screen, &font_base, pos, 0, scrolling_text, blend_gray_set);
     if(pos < 0) {
-      draw_text(screen, &font_base, pos + scrolling_text_width, 0, scrolling_text, RGB(0xff, 0xff, 0));
+      blend_text(screen, &font_base, pos + scrolling_text_width, 0, scrolling_text, blend_gray_set);
     }
-    pixel_t blending_color = RGB(1U << color_shift, 1U << color_shift, 0);
-    blend_texture_mul(screen, &upper_rect, blending_color);
+    for(uint8_t y = upper_rect.y0; y < upper_rect.y1; y++) {
+      for(uint8_t x = upper_rect.x0; x < upper_rect.x1; x++) {
+        pixel_t *p = TEXTURE_PIXEL(screen, x, y);
+        if(p->r == 0) {
+          *p = RGB(0,25,0x40);
+        } else {
+          *p = RGB(0x40,25,0);
+        }
+      }
+    }
 
     // if battery is low, display a red rectangle
     if(battery_discharged) {
@@ -150,19 +156,9 @@ int main(void)
       pos = 0;
     }
 
-    color_shift += color_dir;
-    if(color_shift >= 8) {
-      color_shift = 7;
-      color_dir = -1;
-    } else if(color_shift < 2) {
-      color_shift = 2;
-      color_dir = 1;
-    }
-    color_shift = 6;
-
     _delay_ms(70);
   }
 
-  while(1);
+  for(;;);
 }
 
