@@ -489,7 +489,8 @@ uint8_t htrajectory_doneAutoset( htrajectory_t *htj )
 {
   if( (htj->state == STATE_AUTOSET_HEADING)
       || (htj->state == STATE_AUTOSET_HEADING_WAIT)
-      || (htj->state == STATE_AUTOSET_MOVE) )
+      || (htj->state == STATE_AUTOSET_MOVE)
+      || (htj->state == STATE_AUTOSET_MOVE_WAIT) )
     return 0;
   else
     return 1;
