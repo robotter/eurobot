@@ -22,9 +22,16 @@ rome_intf_t rome_intf;
 #define ROME_DEVICE  ROME_ENUM_DEVICE_BOOMOTTER
 
 
+// Define the global screen
+// Allocate then define a pointer, initialize widh/height in main
+// This allows to still but screen in bss.
+uint8_t screen_data[sizeof(texture_t) + sizeof(pixel_t) * SCREEN_W * SCREEN_H];
+texture_t *const screen = (texture_t*)screen_data;
+
+
 static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
-  #if 0
+#if 0
   switch(frame->mid) {
     case ROME_MID_R3D2_SET_ROTATION:
       r3d2_set_rotation(frame->r3d2_set_rotation.speed_rpm,
@@ -42,8 +49,6 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     default:
       break;
   }
-#else
-
 #endif
 }
 
@@ -52,8 +57,8 @@ static bool battery_discharged = false;
 
 static void update_battery(void)
 {
-  static uint8_t it=0; it++;
-  if(it > 10) {
+  static uint8_t it = 0;
+  if(++it > 10) {
     it = 0;
     uint16_t voltage = battery_get_value();
     battery_discharged = voltage < BATTERY_ALERT_LIMIT;
@@ -62,6 +67,45 @@ static void update_battery(void)
 }
 
 
+static void update_display(void)
+{
+  static const char *scrolling_text = "DEBUG TEAM  ";
+  static uint8_t scrolling_text_width = 0;
+  static int8_t pos = 0;
+  if(scrolling_text_width == 0) {
+    scrolling_text_width = get_text_width(&font_base, scrolling_text);
+  }
+
+  texture_clear(screen);
+  const draw_rect_t upper_rect = { 0, 0, SCREEN_UW, SCREEN_UH };
+
+  blend_text(screen, &font_base, pos, 0, scrolling_text, blend_gray_set);
+  if(pos < 0) {
+    blend_text(screen, &font_base, pos + scrolling_text_width, 0, scrolling_text, blend_gray_set);
+  }
+  for(uint8_t y = upper_rect.y0; y < upper_rect.y1; y++) {
+    for(uint8_t x = upper_rect.x0; x < upper_rect.x1; x++) {
+      pixel_t *p = TEXTURE_PIXEL(screen, x, y);
+      if(p->r == 0) {
+        *p = RGB(0,25,0x40);
+      } else {
+        *p = RGB(0x40,25,0);
+      }
+    }
+  }
+
+  // if battery is low, display a red rectangle
+  if(battery_discharged) {
+    draw_rect(screen, &(draw_rect_t){0, 0, 6, 6}, RGB(0x30, 0, 0));
+  }
+  display_screen(screen);
+
+  if(--pos <= -scrolling_text_width) {
+    pos = 0;
+  }
+
+}
+
 
 int main(void)
 {
@@ -69,10 +113,10 @@ int main(void)
   portpin_dirset(&LED_ERROR_PP);
   portpin_dirset(&LED_COM_PP);
 
-
   portpin_outset(&LED_COM_PP);
   portpin_outset(&LED_RUN_PP);
   portpin_outset(&LED_ERROR_PP);
+
   clock_init();
   portpin_outclr(&LED_COM_PP);
 
@@ -89,9 +133,8 @@ int main(void)
   rome_intf.uart = uartC0;
   rome_intf.handler = rome_handler;
 
-  ROME_LOGF(&rome_intf, INFO, "RST.STATUS=%x booting...\n", RST.STATUS);
+  ROME_LOGF(&rome_intf, INFO, "boomotter booting");
   RST.STATUS = 0;
-
   portpin_outclr(&LED_ERROR_PP);
 
   timer_init();
@@ -112,15 +155,14 @@ int main(void)
   amplifier_mute(0);
 //  amplifier_set_gain(GAIN_26DB);
 
-  SCREEN_TEXTURE_DECL(screen);
+  // initialize the screen
+  screen->width = SCREEN_W;
+  screen->height = SCREEN_H;
   texture_clear(screen);
   display_screen(screen);
 
   portpin_outset(&LED_RUN_PP); 
 
-  const char *scrolling_text = "DEBUG TEAM  ";
-  const uint8_t scrolling_text_width = get_text_width(&font_base, scrolling_text);
-  int8_t pos = 0;
   for(;;) {
     rome_handle_input(&rome_intf);
 
@@ -128,33 +170,7 @@ int main(void)
       dfplayer_play_track(1);
     }
 
-    texture_clear(screen);
-    const draw_rect_t upper_rect = { 0, 0, SCREEN_UW, SCREEN_UH };
-
-    blend_text(screen, &font_base, pos, 0, scrolling_text, blend_gray_set);
-    if(pos < 0) {
-      blend_text(screen, &font_base, pos + scrolling_text_width, 0, scrolling_text, blend_gray_set);
-    }
-    for(uint8_t y = upper_rect.y0; y < upper_rect.y1; y++) {
-      for(uint8_t x = upper_rect.x0; x < upper_rect.x1; x++) {
-        pixel_t *p = TEXTURE_PIXEL(screen, x, y);
-        if(p->r == 0) {
-          *p = RGB(0,25,0x40);
-        } else {
-          *p = RGB(0x40,25,0);
-        }
-      }
-    }
-
-    // if battery is low, display a red rectangle
-    if(battery_discharged) {
-      draw_rect(screen, &(draw_rect_t){0, 0, 6, 6}, RGB(0x30, 0, 0));
-    }
-    display_screen(screen);
-
-    if(--pos <= -scrolling_text_width) {
-      pos = 0;
-    }
+    update_display();
 
     _delay_ms(70);
   }

@@ -1,4 +1,5 @@
 #include <string.h>
+#include <util/atomic.h>
 #include "draw.h"
 #include "ws2812.h"
 
@@ -19,27 +20,25 @@ void display_screen(const texture_t *tex) {
   } \
   p += (n);
 
-  __asm__("cli");
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    send_pixels_l2r(SCREEN_UW);
+    send_pixels_r2l(SCREEN_UW);
+    send_pixels_l2r(SCREEN_UW);
+    send_pixels_r2l(SCREEN_UW);
+    send_pixels_l2r(SCREEN_UW);
+    send_pixels_r2l(SCREEN_UW);
 
-  send_pixels_l2r(SCREEN_UW);
-  send_pixels_r2l(SCREEN_UW);
-  send_pixels_l2r(SCREEN_UW);
-  send_pixels_r2l(SCREEN_UW);
-  send_pixels_l2r(SCREEN_UW);
-  send_pixels_r2l(SCREEN_UW);
-
-  send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
-  send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
-  send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
-  send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
-  send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
-  send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
-  send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
-  send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
-  send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
-  send_pixels_r2l(SCREEN_LW);
-
-  __asm__("cli");
+    send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+    send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+    send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+    send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+    send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+    send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+    send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+    send_pixels_r2l(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+    send_pixels_l2r(SCREEN_LW); p += SCREEN_W - SCREEN_LW;
+    send_pixels_r2l(SCREEN_LW);
+  }
 
 #undef send_pixels_l2r
 #undef send_pixels_r2l
