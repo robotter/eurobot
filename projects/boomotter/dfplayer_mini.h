@@ -21,12 +21,12 @@ void dfplayer_handle_input(dfplayer_handler_t cb);
 void dfplayer_send_cmd(uint8_t cmd, uint16_t param);
 
 typedef enum {
-  // datasheet seems buggy, just assume values are shifted
-  DF_REPEAT_OFF = 0,
-  DF_REPEAT_NORMAL = 1,
-  DF_REPEAT_FOLDER = 2,
-  DF_REPEAT_SINGLE = 3,
-  DF_REPEAT_RANDOM = 4,
+  // repeat mode is acting weird, values might be buggy
+  DF_REPEAT_NORMAL = 0,
+  DF_REPEAT_FOLDER = 1,
+  DF_REPEAT_SINGLE = 2,
+  DF_REPEAT_RANDOM = 3,
+  DF_REPEAT_OFF = 0xf,
 } dfplayer_repeat_mode_t;
 
 /// specify volume
