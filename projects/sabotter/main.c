@@ -271,6 +271,12 @@ int main(void)
   rome_paddock.uart = ROME_PADDOCK_UART;
   rome_paddock.handler = rome_paddock_handler;
 
+#if defined(GALIPEUR)
+  ROME_LOG(&rome_paddock, INFO, "strat galipeur booting");
+#elif defined(GALIPETTE)
+  ROME_LOG(&rome_paddock, INFO, "strat galipette booting");
+#endif
+
   // starting cord and color selector
   portpin_dirclr(&STARTING_CORD_PP);
   portpin_dirclr(&COLOR_SELECTOR_PP);
