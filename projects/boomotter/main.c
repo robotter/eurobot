@@ -316,6 +316,9 @@ int main(void)
   //amplifier_set_gain(GAIN_26DB);
   //dfplayer_set_volume(20);
 
+  // set to match mode by default
+  switch_mode(ROME_ENUM_BOOMOTTER_MODE_MATCH);
+
   // initialize the screen
   screen->width = SCREEN_W;
   screen->height = SCREEN_H;
