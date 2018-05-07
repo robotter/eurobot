@@ -19,7 +19,9 @@
 #define DEFAULT_WAIT_MS  2000
 
 extern rome_intf_t rome_asserv;
+#if (defined UART_MECA)
 extern rome_intf_t rome_meca;
+#endif
 extern rome_intf_t rome_paddock;
 
 extern pathfinding_t pathfinder;
@@ -399,6 +401,7 @@ order_result_t goto_pathfinding_node(uint8_t goal, float angle){
                                   robot_state.current_pos.x,
                                   robot_state.current_pos.y);
 
+    ROME_LOGF(&rome_paddock, DEBUG, "searching path from %u to %u", start,goal);
     //check if we are already arrived
     if(start == goal)
       return ORDER_SUCCESS;
@@ -411,10 +414,10 @@ order_result_t goto_pathfinding_node(uint8_t goal, float angle){
     rome_send_pathfinding_path(&pathfinder);
 
     //send the trajectory to asserv, but do not go to nearest node
-    int16_t traj[(pathfinder.path_size-1) * 2];
-    for(int i=0; i < pathfinder.path_size-1; i++){
-      traj[2*i] = pathfinder.nodes[pathfinder.path[i+1]].x;
-      traj[2*i+1] = pathfinder.nodes[pathfinder.path[i+1]].y;
+    int16_t traj[(pathfinder.path_size) * 2];
+    for(int i=0; i < pathfinder.path_size; i++){
+      traj[2*i] = pathfinder.nodes[pathfinder.path[i]].x;
+      traj[2*i+1] = pathfinder.nodes[pathfinder.path[i]].y;
     }
 
     uint32_t start_time_us = uptime_us();
@@ -663,7 +666,7 @@ void strat_wait_start(void)
   portpin_outclr(&LED_G_PP);
   portpin_outclr(&LED_B_PP);
   ROME_SENDWAIT_START_TIMER(&rome_asserv);
-#if (defined GALIPEUR)
+#if (defined UART_MECA)
   ROME_SENDWAIT_START_TIMER(&rome_meca);
 #endif
 }
@@ -675,6 +678,8 @@ void strat_wait_start(void)
 #define PATHFINDING_GRAPH_NODE_WATER_TOWER (robot_state.team == TEAM_GREEN ? PATHFINDING_GRAPH_NODE_GREEN_WATER_TOWER : PATHFINDING_GRAPH_NODE_ORANGE_WATER_TOWER)
 #define PATHFINDING_GRAPH_NODE_BEE (robot_state.team == TEAM_GREEN ? PATHFINDING_GRAPH_NODE_GREEN_BEE : PATHFINDING_GRAPH_NODE_ORANGE_BEE)
 #define PATHFINDING_GRAPH_NODE_OPPOSITE_BEE (robot_state.team == TEAM_ORANGE ? PATHFINDING_GRAPH_NODE_GREEN_BEE : PATHFINDING_GRAPH_NODE_ORANGE_BEE)
+#define PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA (robot_state.team == TEAM_GREEN ? PATHFINDING_GRAPH_NODE_GREEN_TOP : PATHFINDING_GRAPH_NODE_ORANGE_TOP)
+#define PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA_CUBES (robot_state.team == TEAM_GREEN ? PATHFINDING_GRAPH_NODE_GREEN_MIDH : PATHFINDING_GRAPH_NODE_ORANGE_MIDH)
 
 
 //include robot's strat files

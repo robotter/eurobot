@@ -1,6 +1,7 @@
 #define ROBOT_SIDE_CUBE_CLAW (ROBOT_SIDE_LEFT)
 
 typedef enum{
+  NONE = 0,
   CUBE_CLAW_LEFT = 1,
   CUBE_CLAW_ELEVATOR = 2,
   CUBE_CLAW_RIGHT = 3,
@@ -69,16 +70,17 @@ void strat_init(void)
   cube_claw_start();
 
   // set R3D2 parameters
-  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,0,25);
+  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
+
   for(;;) {
     idle();
     if(!robot_state.gyro_calibration)
       break;
   }
 
-  // set R3D2 parameters
-  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
 
+  cube_claw_open();
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
 }
 
 void strat_prepare(void)
@@ -88,6 +90,10 @@ void strat_prepare(void)
   robot_kx = robot_state.team == TEAM_GREEN ? -1 : 1;
 
   ROME_LOG(&rome_paddock,DEBUG,"Strat prepare");
+
+  cube_claw_close();
+  idle_delay_ms(200);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
 
@@ -99,11 +105,67 @@ void strat_prepare(void)
   goto_xya(KX(1200), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   goto_xya(KX(1350), 1800, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
 
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
-  cube_claw_open();
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
+}
+
+
+order_result_t switch_on_boomotter(bool cube_present){
+  ROME_LOG(&rome_paddock,INFO,"go switching on boomotter");
+  order_result_t or = ORDER_FAILURE;
+  //go switching domotic panel first
+  if (cube_present){
+    ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_BUTTON_WITHCUBE);
+  }
+  else{
+    cube_claw_start();
+    ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_BUTTON);
+  }
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  int16_t traj[] = {
+      KX(370), 1750,
+      KX(370), 1810,
+      };
+  or = goto_traj(traj, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  //TODO check that boomotter is on before updating score
+  update_score(25);
+  or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  return or;
+}
+
+order_result_t launch_bee(void){
+  ROME_LOG(&rome_paddock,INFO,"go lauching the bee");
+  order_result_t or = ORDER_FAILURE;
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BEE,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
+  if (or != ORDER_SUCCESS)
+    return or;
+
+  or = goto_xya(KX(1300),200, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, BUMPER_TO_CENTER_DIST);
+  or = goto_xya(KX(1300),200, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
+  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
+  or = goto_xya(KX(1300),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  or = goto_xya(KX(1100),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  update_score(50);
+  or = goto_xya_synced(KX(1250),300, arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP));
+
+  return or;
+
+}
+
+order_result_t look_at_the_card(void){
+  order_result_t or = ORDER_FAILURE;
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MIDDLE_MIDH,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  //wait for jeVois to see the card
+  return or;
+}
+
+
+order_result_t take_cubes_in_front_of_contruction_area(void){
+  order_result_t or = ORDER_FAILURE;
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA_CUBES,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  return or;
 }
 
 void strat_run(void)
@@ -112,28 +174,31 @@ void strat_run(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   cube_claw_close();
 
-  //wait for galipeur departure
-  idle_delay_ms(1000);
+  //boomotter is on the table !
+  update_score(5);
+  //bee is on the table !
+  update_score(5);
 
-  //go switching domotic panel first
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_BUTTON_WITHCUBE);
-
-  int16_t traj[] = {
-      KX(1000), 1700,
-      KX(370), 1700,
-      KX(370), 1820,
-      };
-  goto_traj(traj, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
-  idle_delay_ms(2000);
-  cube_claw_open();
-  goto_xya(KX(370), 1460, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_MAIN));
+  switch_on_boomotter(true);
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
 
+  launch_bee();
+
+  look_at_the_card();
+
+  take_cubes_in_front_of_contruction_area();
+
+  //idle_delay_ms(2000);
+  //cube_claw_open();
+  //ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+
+  ROME_LOG(&rome_paddock,INFO,"That's all folks !");
+  _delay_ms(3000);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
 }
 
 void strat_test(void)
 {
-#if 1
   ROME_LOG(&rome_paddock,INFO,"Strat test stuff");
   for(;;) {
     update_rome_interfaces();
@@ -151,5 +216,4 @@ void strat_test(void)
     goto_xya(0,0,0);
     idle_delay_ms(10000);
   }
-#endif
 }
