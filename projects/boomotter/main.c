@@ -11,8 +11,8 @@
 #include <idle/idle.h>
 #include "battery.h"
 #include "leds.h"
+#include "audio.h"
 #include "dfplayer_mini.h"
-#include "amplifier.h"
 #include "ws2812.h"
 #include "draw.h"
 #include "font_bitmap.inc.c"
@@ -66,7 +66,7 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       break;
 
     case ROME_MID_BOOMOTTER_MP3_RAW:
-      dfplayer_cmd(frame->boomotter_mp3_raw.cmd, frame->boomotter_mp3_raw.param);
+      dfplayer_send_cmd(frame->boomotter_mp3_raw.cmd, frame->boomotter_mp3_raw.param);
       rome_reply_ack(intf, frame);
       break;
 
@@ -93,6 +93,16 @@ static void update_battery(void)
 static void update_rome(void)
 {
   rome_handle_input(&rome_intf);
+}
+
+static void dfplayer_input_handler(uint8_t cmd, uint16_t param)
+{
+  ROME_LOGF(&rome_intf, DEBUG, "dfplayer reply: %02x %04x (%u)", cmd, param, param);
+}
+
+static void handle_dfplayer_input(void)
+{
+  dfplayer_handle_input(dfplayer_input_handler);
 }
 
 
@@ -248,23 +258,20 @@ int main(void)
   timer_init();
   uptime_init();
 
-  dfplayer_init();
-  amplifier_init();
-
+  audio_init();
   ws2812_init();
 
   update_battery(); // make sure to update battery at startup
   TIMER_SET_CALLBACK_US(E0, 'B', 50e3, INTLVL_HI, update_battery);
 
   idle_set_callback(rome_update, update_rome);
+  idle_set_callback(dfplayer_input, handle_dfplayer_input);
   idle_set_callback(display_update, update_display);
 
   _delay_ms(500);
   dfplayer_set_volume(0);
 
-  amplifier_shutdown(false);
-  amplifier_mute(false);
-  //amplifier_set_gain(GAIN_26DB);
+  audio_on();
 
   // initialize the screen
   screen->width = SCREEN_W;
@@ -276,13 +283,6 @@ int main(void)
 
   for(;;) {
     idle();
-    /*
-    if(!dfplayer_is_busy()) {
-      dfplayer_play_track(1);
-    }
-    */
   }
-
-  for(;;);
 }
 

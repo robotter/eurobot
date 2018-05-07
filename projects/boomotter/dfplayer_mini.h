@@ -4,11 +4,21 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+
 /// Initialize the dfplayer mini
 void dfplayer_init(void);
 
+/// Callback for dfplayer_handle_input()
+typedef void (*dfplayer_handler_t)(uint8_t cmd, uint16_t param);
+
+/** @brief Handle dfplayer UART input
+ *
+ * The callback will be called for each available message.
+ */
+void dfplayer_handle_input(dfplayer_handler_t cb);
+
 /// Send a raw command
-void dfplayer_cmd(uint8_t cmd, uint16_t param);
+void dfplayer_send_cmd(uint8_t cmd, uint16_t param);
 
 /// specify volume
 void dfplayer_set_volume(uint8_t volume);

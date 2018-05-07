@@ -40,17 +40,7 @@ typedef enum{
   DF_STORAGE_NORFLASH = 0x04,
 } dfplayer_storage_src_t;
 
-#define DFPLAYER_START_FRAME  0x7E
-#define DFPLAYER_STOP_FRAME   0xEF
-
-typedef struct {
-  uint8_t version;
-  dfplayer_cmd_t cmd;
-  uint8_t feedback;
-  uint8_t para1;
-  uint8_t para2;
-  uint16_t checksum;
-} dfplayer_frame_t;
-
+#define DFPLAYER_START_BYTE  0x7E
+#define DFPLAYER_STOP_BYTE  0xEF
 
 #endif //_DFPLAYER_MINI_DEFS_H_
