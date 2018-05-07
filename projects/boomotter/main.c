@@ -1,12 +1,14 @@
 #include <avarix.h>
 #include <avarix/intlvl.h>
 #include <avarix/portpin.h>
+#include <avarix/register.h>
 #include <uart/uart.h>
 #include <clock/clock.h>
 #include <rome/rome.h>
 #include <util/delay.h>
 #include <timer/timer.h>
 #include <timer/uptime.h>
+#include <idle/idle.h>
 #include "battery.h"
 #include "leds.h"
 #include "dfplayer_mini.h"
@@ -32,25 +34,18 @@ texture_t *const screen = (texture_t*)screen_data;
 
 static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
-#if 0
+  portpin_outtgl(&LED_COM_PP);
   switch(frame->mid) {
-    case ROME_MID_R3D2_SET_ROTATION:
-      r3d2_set_rotation(frame->r3d2_set_rotation.speed_rpm,
-        frame->r3d2_set_rotation.threshold_percent);
-      rome_reply_ack(intf, frame);
-      break;
-
-    case ROME_MID_R3D2_SET_BLIND_SPOT:
-      r3d2_set_blind_spot(
-        1.0*frame->r3d2_set_blind_spot.begin/1000,
-        1.0*frame->r3d2_set_blind_spot.end/1000);
-      rome_reply_ack(intf, frame);
-      break;
-
+    case ROME_MID_ACK:
+      // should not happen
+      rome_free_ack(frame->ack.ack);
+      return;
+    case ROME_MID_RESET: {
+      software_reset();
+    } break;
     default:
       break;
   }
-#endif
 }
 
 
@@ -67,6 +62,10 @@ static void update_battery(void)
   }
 }
 
+static void update_rome(void)
+{
+  rome_handle_input(&rome_intf);
+}
 
 static void update_display(void)
 {
@@ -149,6 +148,9 @@ int main(void)
   update_battery(); // make sure to update battery at startup
   TIMER_SET_CALLBACK_US(E0, 'B', 50e3, INTLVL_HI, update_battery);
 
+  idle_set_callback(rome_update, update_rome);
+  idle_set_callback(display_update, update_display);
+
   _delay_ms(500);
   dfplayer_set_volume(0);
 
@@ -165,15 +167,12 @@ int main(void)
   portpin_outset(&LED_RUN_PP);
 
   for(;;) {
-    rome_handle_input(&rome_intf);
-
+    idle();
+    /*
     if(!dfplayer_is_busy()) {
       dfplayer_play_track(1);
     }
-
-    update_display();
-
-    _delay_ms(70);
+    */
   }
 
   for(;;);

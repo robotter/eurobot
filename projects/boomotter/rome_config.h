@@ -19,7 +19,13 @@
  */
 #define ROME_SEND_INTLVL  INTLVL_LO
 
+/// Minimum ACK value to use for sent orders
+#define ROME_ACK_MIN  0
+/// Maximum ACK value to use for sent orders
+#define ROME_ACK_MAX  127
 
+/// ACK waiting time before resending an order, in microseconds
+#define ROME_ACK_TIMEOUT_US  500000
 
 //@}
 //@}

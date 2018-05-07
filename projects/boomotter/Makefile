@@ -5,7 +5,7 @@ include ../../config.mk
 SRCS = $(filter-out $(wildcard *.inc.c),$(wildcard *.c))
 ASRCS =
 TARGET = main
-MODULES = uart rome timer
+MODULES = uart rome timer idle
 GEN_FILES = modules/font_bitmap.inc.c
 
 
