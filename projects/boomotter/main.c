@@ -14,6 +14,7 @@
 #include "ws2812.h"
 #include "draw.h"
 #include "font_bitmap.inc.c"
+#include "config.h"
 
 #define BATTERY_ALERT_LIMIT  10000
 
@@ -45,7 +46,7 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
         1.0*frame->r3d2_set_blind_spot.end/1000);
       rome_reply_ack(intf, frame);
       break;
-        
+
     default:
       break;
   }
@@ -121,7 +122,7 @@ int main(void)
   portpin_outclr(&LED_COM_PP);
 
   uart_init();
-  uart_fopen(uartC0);
+  uart_fopen(UART_ROME);
   portpin_outclr(&LED_RUN_PP);
 
   INTLVL_ENABLE_ALL();
@@ -130,7 +131,7 @@ int main(void)
   battery_init();
 
   rome_intf_init(&rome_intf);
-  rome_intf.uart = uartC0;
+  rome_intf.uart = UART_ROME;
   rome_intf.handler = rome_handler;
 
   ROME_LOGF(&rome_intf, INFO, "boomotter booting");
@@ -151,9 +152,9 @@ int main(void)
   _delay_ms(500);
   dfplayer_set_volume(0);
 
-  amplifier_shutdown(0);
-  amplifier_mute(0);
-//  amplifier_set_gain(GAIN_26DB);
+  amplifier_shutdown(false);
+  amplifier_mute(false);
+  //amplifier_set_gain(GAIN_26DB);
 
   // initialize the screen
   screen->width = SCREEN_W;
@@ -161,7 +162,7 @@ int main(void)
   texture_clear(screen);
   display_screen(screen);
 
-  portpin_outset(&LED_RUN_PP); 
+  portpin_outset(&LED_RUN_PP);
 
   for(;;) {
     rome_handle_input(&rome_intf);

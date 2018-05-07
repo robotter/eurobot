@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "dfplayer_mini_config.h"
 
 /// Initialize the dfplayer mini
 void dfplayer_init(void);

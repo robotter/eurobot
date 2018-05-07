@@ -2,26 +2,26 @@
 #define _AUDIO_AMPLIFIER_H_
 
 #include <stdint.h>
-#include "audio_amplifier_config.h"
 
-typedef enum {GAIN_20DB, 
-              GAIN_26DB, 
-              GAIN_32DB, 
-              GAIN_36DB
-             } amplifier_gain_t;
+typedef enum {
+  AMPLI_GAIN_20DB,
+  AMPLI_GAIN_26DB,
+  AMPLI_GAIN_32DB,
+  AMPLI_GAIN_36DB,
+} amplifier_gain_t;
 
 
-/// initialize port pin and set gain to GAIN_20DB
+/// Initialize port pin and set gain to GAIN_20DB
 void amplifier_init(void);
 
-/// set amplifier gain (must be one of the amplifier_gain_t enum value)
+/// Set amplifier gain
 void amplifier_set_gain(amplifier_gain_t gain);
 
-/// update shutdown state (0 => enabled, everything else => disabled)
-void amplifier_shutdown(uint8_t state);
+/// Update shutdown state
+void amplifier_shutdown(bool shutdown);
 
-/// update mute state (0=> enabled, everything else => mute)
-void amplifier_mute(uint8_t state);
+/// Update mute state
+void amplifier_mute(bool mute);
 
 
 #endif //_AUDIO_AMPLIFIER_H_
