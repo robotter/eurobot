@@ -3,8 +3,10 @@
 
 // Mapping of UART to boards/interfaces
 #define ROME_ASSERV_UART  uartE1
-#define ROME_MECA_UART    uartD0
 #define ROME_PADDOCK_UART uartF0
+#if (defined GALIPEUR)
+#define ROME_MECA_UART    uartD0
+#endif
 
 // Timeout before repeating various strat orders
 #define STRAT_TIMEOUT_US  1000000

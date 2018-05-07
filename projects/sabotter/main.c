@@ -34,6 +34,7 @@
 #include "config.h"
 #include "battery_monitor.h"
 #include <pathfinding/pathfinding.h>
+#include "servos.h"
 
 // battery monitoring
 BATTMON_t battery;
@@ -149,6 +150,16 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_STRAT_TEST:  {
       strat_test();
     }break;
+    case ROME_MID_STRAT_SET_SERVO: {
+      INTLVL_DISABLE_ALL_BLOCK() {
+#if defined(GALIPETTE)
+        ROME_LOGF(&rome_paddock, DEBUG, "strat: set servo %u to %u", frame->strat_set_servo.id, frame->strat_set_servo.value);
+        servo_set(frame->strat_set_servo.id, frame->strat_set_servo.value);
+#endif
+        rome_reply_ack(intf, frame);
+      }
+    } break;
+
     default:
       break;
   }
@@ -234,7 +245,9 @@ int main(void)
 
   // Initialize UART
   uart_init();
+#ifdef GALIPEUR
   uart_fopen(uartC0);
+#endif
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
@@ -246,9 +259,13 @@ int main(void)
   rome_asserv.uart = ROME_ASSERV_UART;
   rome_asserv.handler = rome_asserv_handler;
 
+#ifdef ROME_MECA_UART
   rome_intf_init(&rome_meca);
   rome_meca.uart = ROME_MECA_UART;
   rome_meca.handler = rome_meca_handler;
+#else
+  (void)rome_meca_handler;
+#endif
 
   rome_intf_init(&rome_paddock);
   rome_paddock.uart = ROME_PADDOCK_UART;
@@ -272,6 +289,10 @@ int main(void)
   BATTMON_Init(&battery);
   BATTMON_monitor(&battery);
   uint16_t voltage = battery.FilterMemory;
+
+#if defined(GALIPETTE)
+  servos_init();
+#endif
 
   // Initialize timers
   timer_init();

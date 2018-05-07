@@ -18,7 +18,7 @@ endif
 
 SRCS = $(filter-out $(wildcard *.inc.c), $(wildcard *.c))
 ASRCS =
-MODULES = uart clock timer idle rome pathfinding
+MODULES = uart clock timer idle rome pathfinding pwm
 
 ## Target configuration
 MCU = atxmega256a3

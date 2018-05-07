@@ -121,8 +121,6 @@ register_messages(
       ('tm_battery', [('device', 'device'), ('voltage','uint16')]),
       ('tm_score',  [('device', 'device'), ('points','uint16')]),
       ('tm_match_timer', [('device', 'device'), ('seconds','int16')]),
-
-      (Order,'strat_test', [('active','bool')]),
     ]),
 
     # R3D2
@@ -214,5 +212,11 @@ register_messages(
     (0xB8, [
       ('boomotter_tm_battery', [('voltage','uint16')]),
     ]),
+
+    # SABOTTER
+    (0xD0, [
+      (Order, 'strat_set_servo', [('id','uint8'), ('value','uint16')]),
+      (Order, 'strat_test', [('active','bool')]),
+    ])
   )
 

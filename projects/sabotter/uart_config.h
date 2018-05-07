@@ -23,10 +23,13 @@
 #define UART_BSCALE  0
 
 /// Enable UARTxn
+#if (defined GALIPEUR)
 #define UARTC0_ENABLED
 #define UARTD0_ENABLED
+#elif (defined GALIPETTE)
+#define UARTE0_ENABLED
+#endif
 #define UARTE1_ENABLED
-
 #define UARTF0_ENABLED
 //#define UARTF0_BAUDRATE 115200
 //#define UARTF0_BSCALE -6
