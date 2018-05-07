@@ -33,8 +33,8 @@ texture_t *const screen = (texture_t*)screen_data;
 
 // Robot scores
 static struct {
-  uint8_t galipeur;
-  uint8_t galipette;
+  uint16_t galipeur;
+  uint16_t galipette;
 } scores;
 
 
@@ -123,14 +123,28 @@ static void update_display_debug_team(void)
 }
 
 
+uint8_t celebration_duration = 0;
+
 static void draw_score(void)
 {
-  uint8_t total_score = scores.galipeur + scores.galipette;
-  //XXX
-  total_score = uptime_us() / 100000;
+  static uint16_t previous_total_score = 0;
+  static uint16_t displayed_score = 0;
+  uint16_t total_score = scores.galipeur + scores.galipette;
+  if(total_score > 999) {
+    total_score = 999;
+  }
+  if(total_score != previous_total_score) {
+    celebration_duration = 30;
+    previous_total_score = total_score;
+  }
+  if(total_score > displayed_score) {
+    displayed_score += (total_score - displayed_score) / 5 + 1;
+  } else if(total_score < displayed_score) {
+    displayed_score -= (displayed_score - total_score) / 5 + 1;
+  }
 
   char buf[4];
-  snprintf(buf, sizeof(buf), "%u", total_score);
+  snprintf(buf, sizeof(buf), "%u", displayed_score);
   uint8_t len = strlen(buf);
   uint8_t pos = (SCREEN_LW - 3*len - (len-1))/2;
 
@@ -142,6 +156,42 @@ static void draw_score(void)
   }
 }
 
+static void draw_scrolling_robotter(void)
+{
+  static scrolling_text_t scroll;
+  if(scroll.text_width == 0) {
+    scrolling_text_init(&scroll, &font_base, "ROB'OTTER  ", 2);
+  }
+  scrolling_text_draw(&scroll, screen, 0);
+  FOREACH_RECT_PIXEL(screen, screen_upper_rect) {
+    if(p->r) {
+      *p = RGB(0,0x40,0);
+    }
+  }
+  scrolling_text_scroll(&scroll, -1);
+}
+
+static void draw_celebration(void)
+{
+  static const pixel_t celebration_colors[] = {
+    {0x00,0x00,0x06},
+    {0x06,0x00,0x06},
+    {0x06,0x00,0x00},
+    {0x06,0x06,0x00},
+    {0x00,0x06,0x00},
+    {0x00,0x06,0x06},
+  };
+
+  if(celebration_duration) {
+    FOREACH_PIXEL(screen) {
+      if(p->r == 0 && p->g == 0 && p->b == 0) {
+        *p = celebration_colors[(celebration_duration + x + y) % (sizeof(celebration_colors)/sizeof(*celebration_colors))];
+      }
+    }
+    celebration_duration--;
+  }
+}
+
 
 static void update_display(void)
 {
@@ -149,6 +199,8 @@ static void update_display(void)
 
   (void)update_display_debug_team;
   draw_score();
+  draw_scrolling_robotter();
+  draw_celebration();
 
   // if battery is low, display a red rectangle
   if(battery_discharged) {

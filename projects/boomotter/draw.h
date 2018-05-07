@@ -179,5 +179,29 @@ void blend_color_mul(pixel_t *p, pixel_t c);
   for(uint8_t x = (rect).x0; x < (rect).x1; x++) \
   for(pixel_t *p = TEXTURE_PIXEL((tex), (x), (y)); p; p=0) \
 
+#define FOREACH_PIXEL(tex) \
+  for(uint8_t y = 0; y < (tex)->height; y++) \
+  for(uint8_t x = 0; x < (tex)->width; x++) \
+  for(pixel_t *p = TEXTURE_PIXEL((tex), (x), (y)); p; p=0) \
+
+/// Scrolling text data
+typedef struct {
+  const font_t *font;
+  const char *text;
+  uint8_t text_width;
+  int16_t pos;
+  uint8_t pos_prescaler;
+} scrolling_text_t;
+
+/** @brief Initialize a scrolling text
+ *
+ * Text will be drew on the whole texture width.
+ */
+void scrolling_text_init(scrolling_text_t *scroll, const font_t *font, const char *text, uint8_t prescaler);
+/// Draw scrolling text (repeated)
+void scrolling_text_draw(const scrolling_text_t *scroll, texture_t *tex, int8_t y);
+/// Scroll text (in any direction
+void scrolling_text_scroll(scrolling_text_t *scroll, int8_t n);
+
 
 #endif

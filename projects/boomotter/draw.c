@@ -180,3 +180,34 @@ void blend_color_mul(pixel_t *p, pixel_t c) {
   p->b = ((uint16_t)p->b * c.b) >> 8;
 }
 
+
+void scrolling_text_init(scrolling_text_t *scroll, const font_t *font, const char *text, uint8_t prescaler) {
+  scroll->font = font;
+  scroll->text = text;
+  scroll->text_width = get_text_width(font, text) + 1;
+  scroll->pos = 0;
+  scroll->pos_prescaler = prescaler;
+}
+
+void scrolling_text_draw(const scrolling_text_t *scroll, texture_t *tex, int8_t y) {
+  int8_t pos = scroll->pos / scroll->pos_prescaler;
+  for(int8_t x = pos; x < tex->width; x += scroll->text_width) {
+    blend_text(tex, scroll->font, x, y, scroll->text, blend_gray_set);
+  }
+  for(int8_t x = pos - scroll->text_width; x > -scroll->text_width; x -= scroll->text_width) {
+    blend_text(tex, scroll->font, x, y, scroll->text, blend_gray_set);
+  }
+}
+
+void scrolling_text_scroll(scrolling_text_t *scroll, int8_t n) {
+  scroll->pos += n;
+  uint16_t scaled_width = scroll->text_width * scroll->pos_prescaler;
+  while(scroll->pos < 0) {
+    scroll->pos += scaled_width;
+  }
+  // pos >= 0 due to above loop, cast to unsigned is safe
+  while((uint16_t)scroll->pos >= scaled_width) {
+    scroll->pos -= scaled_width;
+  }
+}
+
