@@ -172,6 +172,7 @@ bool opponent_detected_in_arc(float angle, float fov, float distance)
   return false;
 }
 
+uint32_t detection_log_timer = 0;
 bool opponent_detected_in_corridor(float angle, float width, float depth){
   for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
     r3d2_object_t *object = &robot_state.r3d2.objects[i];
@@ -180,6 +181,11 @@ bool opponent_detected_in_corridor(float angle, float width, float depth){
       float dx = object->r*cos(d_a);
       float dy = object->r*sin(d_a);
       bool out_of_corridor = (dx < 0) || (dx > depth) || (fabs(dy) > width);
+      if (uptime_us() - detection_log_timer > 300000){
+        ROME_LOGF(&rome_paddock,DEBUG,"corridor : d_a %f, r %f",d_a,object->r);
+        ROME_LOGF(&rome_paddock,DEBUG,"corridor : dx %f, dy %f",dx,dy);
+        detection_log_timer = uptime_us();
+      }
       if (!out_of_corridor){
         return true;
       }
@@ -460,6 +466,7 @@ order_result_t goto_pathfinding_node(uint8_t goal, float angle){
       idle();
     }
 
+    idle();
   }
   return ORDER_FAILURE;
 }
@@ -660,6 +667,15 @@ void strat_wait_start(void)
   ROME_SENDWAIT_START_TIMER(&rome_meca);
 #endif
 }
+
+//define some aliases for selecting color sided nodes
+#define PATHFINDING_GRAPH_NODE_WATER_DISPENSER_NEAR (robot_state.team == TEAM_GREEN ? PATHFINDING_GRAPH_NODE_GREEN_WATER_DISPENSER_NEAR : PATHFINDING_GRAPH_NODE_ORANGE_WATER_DISPENSER_NEAR)
+#define PATHFINDING_GRAPH_NODE_WATER_DISPENSER_FAR (robot_state.team == TEAM_GREEN ? PATHFINDING_GRAPH_NODE_GREEN_WATER_DISPENSER_FAR : PATHFINDING_GRAPH_NODE_ORANGE_WATER_DISPENSER_FAR)
+#define PATHFINDING_GRAPH_NODE_WATER_RECYCLE (robot_state.team == TEAM_GREEN ? PATHFINDING_GRAPH_NODE_GREEN_WATER_RECYCLE : PATHFINDING_GRAPH_NODE_ORANGE_WATER_RECYCLE)
+#define PATHFINDING_GRAPH_NODE_WATER_TOWER (robot_state.team == TEAM_GREEN ? PATHFINDING_GRAPH_NODE_GREEN_WATER_TOWER : PATHFINDING_GRAPH_NODE_ORANGE_WATER_TOWER)
+#define PATHFINDING_GRAPH_NODE_BEE (robot_state.team == TEAM_GREEN ? PATHFINDING_GRAPH_NODE_GREEN_BEE : PATHFINDING_GRAPH_NODE_ORANGE_BEE)
+#define PATHFINDING_GRAPH_NODE_OPPOSITE_BEE (robot_state.team == TEAM_ORANGE ? PATHFINDING_GRAPH_NODE_GREEN_BEE : PATHFINDING_GRAPH_NODE_ORANGE_BEE)
+
 
 //include robot's strat files
 #if (defined GALIPEUR)

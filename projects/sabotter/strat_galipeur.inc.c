@@ -195,20 +195,17 @@ order_result_t take_water(dispenser_t dispenser){
     case DISPENSER_FAR:{
       ROME_LOG(&rome_paddock,INFO,"Going to opposite dispenser");
       //send first position order
-      int16_t traj[] = {
-        KX(-far_pos),1000,
-        KX(far_pos),1000,
-        KX(-1200), 300};
-      or = goto_traj(traj, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+      //go to the bee corner to be near borders for autoset
+      or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_OPPOSITE_BEE, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
       if (or!= ORDER_SUCCESS){
         ROME_LOG(&rome_paddock,INFO,"Aborting opposite dispenser");
-        idle_delay_ms(5000);
-        goto_xya(KX(-far_pos), 1000, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+        //go back near start area
+        goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_TOWER, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
         return or;
         }
       //we did a very long move, so launch an autoset
       //XXX on eirbot's table, we have a 3cm offset on the other side of the table...
-      autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET + 30);
+      autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET);// + 30);
       //XXX
       or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
       or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
@@ -262,6 +259,7 @@ order_result_t throw_water_watertower(void){
   _wait_meca_ground_clear();
 
   uint8_t balls_loaded = robot_state.cylinder_nb_good;
+  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_DISPENSER_NEAR,arfast(ROBOT_SIDE_TURBINE, TABLE_SIDE_MAIN));
   or = goto_xya(KX(1100), 1450, compute_throw_angle(1100,1450));
   ROME_SENDWAIT_MECA_SET_THROW_POWER(&rome_meca,1950);
   _wait_meca_ready();
@@ -275,7 +273,6 @@ order_result_t throw_water_watertower(void){
 
 order_result_t trash_water_treatment(void){
   ROME_LOG(&rome_paddock,INFO,"Trashing water in treatment area");
-  // warning : order to call when we are near the "far" dispenser !
   order_result_t or;
   set_speed(RS_NORMAL);
 
@@ -287,14 +284,14 @@ order_result_t trash_water_treatment(void){
   uint8_t balls_loaded = robot_state.cylinder_nb_bad;
 
   //push away the cubes in front of treatment area
-  int16_t traj[] = {
-    KX(-700), 500,
-    KX(-100), 500,
-  };
+  //the angle is changed to avoid pushing cubes towards recyling area
+  float angle;
   if (robot_state.team == TEAM_GREEN)
-    or = goto_traj(traj, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+    angle = arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN);
   else
-    or = goto_traj(traj, arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_MAIN));
+    angle = arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_MAIN);
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MIDDLE_BOT, angle);
+
   //go in position to trash the bad water
   or = goto_xya(KX(-250),250+120, arfast(ROBOT_SIDE_TURBINE,TABLE_SIDE_DOWN));
   _wait_meca_ready();
@@ -305,7 +302,8 @@ order_result_t trash_water_treatment(void){
   or = goto_xya(KX(-250), 500, arfast(ROBOT_SIDE_TURBINE, TABLE_SIDE_DOWN));
   or = goto_xya(KX(-250), 500, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
   autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, 250+AUTOSET_OFFSET);
-  or = goto_xya(KX(-250), 1000, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+  or = goto_xya(KX(-250), 550, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+
   return or;
 }
 
@@ -367,7 +365,7 @@ void strat_run(void)
     if (or_take_water_near != ORDER_SUCCESS){
       or_take_water_near = take_water(DISPENSER_NEAR);
 
-      or_empty_water_far = empty_cylinder();
+      or_empty_water_near = empty_cylinder();
     }
 
     idle_delay_ms(200);
@@ -387,13 +385,13 @@ void strat_test(void)
     if(!robot_state.gyro_calibration)
       break;
   }
+
+  set_speed(RS_NORMAL);
+  #if 0
   set_xya_wait(0,0,0);
   goto_xya(0,0,0);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
-
-  set_speed(RS_NORMAL);
-  #if 1
 
   ROME_LOG(&rome_paddock,INFO,"go");
   goto_xya(0,700,0);
@@ -401,14 +399,19 @@ void strat_test(void)
   goto_xya(0,0,0);
 
   #else
-  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ORANGE_WATER_DISPENSER_FAR,
+  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
+  ROME_LOG(&rome_paddock,INFO,"go");
+  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_DISPENSER_FAR,
                         arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
 
 
   idle_delay_ms(5000);
+  ROME_LOG(&rome_paddock,INFO,"back");
   goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ORANGE_WATER_TOWER,
                         arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
 
+  ROME_LOG(&rome_paddock,INFO,"align to start a new test");
   goto_xya(KX(1300), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   #endif
 
