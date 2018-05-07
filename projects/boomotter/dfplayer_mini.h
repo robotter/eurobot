@@ -7,6 +7,9 @@
 /// Initialize the dfplayer mini
 void dfplayer_init(void);
 
+/// Send a raw command
+void dfplayer_cmd(uint8_t cmd, uint16_t param);
+
 /// specify volume
 void dfplayer_set_volume(uint8_t volume);
 

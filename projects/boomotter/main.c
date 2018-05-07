@@ -65,6 +65,11 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       }
       break;
 
+    case ROME_MID_BOOMOTTER_MP3_RAW:
+      dfplayer_cmd(frame->boomotter_mp3_raw.cmd, frame->boomotter_mp3_raw.param);
+      rome_reply_ack(intf, frame);
+      break;
+
     default:
       break;
   }

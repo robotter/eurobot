@@ -211,6 +211,7 @@ register_messages(
     # BOOMOTTER
     (0xB8, [
       ('boomotter_tm_battery', [('voltage','uint16')]),
+      (Order, 'boomotter_mp3_raw', [('cmd', 'uint8'), ('param', 'uint16')]),
     ]),
 
     # SABOTTER

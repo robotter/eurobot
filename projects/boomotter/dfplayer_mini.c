@@ -45,16 +45,21 @@ void dfplayer_send(dfplayer_frame_t *frame)
   }
 }
 
-void dfplayer_set_source(dfplayer_storage_src_t src)
+void dfplayer_cmd(uint8_t cmd, uint16_t param)
 {
   dfplayer_frame_t frame = {
     .version = 0xff,
-    .cmd = DF_SET_STORAGE_SOURCE,
+    .cmd = cmd,
     .feedback = 0x00,
-    .para1 = 0,
-    .para2 = src,
+    .para1 = param >> 8,
+    .para2 = param,
   };
   dfplayer_send(&frame);
+}
+
+void dfplayer_set_source(dfplayer_storage_src_t src)
+{
+  dfplayer_cmd(DF_SET_STORAGE_SOURCE, src);
 }
 
 void dfplayer_set_volume(uint8_t volume)
@@ -62,90 +67,41 @@ void dfplayer_set_volume(uint8_t volume)
   if(volume > 30) {
     volume = 30;
   }
-
-  dfplayer_frame_t frame = {
-    .version = 0xff,
-    .cmd = DF_SET_VOLUME,
-    .feedback = 0x00,
-    .para1 = 0,
-    .para2 = volume,
-  };
-  dfplayer_send(&frame);
+  dfplayer_cmd(DF_SET_VOLUME, volume);
 }
 
 void dfplayer_pause(void)
 {
-  dfplayer_frame_t frame = {
-    .version = 0xff,
-    .cmd = DF_PAUSE,
-    .feedback = 0x00,
-    .para1 = 0x00,
-    .para2 = 0x00,
-  };
-  dfplayer_send(&frame);
+  dfplayer_cmd(DF_PAUSE, 0);
 }
 
 void dfplayer_play(void)
 {
-  dfplayer_frame_t frame = {
-    .version = 0xff,
-    .cmd = DF_PLAY,
-    .feedback = 0x00,
-    .para1 = 0x00,
-    .para2 = 0x00,
-  };
-  dfplayer_send(&frame);
+  dfplayer_cmd(DF_PLAY, 0);
 }
 
 void dfplayer_reset(void)
 {
-  dfplayer_frame_t frame = {
-    .version = 0xff,
-    .cmd = DF_RESET_MODULE,
-    .feedback = 0x00,
-    .para1 = 0x00,
-    .para2 = 0x00,
-  };
-  dfplayer_send(&frame);
+  dfplayer_cmd(DF_RESET_MODULE, 0);
 }
 
 void dfplayer_play_track(uint16_t track_id)
 {
-  dfplayer_frame_t frame = {
-    .version = 0xff,
-    .cmd = DF_READ_TRACK,
-    .feedback = 0x00,
-    .para1 = track_id >> 8,
-    .para2 = track_id,
-  };
-  dfplayer_send(&frame);
+  dfplayer_cmd(DF_READ_TRACK, track_id);
 }
 
 void dfplayer_set_equalizer(uint8_t eq)
 {
-  dfplayer_frame_t frame = {
-    .version = 0xff,
-    .cmd = DF_SET_EQUALIZER,
-    .feedback = 0x00,
-    .para1 = 0x00,
-    .para2 = eq,
-  };
-  dfplayer_send(&frame);
+  dfplayer_cmd(DF_RESET_MODULE, eq);
 }
 
 void dfplayer_normal_mode(void)
 {
-  dfplayer_frame_t frame = {
-    .version = 0xff,
-    .cmd = DF_NORMAL_WORKING,
-    .feedback = 0x00,
-    .para1 = 0x00,
-    .para2 = 0x00,
-  };
-  dfplayer_send(&frame);
+  dfplayer_cmd(DF_NORMAL_WORKING, 0);
 }
 
 bool dfplayer_is_busy(void)
 {
   return !portpin_in(&DFPLAYER_BUSY_PP);
 }
+
