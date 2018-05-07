@@ -41,7 +41,9 @@ BATTMON_t battery;
 
 // ROME interfaces
 rome_intf_t rome_asserv;
+#ifdef UART_MECA
 rome_intf_t rome_meca;
+#endif
 rome_intf_t rome_paddock;
 
 #if (defined GALIPEUR)
@@ -139,6 +141,7 @@ static void rome_meca_handler(rome_intf_t *intf, const rome_frame_t *frame)
 
 static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
+  portpin_outtgl(&LED1_PP);
   switch(frame->mid) {
     case ROME_MID_ACK:
       // should not happen
@@ -151,13 +154,12 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
       strat_test();
     }break;
     case ROME_MID_STRAT_SET_SERVO: {
-      INTLVL_DISABLE_ALL_BLOCK() {
+      ROME_LOGF(&rome_paddock, DEBUG, "strat: set servo %u to %u", frame->strat_set_servo.id, frame->strat_set_servo.value);
 #if defined(GALIPETTE)
-        ROME_LOGF(&rome_paddock, DEBUG, "strat: set servo %u to %u", frame->strat_set_servo.id, frame->strat_set_servo.value);
-        servo_set(frame->strat_set_servo.id, frame->strat_set_servo.value);
+      servo_set(frame->strat_set_servo.id, frame->strat_set_servo.value);
 #endif
-        rome_reply_ack(intf, frame);
-      }
+      rome_reply_ack(intf, frame);
+      return;
     } break;
 
     default:
@@ -166,14 +168,18 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
 
   // forward to other interfaces
   rome_send(&rome_asserv, frame);
+#ifdef UART_MECA
   rome_send(&rome_meca, frame);
+#endif
 }
 
 // Handle input from all ROME interfaces
 void update_rome_interfaces(void)
 {
   rome_handle_input(&rome_asserv);
+#ifdef UART_MECA
   rome_handle_input(&rome_meca);
+#endif
   rome_handle_input(&rome_paddock);
 }
 
@@ -191,8 +197,7 @@ static void update_battery(void)
     uint16_t voltage = battery.FilterMemory;
     // send telemetry message
     ROME_SEND_TM_BATTERY(&rome_paddock, ROME_DEVICE, voltage);
-    PORTA.DIRSET = 0x0E;
-    PORTA.OUTTGL = 0x0E;
+    portpin_outtgl(&LED0_PP);
   }
 
 }
@@ -211,7 +216,9 @@ static void match_end(void)
     ROME_LOG(&rome_paddock,INFO,"End of match");
     // end of match
     ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+#ifdef UART_MECA
     ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 0);
+#endif
     portpin_outset(&LED_R_PP);
     portpin_outset(&LED_G_PP);
     portpin_outset(&LED_B_PP);
@@ -242,6 +249,16 @@ int main(void)
   // HACK : in unioc, Pin D0  and D1 are outputs
   PORTD.DIRCLR = _BV(0) | _BV(1);
   #endif
+
+  // leds
+  portpin_dirset(&LED_R_PP);
+  portpin_dirset(&LED_G_PP);
+  portpin_dirset(&LED_B_PP);
+
+  portpin_dirset(&LED0_PP);
+  portpin_dirset(&LED1_PP);
+  portpin_dirset(&LED2_PP);
+  portpin_dirset(&LED3_PP);
 
   // Initialize UART
   uart_init();
@@ -280,16 +297,6 @@ int main(void)
   // starting cord and color selector
   portpin_dirclr(&STARTING_CORD_PP);
   portpin_dirclr(&COLOR_SELECTOR_PP);
-
-  // leds
-  portpin_dirset(&LED_R_PP);
-  portpin_dirset(&LED_G_PP);
-  portpin_dirset(&LED_B_PP);
-
-  portpin_dirset(&LED0_PP);
-  portpin_dirset(&LED1_PP);
-  portpin_dirset(&LED2_PP);
-  portpin_dirset(&LED3_PP);
 
   // Initialize battery monitoring
   BATTMON_Init(&battery);

@@ -1,7 +1,6 @@
 #define ROBOT_SIDE_CUBE_CLAW (ROBOT_SIDE_LEFT)
 
 typedef enum{
-  NONE = 0,
   CUBE_CLAW_LEFT = 1,
   CUBE_CLAW_ELEVATOR = 2,
   CUBE_CLAW_RIGHT = 3,
