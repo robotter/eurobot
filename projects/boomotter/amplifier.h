@@ -1,5 +1,5 @@
-#ifndef _AUDIO_AMPLIFIER_H_
-#define _AUDIO_AMPLIFIER_H_
+#ifndef AMPLIFIER_H_
+#define AMPLIFIER_H_
 
 #include <stdint.h>
 
@@ -24,4 +24,4 @@ void amplifier_shutdown(bool shutdown);
 void amplifier_mute(bool mute);
 
 
-#endif //_AUDIO_AMPLIFIER_H_
+#endif //AMPLIFIER_H_

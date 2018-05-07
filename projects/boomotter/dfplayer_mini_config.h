@@ -1,8 +1,0 @@
-#ifndef _DFPLAYER_MINI_CONFIG_H_
-#define _DFPLAYER_MINI_CONFIG_H_
-
-#define DFPLAYER_BUSY_PP  PORTPIN(D,5)
-
-#define DFPLAYER_UART     uartD0
-
-#endif//_DFPLAYER_MINI_CONFIG_H_

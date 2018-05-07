@@ -2,7 +2,6 @@
 #include <uart/uart.h>
 #include "dfplayer_mini.h"
 #include "dfplayer_mini_defs.h"
-#include "dfplayer_mini_config.h"
 #include "config.h"
 
 void dfplayer_send(dfplayer_frame_t *frame);

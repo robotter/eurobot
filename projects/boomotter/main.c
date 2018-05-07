@@ -12,7 +12,7 @@
 #include "battery.h"
 #include "leds.h"
 #include "dfplayer_mini.h"
-#include "audio_amplifier.h"
+#include "amplifier.h"
 #include "ws2812.h"
 #include "draw.h"
 #include "font_bitmap.inc.c"

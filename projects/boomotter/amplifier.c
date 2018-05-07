@@ -1,6 +1,6 @@
 #include <avarix/portpin.h>
-#include "audio_amplifier.h"
-#include "audio_amplifier_config.h"
+#include "amplifier.h"
+#include "config.h"
 
 
 void amplifier_init(void)
