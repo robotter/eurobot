@@ -96,6 +96,8 @@ void strat_prepare(void)
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  //boomotter is on the table !
+  update_score(5);
 
   set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
@@ -105,6 +107,8 @@ void strat_prepare(void)
   goto_xya(KX(1200), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   goto_xya(KX(1350), 1800, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
 
+  //bee is on the table !
+  update_score(5);
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
@@ -136,6 +140,7 @@ order_result_t switch_on_boomotter(bool cube_present){
 
 order_result_t launch_bee(void){
   ROME_LOG(&rome_paddock,INFO,"go lauching the bee");
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
   order_result_t or = ORDER_FAILURE;
   or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BEE,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
   if (or != ORDER_SUCCESS)
@@ -146,9 +151,9 @@ order_result_t launch_bee(void){
   or = goto_xya(KX(1300),200, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
   or = goto_xya(KX(1300),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  or = goto_xya(KX(1100),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  or = goto_xya_synced(KX(1100),150, arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP));
   update_score(50);
-  or = goto_xya_synced(KX(1250),300, arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP));
+  or = goto_xya(KX(1250),300, arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP));
 
   return or;
 
@@ -164,7 +169,51 @@ order_result_t look_at_the_card(void){
 
 order_result_t take_cubes_in_front_of_contruction_area(void){
   order_result_t or = ORDER_FAILURE;
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
   or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA_CUBES,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+
+  //take a cube
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_MID);
+  or = goto_xya(KX(680),1260,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  idle_delay_ms(500);
+  cube_claw_open();
+  goto_xya(KX(680),1230,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  idle_delay_ms(500);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
+  idle_delay_ms(500);
+  or = goto_xya(KX(680),1260,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  idle_delay_ms(500);
+  cube_claw_close();
+  idle_delay_ms(500);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+  goto_xya(KX(680),1230,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  //take another one
+  goto_xya(KX(1000),1540,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
+  or = goto_xya(KX(880),1540,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_MID);
+  idle_delay_ms(500);
+  cube_claw_open();
+  goto_xya(KX(910),1540,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
+  idle_delay_ms(500);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
+  idle_delay_ms(500);
+  or = goto_xya(KX(880),1540,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
+  idle_delay_ms(500);
+  cube_claw_close();
+  idle_delay_ms(500);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+  goto_xya(KX(1000),1540,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+
+  //go constructing !
+  goto_xya(KX(900),1800,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
+  idle_delay_ms(500);
+  cube_claw_open();
+  goto_xya(KX(910),1810,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  goto_xya(KX(910),1700,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+
+  //yeah we scored !!!!!
+  update_score(1+2+3);
   return or;
 }
 
@@ -174,17 +223,11 @@ void strat_run(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   cube_claw_close();
 
-  //boomotter is on the table !
-  update_score(5);
-  //bee is on the table !
-  update_score(5);
+  //switch_on_boomotter(true);
 
-  switch_on_boomotter(true);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+  //launch_bee();
 
-  launch_bee();
-
-  look_at_the_card();
+  //look_at_the_card();
 
   take_cubes_in_front_of_contruction_area();
 
