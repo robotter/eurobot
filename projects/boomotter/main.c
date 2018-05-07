@@ -11,7 +11,7 @@
 #include <idle/idle.h>
 #include "battery.h"
 #include "leds.h"
-#include "audio.h"
+#include "amplifier.h"
 #include "dfplayer_mini.h"
 #include "ws2812.h"
 #include "draw.h"
@@ -37,72 +37,49 @@ static struct {
   uint16_t galipette;
 } scores;
 
+static bool battery_discharged = false;
 
-static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
+uint8_t celebration_duration = 0;
+
+
+static void switch_mode(rome_enum_boomotter_mode_t mode)
 {
-  portpin_outtgl(&LED_COM_PP);
+  ROME_LOGF(&rome_intf, INFO, "boomotter: switch to mode %u", mode);
 
-  switch(frame->mid) {
-    case ROME_MID_ACK:
-      // should not happen
-      rome_free_ack(frame->ack.ack);
-      return;
+  switch(mode) {
+    case ROME_ENUM_BOOMOTTER_MODE_MATCH:
+      // maximum volume, no auto play
+      _delay_ms(50);
+      dfplayer_set_volume(30);
+      if(dfplayer_is_busy()) {
+        _delay_ms(50);
+        dfplayer_pause();
+      }
+      _delay_ms(50);
+      dfplayer_set_repeat(DF_REPEAT_OFF);
+      break;
 
-    case ROME_MID_RESET: {
-      software_reset();
-    } break;
-
-    case ROME_MID_TM_SCORE:
-      switch(frame->tm_score.device) {
-        case ROME_ENUM_DEVICE_GALIPEUR_STRAT:
-          scores.galipeur = frame->tm_score.points;
-          break;
-        case ROME_ENUM_DEVICE_GALIPETTE_STRAT:
-          scores.galipette = frame->tm_score.points;
-          break;
-        default:
-          break;
+    case ROME_ENUM_BOOMOTTER_MODE_STAND:
+      // medium volume, loop tracks
+      _delay_ms(50);
+      dfplayer_set_volume(10);
+      _delay_ms(50);
+      dfplayer_set_repeat(DF_REPEAT_RANDOM);
+      if(!dfplayer_is_busy()) {
+        _delay_ms(50);
+        dfplayer_play();
       }
       break;
 
-    case ROME_MID_BOOMOTTER_MP3_RAW:
-      dfplayer_send_cmd(frame->boomotter_mp3_raw.cmd, frame->boomotter_mp3_raw.param);
-      rome_reply_ack(intf, frame);
+    case ROME_ENUM_BOOMOTTER_MODE_SILENT:
+      // just mute the MP3 player
+      _delay_ms(50);
+      dfplayer_set_volume(0);
       break;
 
     default:
       break;
   }
-}
-
-
-static bool battery_discharged = false;
-
-static void update_battery(void)
-{
-  static uint8_t it = 0;
-  if(++it > 10) {
-    it = 0;
-    uint16_t voltage = battery_get_value();
-    battery_discharged = voltage < BATTERY_ALERT_LIMIT;
-    ROME_SEND_TM_BATTERY(&rome_intf, ROME_DEVICE, voltage);
-  }
-}
-
-
-static void update_rome(void)
-{
-  rome_handle_input(&rome_intf);
-}
-
-static void dfplayer_input_handler(uint8_t cmd, uint16_t param)
-{
-  ROME_LOGF(&rome_intf, DEBUG, "dfplayer reply: %02x %04x (%u)", cmd, param, param);
-}
-
-static void handle_dfplayer_input(void)
-{
-  dfplayer_handle_input(dfplayer_input_handler);
 }
 
 
@@ -137,8 +114,6 @@ static void update_display_debug_team(void)
   }
 }
 
-
-uint8_t celebration_duration = 0;
 
 static void draw_score(void)
 {
@@ -225,6 +200,69 @@ static void update_display(void)
 }
 
 
+static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
+{
+  portpin_outtgl(&LED_COM_PP);
+
+  switch(frame->mid) {
+    case ROME_MID_ACK:
+      // should not happen
+      rome_free_ack(frame->ack.ack);
+      return;
+
+    case ROME_MID_RESET: {
+      software_reset();
+    } break;
+
+    case ROME_MID_TM_SCORE:
+      switch(frame->tm_score.device) {
+        case ROME_ENUM_DEVICE_GALIPEUR_STRAT:
+          scores.galipeur = frame->tm_score.points;
+          break;
+        case ROME_ENUM_DEVICE_GALIPETTE_STRAT:
+          scores.galipette = frame->tm_score.points;
+          break;
+        default:
+          break;
+      }
+      break;
+
+    case ROME_MID_BOOMOTTER_MP3_CMD:
+      dfplayer_send_cmd(frame->boomotter_mp3_cmd.cmd, frame->boomotter_mp3_cmd.param);
+      rome_reply_ack(intf, frame);
+      break;
+
+    case ROME_MID_BOOMOTTER_SET_MODE:
+      switch_mode(frame->boomotter_set_mode.mode);
+      break;
+
+    default:
+      break;
+  }
+}
+
+static void update_battery(void)
+{
+  static uint8_t it = 0;
+  if(++it > 10) {
+    it = 0;
+    uint16_t voltage = battery_get_value();
+    battery_discharged = voltage < BATTERY_ALERT_LIMIT;
+    ROME_SEND_TM_BATTERY(&rome_intf, ROME_DEVICE, voltage);
+  }
+}
+
+static void update_rome(void)
+{
+  rome_handle_input(&rome_intf);
+}
+
+static void handle_dfplayer_input(void)
+{
+  dfplayer_handle_input(0);
+}
+
+
 int main(void)
 {
   portpin_dirset(&LED_RUN_PP);
@@ -258,7 +296,8 @@ int main(void)
   timer_init();
   uptime_init();
 
-  audio_init();
+  dfplayer_init();
+  amplifier_init();
   ws2812_init();
 
   update_battery(); // make sure to update battery at startup
@@ -271,7 +310,11 @@ int main(void)
   _delay_ms(500);
   dfplayer_set_volume(0);
 
-  audio_on();
+  // switch on audio
+  amplifier_shutdown(false);
+  amplifier_mute(false);
+  //amplifier_set_gain(GAIN_26DB);
+  //dfplayer_set_volume(20);
 
   // initialize the screen
   screen->width = SCREEN_W;

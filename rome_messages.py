@@ -211,7 +211,13 @@ register_messages(
     # BOOMOTTER
     (0xB8, [
       ('boomotter_tm_battery', [('voltage','uint16')]),
-      (Order, 'boomotter_mp3_raw', [('cmd', 'uint8'), ('param', 'uint16')]),
+      (Order, 'boomotter_mp3_cmd', [('cmd', 'uint8'), ('param', 'uint16')]),
+      rome_types.rome_enum('boomotter_mode', (
+          'match',
+          'stand',
+          'silent',
+      )),
+      (Order, 'boomotter_set_mode', [('mode', 'boomotter_mode')]),
     ]),
 
     # SABOTTER

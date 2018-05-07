@@ -1,3 +1,5 @@
+#include <clock/clock.h>
+#include <util/delay.h>
 #include <avarix/portpin.h>
 #include <uart/uart.h>
 #include <rome/rome.h>
@@ -113,7 +115,12 @@ void dfplayer_handle_input(dfplayer_handler_t cb)
     uint16_t checksum_got = (buf[7-1] << 8) | buf[8-1];
     uint16_t checksum_exp = dfplayer_checksum(buf, 6);
     if(checksum_got == checksum_exp) {
-      cb(buf[3-1], (buf[4-1] << 8) | buf[5-1]);
+      uint8_t cmd = buf[3-1];
+      uint16_t param = (buf[5-1] << 8) | buf[6-1];
+      ROME_LOGF(&rome_intf, DEBUG, "dfplayer reply: %02x %04x (%u)", cmd, param, param);
+      if(cb) {
+        cb(cmd, param);
+      }
     }
   }
 }
@@ -149,7 +156,18 @@ void dfplayer_reset(void)
 
 void dfplayer_play_track(uint16_t track_id)
 {
-  dfplayer_send_cmd(DF_READ_TRACK, track_id);
+  dfplayer_send_cmd(DF_PLAY_TRACK, track_id);
+}
+
+void dfplayer_set_repeat(dfplayer_repeat_mode_t mode)
+{
+  if(mode == DF_REPEAT_OFF) {
+    dfplayer_send_cmd(DF_REPEAT_PLAY, 0);
+  } else {
+    dfplayer_send_cmd(DF_REPEAT_PLAY, 1);
+    _delay_ms(50);
+    dfplayer_send_cmd(DF_SET_PLAY_MODE, mode);
+  }
 }
 
 void dfplayer_set_equalizer(uint8_t eq)

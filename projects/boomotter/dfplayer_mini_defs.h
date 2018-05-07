@@ -7,7 +7,7 @@
 typedef enum {
   DF_NEXT = 0x01,
   DF_PREVIOUS = 0x02,
-  DF_READ_TRACK = 0x03,
+  DF_PLAY_TRACK = 0x03,
   DF_INCREASE_VOLUME = 0x04,
   DF_DECREASE_VOLUME = 0x05,
   DF_SET_VOLUME = 0x06,
@@ -28,8 +28,8 @@ typedef enum {
   DF_READ_VOLUME = 0x43,
   DF_READ_EQUALIZER = 0x44,
   DF_READ_SW_VERSION = 0x46,
-  DF_READ_FILE_NB_IN_TF = 0x47,
-  DF_READ_CURRENT_FILENAME = 0x4B,
+  DF_READ_TRACK_COUNT = 0x48,
+  DF_READ_CURRENT_TRACK = 0x4B,
 } dfplayer_cmd_t;
 
 typedef enum{
