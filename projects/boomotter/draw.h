@@ -58,6 +58,9 @@ typedef void (*blend_gray_t)(pixel_t *p, uint8_t gray);
 
 #define RECT(x0,y0,x1,y1)  ((draw_rect_t){(x0),(y0),(x1),(y1)})
 
+const draw_rect_t screen_upper_rect;
+const draw_rect_t screen_lower_rect;
+
 
 /// Bound an area by to fit in a texture
 inline draw_rect_t bound_to_texture(const texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h) {
@@ -164,5 +167,17 @@ void blend_gray_set(pixel_t *p, uint8_t gray);
 void blend_gray_mul(pixel_t *p, uint8_t gray);
 /// Blend color, multiply
 void blend_color_mul(pixel_t *p, pixel_t c);
+
+
+/** @brief Helper to apply code on a rectangle
+ *
+ * Iterate on each pixel, define `x`, `y` and `p` (for the pixel), and execute
+ * the block that follows the macro.
+ */
+#define FOREACH_RECT_PIXEL(tex,rect) \
+  for(uint8_t y = (rect).y0; y < (rect).y1; y++) \
+  for(uint8_t x = (rect).x0; x < (rect).x1; x++) \
+  for(pixel_t *p = TEXTURE_PIXEL((tex), (x), (y)); p; p=0) \
+
 
 #endif

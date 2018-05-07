@@ -3,6 +3,9 @@
 #include "draw.h"
 #include "ws2812.h"
 
+const draw_rect_t screen_upper_rect = RECT(0, 0, SCREEN_UW, SCREEN_UH);
+const draw_rect_t screen_lower_rect = RECT(0, SCREEN_UH, SCREEN_LW, SCREEN_H);
+
 
 void display_screen(const texture_t *tex) {
   ws2812_send_pixel(0, 0, 0);

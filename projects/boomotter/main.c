@@ -31,18 +31,40 @@ rome_intf_t rome_intf;
 uint8_t screen_data[sizeof(texture_t) + sizeof(pixel_t) * SCREEN_W * SCREEN_H];
 texture_t *const screen = (texture_t*)screen_data;
 
+// Robot scores
+static struct {
+  uint8_t galipeur;
+  uint8_t galipette;
+} scores;
+
 
 static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
 {
   portpin_outtgl(&LED_COM_PP);
+
   switch(frame->mid) {
     case ROME_MID_ACK:
       // should not happen
       rome_free_ack(frame->ack.ack);
       return;
+
     case ROME_MID_RESET: {
       software_reset();
     } break;
+
+    case ROME_MID_TM_SCORE:
+      switch(frame->tm_score.device) {
+        case ROME_ENUM_DEVICE_GALIPEUR_STRAT:
+          scores.galipeur = frame->tm_score.points;
+          break;
+        case ROME_ENUM_DEVICE_GALIPETTE_STRAT:
+          scores.galipette = frame->tm_score.points;
+          break;
+        default:
+          break;
+      }
+      break;
+
     default:
       break;
   }
@@ -62,12 +84,14 @@ static void update_battery(void)
   }
 }
 
+
 static void update_rome(void)
 {
   rome_handle_input(&rome_intf);
 }
 
-static void update_display(void)
+
+static void update_display_debug_team(void)
 {
   static const char *scrolling_text = "DEBUG TEAM  ";
   static uint8_t scrolling_text_width = 0;
@@ -77,14 +101,13 @@ static void update_display(void)
   }
 
   texture_clear(screen);
-  const draw_rect_t upper_rect = { 0, 0, SCREEN_UW, SCREEN_UH };
 
   blend_text(screen, &font_base, pos, 0, scrolling_text, blend_gray_set);
   if(pos < 0) {
     blend_text(screen, &font_base, pos + scrolling_text_width, 0, scrolling_text, blend_gray_set);
   }
-  for(uint8_t y = upper_rect.y0; y < upper_rect.y1; y++) {
-    for(uint8_t x = upper_rect.x0; x < upper_rect.x1; x++) {
+  for(uint8_t y = screen_upper_rect.y0; y < screen_upper_rect.y1; y++) {
+    for(uint8_t x = screen_upper_rect.x0; x < screen_upper_rect.x1; x++) {
       pixel_t *p = TEXTURE_PIXEL(screen, x, y);
       if(p->r == 0) {
         *p = RGB(0,25,0x40);
@@ -94,16 +117,44 @@ static void update_display(void)
     }
   }
 
+  if(--pos <= -scrolling_text_width) {
+    pos = 0;
+  }
+}
+
+
+static void draw_score(void)
+{
+  uint8_t total_score = scores.galipeur + scores.galipette;
+  //XXX
+  total_score = uptime_us() / 100000;
+
+  char buf[4];
+  snprintf(buf, sizeof(buf), "%u", total_score);
+  uint8_t len = strlen(buf);
+  uint8_t pos = (SCREEN_LW - 3*len - (len-1))/2;
+
+  blend_text(screen, &font_score, pos, SCREEN_UH+1, buf, blend_gray_set);
+  FOREACH_RECT_PIXEL(screen, screen_lower_rect) {
+    if(p->r) {
+      *p = RGB(0x4f,0x4f,0x4f);
+    }
+  }
+}
+
+
+static void update_display(void)
+{
+  texture_clear(screen);
+
+  (void)update_display_debug_team;
+  draw_score();
+
   // if battery is low, display a red rectangle
   if(battery_discharged) {
     draw_rect(screen, &(draw_rect_t){0, 0, 6, 6}, RGB(0x30, 0, 0));
   }
   display_screen(screen);
-
-  if(--pos <= -scrolling_text_width) {
-    pos = 0;
-  }
-
 }
 
 
