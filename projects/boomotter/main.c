@@ -124,7 +124,7 @@ static void draw_score(void)
     total_score = 999;
   }
   if(total_score != previous_total_score) {
-    celebration_duration = 30;
+    celebration_duration = 40;
     previous_total_score = total_score;
   }
   if(total_score > displayed_score) {
