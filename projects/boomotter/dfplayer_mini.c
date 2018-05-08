@@ -39,7 +39,7 @@ void dfplayer_send_cmd(uint8_t cmd, uint16_t param)
   buf[1] = 0xff;  // version
   buf[2] = 6;  // payload length
   buf[3] = cmd;
-  buf[4] = 0;  // feedback
+  buf[4] = 1;  // feedback
   buf[5] = param >> 8;
   buf[6] = param;
 
