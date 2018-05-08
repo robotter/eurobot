@@ -575,7 +575,7 @@ static void _htrajectory_update( htrajectory_t *htj )
     }
 #elif defined(GALIPETTE)
     if(bumpers_pushed()) {
-      hrobot_set_motors(0,0,0);
+      hrobot_set_motors(dx*alpha/2, dy*alpha/2, 0);
       htj->autosetMovingWaitCount = 0;
       htj->state = STATE_AUTOSET_MOVE_WAIT;
       return;
