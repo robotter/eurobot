@@ -1,3 +1,6 @@
+
+#include "servos.h"
+
 #define ROBOT_SIDE_CUBE_CLAW (ROBOT_SIDE_LEFT)
 
 typedef enum{
@@ -20,6 +23,14 @@ typedef enum{
 #define CUBE_CLAW_ELEVATOR_BUTTON_WITHCUBE 2800
 #define CUBE_CLAW_ELEVATOR_MID 3250
 #define CUBE_CLAW_ELEVATOR_UP 4000
+
+typedef enum {
+  SABOTTER_SERVO_BEE_LAUCHER = 3,
+} sabotter_servo_t;
+
+#define SABOTTER_SERVO_BEE_LAUCHER_DOWN 2450
+#define SABOTTER_SERVO_BEE_LAUCHER_RIGHT 1600
+#define SABOTTER_SERVO_BEE_LAUCHER_LEFT 3300
 
 #define BUMPER_TO_CENTER_DIST 100 // distance from the edge of galipette to the center of the robot (in mm)
 
@@ -60,14 +71,37 @@ void cube_claw_open(void){
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_OPENED);
 }
 
+void bee_launcher_down(void) {
+  servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_DOWN);
+}
+
+void bee_launcher_push(void) {
+  switch(robot_state.team) {
+    case TEAM_GREEN:
+      servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_RIGHT);
+      break;
+    case TEAM_ORANGE:
+      servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_LEFT);
+      break;
+    
+    default:
+      break;
+  }
+}
+
+void galipette_autoset(robot_side_t robot_side, autoset_side_t table_side, float x, float y) {
+  bee_launcher_push();
+  autoset(robot_side,table_side,x,y);
+}
+
 void strat_init(void)
 {
   ROME_LOG(&rome_paddock,INFO,"Galipette : Strat init");
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
 
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_BUTTON);
-  cube_claw_start();
+  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+  cube_claw_open();
 
   // set R3D2 parameters
   ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
@@ -100,11 +134,12 @@ void strat_prepare(void)
   update_score(5);
 
   set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
-  goto_xya(KX(1200), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  goto_xya(KX(1200), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-  autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
-  goto_xya(KX(1200), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
+  goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
+  goto_xya(KX(1000), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  bee_launcher_down();
   goto_xya(KX(1350), 1800, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
 
   //bee is on the table !
@@ -146,12 +181,15 @@ order_result_t launch_bee(void){
   if (or != ORDER_SUCCESS)
     return or;
 
-  or = goto_xya(KX(1300),200, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
-  autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, BUMPER_TO_CENTER_DIST);
-  or = goto_xya(KX(1300),200, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
-  autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
-  or = goto_xya(KX(1300),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  or = goto_xya_synced(KX(1100),150, arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP));
+  or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
+  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, BUMPER_TO_CENTER_DIST);
+  or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
+  bee_launcher_down();
+  or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
+  or = goto_xya(KX(1350),140, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  or = goto_xya(KX(1100),140, arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP));
+  bee_launcher_down();
   update_score(50);
   or = goto_xya(KX(1250),300, arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP));
 
@@ -174,7 +212,7 @@ order_result_t take_cubes_in_front_of_contruction_area(void){
 
   //take a cube
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_MID);
-  or = goto_xya(KX(680),1260,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  or = goto_xya(KX(680),1250,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
   idle_delay_ms(500);
   cube_claw_open();
   goto_xya(KX(680),1230,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
@@ -188,21 +226,21 @@ order_result_t take_cubes_in_front_of_contruction_area(void){
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
   goto_xya(KX(680),1230,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
   //take another one
-  goto_xya(KX(1000),1540,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
-  or = goto_xya(KX(880),1540,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
+  goto_xya(KX(1000),1500,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
+  or = goto_xya(KX(880),1500,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_MID);
   idle_delay_ms(500);
   cube_claw_open();
-  goto_xya(KX(910),1540,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
+  goto_xya(KX(910),1500,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
   idle_delay_ms(500);
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
   idle_delay_ms(500);
-  or = goto_xya(KX(880),1540,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
+  or = goto_xya(KX(880),1500,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
   idle_delay_ms(500);
   cube_claw_close();
   idle_delay_ms(500);
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
-  goto_xya(KX(1000),1540,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  goto_xya(KX(1000),1500,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
 
   //go constructing !
   goto_xya(KX(900),1800,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
@@ -214,6 +252,14 @@ order_result_t take_cubes_in_front_of_contruction_area(void){
 
   //yeah we scored !!!!!
   update_score(1+2+3);
+
+  for(int i=0; i<10; i++) {
+    cube_claw_open();
+    idle_delay_ms(500);
+    cube_claw_close();
+    idle_delay_ms(500);
+  }
+
   return or;
 }
 
@@ -225,11 +271,11 @@ void strat_run(void)
 
   //switch_on_boomotter(true);
 
-  //launch_bee();
+  launch_bee();
 
   //look_at_the_card();
 
-  take_cubes_in_front_of_contruction_area();
+  //take_cubes_in_front_of_contruction_area();
 
   //idle_delay_ms(2000);
   //cube_claw_open();
