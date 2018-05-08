@@ -13,6 +13,8 @@
 #include "leds.h"
 #include "amplifier.h"
 #include "dfplayer_mini.h"
+#include "dfplayer_tracks.h"
+#include "dfplayer_mini_defs.h"
 #include "ws2812.h"
 #include "draw.h"
 #include "font_bitmap.inc.c"
@@ -31,15 +33,34 @@ rome_intf_t rome_intf;
 uint8_t screen_data[sizeof(texture_t) + sizeof(pixel_t) * SCREEN_W * SCREEN_H];
 texture_t *const screen = (texture_t*)screen_data;
 
-// Robot scores
-static struct {
-  uint16_t galipeur;
-  uint16_t galipette;
-} scores;
-
 static bool battery_discharged = false;
 
-uint8_t celebration_duration = 0;
+// Match sounds, ordered by priority (higher is better)
+typedef enum {
+  SOUND_NONE = 0,
+  SOUND_BEE_LAUNCHED,
+  SOUND_POINTS_GAIN,
+  SOUND_BOOT,
+  SOUND_COLLECTING_WATER,
+  SOUND_MATCH_END,
+  SOUND_LOW_BATTERY,
+} sound_t;
+
+typedef struct {
+  uint8_t celebration_duration;
+  // Robot scores
+  struct {
+    uint16_t galipeur;
+    uint16_t galipette;
+  } scores;
+  uint16_t timer;  // timer in sconds
+  rome_enum_meca_state_t meca_state;
+  // Currently playing sound
+  sound_t current_sound;
+
+} match_state_t;
+
+static match_state_t match_state;
 
 
 static void switch_mode(rome_enum_boomotter_mode_t mode)
@@ -81,35 +102,54 @@ static void switch_mode(rome_enum_boomotter_mode_t mode)
   }
 }
 
-
-static void update_display_debug_team(void)
+static void play_sound(sound_t sound)
 {
-  static const char *scrolling_text = "DEBUG TEAM  ";
-  static uint8_t scrolling_text_width = 0;
-  static int8_t pos = 0;
-  if(scrolling_text_width == 0) {
-    scrolling_text_width = get_text_width(&font_base, scrolling_text);
+  if(!dfplayer_is_busy()) {
+    match_state.current_sound = SOUND_NONE;
+  }
+  if(sound <= match_state.current_sound) {
+    // sound with higher priority is playing
+    return;
   }
 
-  texture_clear(screen);
-
-  blend_text(screen, &font_base, pos, 0, scrolling_text, blend_gray_set);
-  if(pos < 0) {
-    blend_text(screen, &font_base, pos + scrolling_text_width, 0, scrolling_text, blend_gray_set);
+  match_state.current_sound = sound;
+  uint16_t folder_track = 0;
+  switch(sound) {
+    case SOUND_NONE:
+      dfplayer_pause();
+      return;
+    case SOUND_BEE_LAUNCHED:
+      folder_track = TRACK_MUSICS_FRENCH_TRAIN_REMIX_SNCF_BY_JAUGS;
+      break;
+    case SOUND_POINTS_GAIN:
+      folder_track = TRACK_SOUNDS_ZELDA_SECRET_FOUND;
+      break;
+    case SOUND_BOOT:
+      //TODO "Encore du travail"
+      break;
+    case SOUND_COLLECTING_WATER:
+      folder_track = TRACK_SOUNDS_BASEBALL_CHARGE_ORGAN;
+      break;
+    case SOUND_MATCH_END:
+      folder_track = TRACK_SOUNDS_FINAL_FANTASY_VII_VICTORY_FANFARE;
+      break;
+    case SOUND_LOW_BATTERY:
+      folder_track = TRACK_MUSICS_ZELDA_LOW_HEALTH;
+      break;
   }
-  for(uint8_t y = screen_upper_rect.y0; y < screen_upper_rect.y1; y++) {
-    for(uint8_t x = screen_upper_rect.x0; x < screen_upper_rect.x1; x++) {
-      pixel_t *p = TEXTURE_PIXEL(screen, x, y);
-      if(p->r == 0) {
-        *p = RGB(0,25,0x40);
-      } else {
-        *p = RGB(0x40,25,0);
-      }
-    }
-  }
 
-  if(--pos <= -scrolling_text_width) {
-    pos = 0;
+  if(folder_track) {
+    dfplayer_send_cmd(DF_PLAY_FOLDER_TRACK, folder_track);
+  }
+}
+
+static void stop_sound(sound_t sound)
+{
+  // stop sound if currently playing
+  if(!dfplayer_is_busy()) {
+    return;  // not playing, no need to stop
+  } else if(sound == match_state.current_sound) {
+    dfplayer_pause();
   }
 }
 
@@ -118,14 +158,40 @@ static void draw_score(void)
 {
   static uint16_t previous_total_score = 0;
   static uint16_t displayed_score = 0;
-  uint16_t total_score = scores.galipeur + scores.galipette;
+  uint16_t total_score = match_state.scores.galipeur + match_state.scores.galipette;
   if(total_score > 999) {
     total_score = 999;
   }
-  if(total_score != previous_total_score) {
-    celebration_duration = 40;
+
+  // water
+  //   10 for open recuperator
+  //   5 points for our color in water tower
+  //   5 points for opponent color in in treatment plant
+  // buildings
+  //   N points for cube at level N
+  //   30 points for building matching schema
+  // automation panel
+  //   5 points for being there
+  //   25 points for being on at end of match
+  // bee
+  //   5 points for being there
+  //   50 for foraged flower
+
+  if(total_score > previous_total_score) {
+    // points gain
+    match_state.celebration_duration = 40;
+    if(total_score - previous_total_score == 50) {
+      // when launching the bee, play a special song!
+      play_sound(SOUND_BEE_LAUNCHED);
+    } else {
+      play_sound(SOUND_POINTS_GAIN);
+    }
+    play_sound(SOUND_POINTS_GAIN);
+  } else if(total_score < previous_total_score) {
+    // points loss (don't celebrate)
     previous_total_score = total_score;
   }
+
   if(total_score > displayed_score) {
     displayed_score += (total_score - displayed_score) / 5 + 1;
   } else if(total_score < displayed_score) {
@@ -171,13 +237,13 @@ static void draw_celebration(void)
     {0x00,0x06,0x06},
   };
 
-  if(celebration_duration) {
+  if(match_state.celebration_duration) {
     FOREACH_PIXEL(screen) {
       if(p->r == 0 && p->g == 0 && p->b == 0) {
-        *p = celebration_colors[(celebration_duration + x + y) % (sizeof(celebration_colors)/sizeof(*celebration_colors))];
+        *p = celebration_colors[(match_state.celebration_duration + x + y) % (sizeof(celebration_colors)/sizeof(*celebration_colors))];
       }
     }
-    celebration_duration--;
+    match_state.celebration_duration--;
   }
 }
 
@@ -186,7 +252,6 @@ static void update_display(void)
 {
   texture_clear(screen);
 
-  (void)update_display_debug_team;
   draw_score();
   draw_scrolling_robotter();
   draw_celebration();
@@ -194,6 +259,9 @@ static void update_display(void)
   // if battery is low, display a red rectangle
   if(battery_discharged) {
     draw_rect(screen, &(draw_rect_t){0, 0, 6, 6}, RGB(0x30, 0, 0));
+    if(!dfplayer_is_busy()) {
+      play_sound(SOUND_LOW_BATTERY);
+    }
   }
   display_screen(screen);
 }
@@ -213,19 +281,6 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       software_reset();
     } break;
 
-    case ROME_MID_TM_SCORE:
-      switch(frame->tm_score.device) {
-        case ROME_ENUM_DEVICE_GALIPEUR_STRAT:
-          scores.galipeur = frame->tm_score.points;
-          break;
-        case ROME_ENUM_DEVICE_GALIPETTE_STRAT:
-          scores.galipette = frame->tm_score.points;
-          break;
-        default:
-          break;
-      }
-      break;
-
     case ROME_MID_BOOMOTTER_MP3_CMD:
       dfplayer_send_cmd(frame->boomotter_mp3_cmd.cmd, frame->boomotter_mp3_cmd.param);
       rome_reply_ack(intf, frame);
@@ -234,6 +289,40 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_BOOMOTTER_SET_MODE:
       switch_mode(frame->boomotter_set_mode.mode);
       break;
+
+    case ROME_MID_TM_SCORE:
+      switch(frame->tm_score.device) {
+        case ROME_ENUM_DEVICE_GALIPEUR_STRAT:
+          match_state.scores.galipeur = frame->tm_score.points;
+          break;
+        case ROME_ENUM_DEVICE_GALIPETTE_STRAT:
+          match_state.scores.galipette = frame->tm_score.points;
+          break;
+        default:
+          break;
+      }
+      break;
+
+    case ROME_MID_TM_MATCH_TIMER:
+      if(match_state.timer < MATCH_DURATION_SECS && frame->tm_match_timer.seconds >= MATCH_DURATION_SECS) {
+        // match end
+        play_sound(SOUND_MATCH_END);
+      }
+      match_state.timer = frame->tm_match_timer.seconds;
+      break;
+
+    case ROME_MID_MECA_TM_STATE: {
+      rome_enum_meca_state_t new_state = frame->meca_tm_state.state;
+      if(new_state != match_state.meca_state) {
+        // meca state changed
+        if(new_state == ROME_ENUM_MECA_STATE_BUSY) {
+          play_sound(SOUND_COLLECTING_WATER);
+        } else {
+          stop_sound(SOUND_COLLECTING_WATER);
+        }
+        match_state.meca_state = new_state;
+      }
+    } break;
 
     default:
       break;
@@ -326,6 +415,7 @@ int main(void)
 
   portpin_outset(&LED_RUN_PP);
 
+  play_sound(SOUND_BOOT);
   for(;;) {
     idle();
   }

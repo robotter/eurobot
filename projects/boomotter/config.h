@@ -11,4 +11,6 @@
 #define AMPLI_MUTE_PP     PORTPIN(A,7)
 #define AMPLI_SHUTDOWN_PP PORTPIN(B,0)
 
+#define MATCH_DURATION_SECS (99)
+
 #endif
