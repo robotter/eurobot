@@ -24,9 +24,7 @@ static uint16_t dfplayer_checksum(uint8_t *buf, uint8_t n)
 void dfplayer_init(void)
 {
   portpin_dirclr(&DFPLAYER_BUSY_PP);
-
-  dfplayer_set_source(DF_STORAGE_SDFLASH);
-  dfplayer_normal_mode();
+  dfplayer_set_source(DF_STORAGE_SD);
 }
 
 
@@ -126,9 +124,29 @@ void dfplayer_handle_input(dfplayer_handler_t cb)
 }
 
 
-void dfplayer_set_source(dfplayer_storage_src_t src)
+void dfplayer_next(void)
 {
-  dfplayer_send_cmd(DF_SET_STORAGE_SOURCE, src);
+  dfplayer_send_cmd(DF_NEXT, 0);
+}
+
+void dfplayer_previous(void)
+{
+  dfplayer_send_cmd(DF_PREVIOUS, 0);
+}
+
+void dfplayer_play_track(uint16_t track_id)
+{
+  dfplayer_send_cmd(DF_PLAY_TRACK_ID, track_id);
+}
+
+void dfplayer_volume_up(void)
+{
+  dfplayer_send_cmd(DF_VOLUME_UP, 0);
+}
+
+void dfplayer_volume_down(void)
+{
+  dfplayer_send_cmd(DF_VOLUME_DOWN, 0);
 }
 
 void dfplayer_set_volume(uint8_t volume)
@@ -139,14 +157,20 @@ void dfplayer_set_volume(uint8_t volume)
   dfplayer_send_cmd(DF_SET_VOLUME, volume);
 }
 
-void dfplayer_pause(void)
+void dfplayer_set_equalizer(dfplayer_equalizer_t eq)
 {
-  dfplayer_send_cmd(DF_PAUSE, 0);
+  dfplayer_send_cmd(DF_SET_EQUALIZER, eq);
 }
 
-void dfplayer_play(void)
+void dfplayer_repeat_track(uint16_t track_id)
 {
-  dfplayer_send_cmd(DF_PLAY, 0);
+  dfplayer_send_cmd(DF_REPEAT_TRACK_ID, track_id);
+}
+
+void dfplayer_set_source(dfplayer_storage_src_t src)
+{
+  // note: seems to be overriden by automatic detection
+  dfplayer_send_cmd(DF_SET_STORAGE_SOURCE, src);
 }
 
 void dfplayer_reset(void)
@@ -154,31 +178,56 @@ void dfplayer_reset(void)
   dfplayer_send_cmd(DF_RESET_MODULE, 0);
 }
 
-void dfplayer_play_track(uint16_t track_id)
+void dfplayer_play(void)
 {
-  dfplayer_send_cmd(DF_PLAY_TRACK, track_id);
+  dfplayer_send_cmd(DF_PLAY, 0);
 }
 
-void dfplayer_set_repeat(dfplayer_repeat_mode_t mode)
+void dfplayer_pause(void)
 {
-  if(mode == DF_REPEAT_OFF) {
-    dfplayer_send_cmd(DF_REPEAT_PLAY, 0);
-  } else {
-    dfplayer_send_cmd(DF_REPEAT_PLAY, 1);
-    _delay_ms(50);
-    dfplayer_send_cmd(DF_SET_PLAY_MODE, mode);
-  }
+  dfplayer_send_cmd(DF_PAUSE, 0);
 }
 
-void dfplayer_set_equalizer(uint8_t eq)
+void dfplayer_play_folder_track(uint8_t folder, uint8_t num)
 {
-  dfplayer_send_cmd(DF_RESET_MODULE, eq);
+  dfplayer_send_cmd(DF_PLAY_FOLDER_TRACK, (folder << 8) | num);
 }
 
-void dfplayer_normal_mode(void)
+void dfplayer_loop_all(void)
 {
-  dfplayer_send_cmd(DF_NORMAL_WORKING, 0);
+  dfplayer_send_cmd(DF_LOOP_ALL, 0);
 }
+
+void dfplayer_play_mp3_track(uint16_t num)
+{
+  dfplayer_send_cmd(DF_PLAY_MP3_TRACK, num);
+}
+
+void dfplayer_stop(void)
+{
+  dfplayer_send_cmd(DF_STOP, 0);
+}
+
+void dfplayer_loop_folder(uint8_t num)
+{
+  dfplayer_send_cmd(DF_LOOP_FOLDER, num);
+}
+
+void dfplayer_random_all(void)
+{
+  dfplayer_send_cmd(DF_RANDOM_ALL, 0);
+}
+
+void dfplayer_loop_current(void)
+{
+  dfplayer_send_cmd(DF_LOOP_CURRENT, 0);
+}
+
+void dfplayer_set_pause(bool pause)
+{
+  dfplayer_send_cmd(DF_SET_PAUSE, pause ? 1 : 0);
+}
+
 
 bool dfplayer_is_busy(void)
 {

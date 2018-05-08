@@ -55,8 +55,6 @@ static void switch_mode(rome_enum_boomotter_mode_t mode)
         _delay_ms(50);
         dfplayer_pause();
       }
-      _delay_ms(50);
-      dfplayer_set_repeat(DF_REPEAT_OFF);
       break;
 
     case ROME_ENUM_BOOMOTTER_MODE_STAND:
@@ -64,10 +62,11 @@ static void switch_mode(rome_enum_boomotter_mode_t mode)
       _delay_ms(50);
       dfplayer_set_volume(10);
       _delay_ms(50);
-      dfplayer_set_repeat(DF_REPEAT_RANDOM);
+      //TODO start a random track, or randomize mp3 directory
+      dfplayer_random_all();
       if(!dfplayer_is_busy()) {
         _delay_ms(50);
-        dfplayer_play();
+        dfplayer_set_pause(false);
       }
       break;
 
