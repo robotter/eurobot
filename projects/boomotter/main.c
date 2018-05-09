@@ -387,6 +387,19 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       }
     } break;
 
+    case ROME_MID_ASSERV_TM_XYA: {
+      switch(frame->asserv_tm_xya.device) {
+        case ROME_ENUM_DEVICE_GALIPETTE_ASSERV:
+          ROME_SEND_TM_ROBOT_POSITION(&rome_intf, ROME_ENUM_DEVICE_GALIPETTE_STRAT, frame->asserv_tm_xya.x, frame->asserv_tm_xya.y, frame->asserv_tm_xya.a);
+          break;
+        case ROME_ENUM_DEVICE_GALIPEUR_ASSERV:
+          ROME_SEND_TM_ROBOT_POSITION(&rome_intf, ROME_ENUM_DEVICE_GALIPEUR_STRAT, frame->asserv_tm_xya.x, frame->asserv_tm_xya.y, frame->asserv_tm_xya.a);
+          break;
+        default:
+          break;
+      }
+    } break;
+
     default:
       break;
   }
