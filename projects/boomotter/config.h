@@ -13,6 +13,6 @@
 
 #define MATCH_DURATION_SECS (99)
 #define AFTER_MATCH_DELAY_SECS (10)
-#define ROBOTS_ALIVE_TIMEOUT  (5)
+#define ROBOTS_ALIVE_TIMEOUT  (10)
 
 #endif
