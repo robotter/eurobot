@@ -20,7 +20,7 @@ typedef enum{
 
 #define CUBE_CLAW_ELEVATOR_DOWN 1300
 #define CUBE_CLAW_ELEVATOR_BUTTON 2600
-#define CUBE_CLAW_ELEVATOR_BUTTON_WITHCUBE 2800
+#define CUBE_CLAW_ELEVATOR_BUTTON_WITHCUBE 3800
 #define CUBE_CLAW_ELEVATOR_MID 3250
 #define CUBE_CLAW_ELEVATOR_UP 4000
 
@@ -133,12 +133,21 @@ void strat_prepare(void)
   //boomotter is on the table !
   update_score(5);
 
-  set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
-  goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
-  goto_xya(KX(1000), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  //the initial setting is diffrent depending on the team
+  if (robot_state.team == TEAM_GREEN){
+    set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+    galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
+    goto_xya(KX(0), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+    galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
+  }
+  else{
+    set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+    galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
+    goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+    goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+    galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
+    goto_xya(KX(1000), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  }
   bee_launcher_down();
   goto_xya(KX(1350), 1800, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
 
@@ -163,8 +172,8 @@ order_result_t switch_on_boomotter(bool cube_present){
   }
   or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
   int16_t traj[] = {
-      KX(370), 1750,
-      KX(370), 1810,
+      KX(340), 1750,
+      KX(340), 1820,
       };
   or = goto_traj(traj, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
   //TODO check that boomotter is on before updating score
@@ -269,7 +278,7 @@ void strat_run(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   cube_claw_close();
 
-  //switch_on_boomotter(true);
+  switch_on_boomotter(true);
 
   launch_bee();
 

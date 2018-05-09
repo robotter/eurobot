@@ -121,6 +121,7 @@ register_messages(
       ('tm_battery', [('device', 'device'), ('voltage','uint16')]),
       ('tm_score',  [('device', 'device'), ('points','uint16')]),
       ('tm_match_timer', [('device', 'device'), ('seconds','int16')]),
+      ('tm_robot_position', [('device', 'device'), ('x','int16'), ('y','int16'), ('a', 'angle')]),
     ]),
 
     # R3D2
