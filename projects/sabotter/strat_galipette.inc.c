@@ -115,6 +115,7 @@ void strat_init(void)
 
   cube_claw_open();
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
+  bee_launcher_down();
 }
 
 void strat_prepare(void)

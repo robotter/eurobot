@@ -74,7 +74,7 @@ register_messages(
       # Encoder raw data
       ('asserv_tm_encoder_raw', [('enc0','int16'), ('enc1','int16'), ('enc2','int16')]),
       # XYA position
-      ('asserv_tm_xya', [('x','dist'), ('y','dist'), ('a','angle')]),
+      ('asserv_tm_xya', [('device','device'), ('x','dist'), ('y','dist'), ('a','angle')]),
       # XYA PIDs telemetry
       ('asserv_tm_x_pid', [('input','int32'), ('error','int32'), ('out','int32')]),
       ('asserv_tm_y_pid', [('input','int32'), ('error','int32'), ('out','int32')]),
@@ -92,8 +92,6 @@ register_messages(
       ('asserv_tm_gp2_raws', [('g0','uint16'), ('g1','uint16'), ('g2','uint16')]),
       # gp2 detection vector
       ('asserv_tm_gp2_det', [('g0','uint16'), ('g1','uint16'), ('g2','uint16')]),
-      # match timer
-      ('asserv_tm_match_timer', [('seconds','int16')]),
       # gyro calibration status
       ('asserv_tm_gyro_calibration', [('active','bool')]),
 

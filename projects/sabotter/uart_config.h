@@ -26,6 +26,7 @@
 #if (defined GALIPEUR)
 #define UARTC0_ENABLED
 #define UARTD0_ENABLED
+#define UART_MECA
 #elif (defined GALIPETTE)
 #define UARTE0_ENABLED
 #endif
