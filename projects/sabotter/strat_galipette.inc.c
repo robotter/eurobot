@@ -180,8 +180,14 @@ order_result_t switch_on_boomotter(bool cube_present){
   else{
     or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
     or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-    or = goto_xya(KX(370),1885, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-    or = goto_xya(KX(370),1850, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+    if (robot_state.team == TEAM_GREEN){
+      or = goto_xya_wait(KX(370),2000, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP), 2000);
+      or = goto_xya(KX(370),1950, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+    }
+    else{
+      or = goto_xya_wait(KX(370),1890, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP), 1000);
+      or = goto_xya(KX(370),1850, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+    }
     galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
     or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   }
