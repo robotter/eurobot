@@ -138,8 +138,10 @@ void strat_prepare(void)
   if (robot_state.team == TEAM_GREEN){
     set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
     galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
-    goto_xya(KX(0), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+    goto_xya(KX(0), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+    goto_xya(KX(50), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
     galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
+    goto_xya(KX(1250), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   }
   else{
     set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
@@ -166,20 +168,25 @@ order_result_t switch_on_boomotter(bool cube_present){
   //go switching domotic panel first
   if (cube_present){
     ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_BUTTON_WITHCUBE);
-  }
-  else{
-    cube_claw_start();
-    ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_BUTTON);
-  }
-  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
-  int16_t traj[] = {
+    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+    int16_t traj[] = {
       KX(340), 1750,
       KX(340), 1820,
       };
-  or = goto_traj(traj, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
-  //TODO check that boomotter is on before updating score
+    or = goto_traj(traj, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+    //TODO check that boomotter is on before updating score
+    or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
+  }
+  else{
+    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+    or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+    or = goto_xya(KX(370),1885, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+    or = goto_xya(KX(370),1850, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+    galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
+    or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  }
+  bee_launcher_down();
   update_score(25);
-  or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
   return or;
 }
 
@@ -279,7 +286,7 @@ void strat_run(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   cube_claw_close();
 
-  switch_on_boomotter(true);
+  switch_on_boomotter(false);
 
   launch_bee();
 
