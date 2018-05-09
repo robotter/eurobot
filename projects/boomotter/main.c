@@ -39,9 +39,13 @@ static bool battery_discharged = false;
 typedef enum {
   SOUND_NONE = 0,
   SOUND_BEE_LAUNCHED,
+  SOUND_POINTS_LOSS,
+  SOUND_AFTER_MATCH,
+  SOUND_ROBOTS_DEAD,
   SOUND_POINTS_GAIN,
   SOUND_BOOT,
   SOUND_COLLECTING_WATER,
+  SOUND_COLLECTING_WATER_END,
   SOUND_MATCH_END,
   SOUND_LOW_BATTERY,
 } sound_t;
@@ -54,6 +58,7 @@ typedef struct {
     uint16_t galipette;
   } scores;
   uint16_t timer;  // timer in sconds
+  uint16_t timer_last_update;  // uptime in seconds
   rome_enum_meca_state_t meca_state;
   // Currently playing sound
   sound_t current_sound;
@@ -121,20 +126,32 @@ static void play_sound(sound_t sound)
     case SOUND_BEE_LAUNCHED:
       folder_track = TRACK_MUSICS_FRENCH_TRAIN_REMIX_SNCF_BY_JAUGS;
       break;
+    case SOUND_POINTS_LOSS:
+      folder_track = TRACK_SOUNDS_POUIK_HAHAHA;
+      break;
+    case SOUND_AFTER_MATCH:
+      folder_track = TRACK_MUSICS_THIS_AEROBIC_VIDEO_WINS_EVERYTHING_480P_EXTENDED;
+      break;
+    case SOUND_ROBOTS_DEAD:
+      folder_track = TRACK_SOUNDS_LE_CRI_DE_WILHELM;
+      break;
     case SOUND_POINTS_GAIN:
       folder_track = TRACK_SOUNDS_ZELDA_SECRET_FOUND;
       break;
     case SOUND_BOOT:
-      //TODO "Encore du travail"
+      folder_track = TRACK_SOUNDS_WIII_ENCORE_DU_TRAVAIL;
       break;
     case SOUND_COLLECTING_WATER:
-      folder_track = TRACK_SOUNDS_BASEBALL_CHARGE_ORGAN;
+      folder_track = TRACK_SOUNDS_BALLS_CHARGE;
+      break;
+    case SOUND_COLLECTING_WATER_END:
+      folder_track = TRACK_SOUNDS_BALLS_FANFARE;
       break;
     case SOUND_MATCH_END:
       folder_track = TRACK_SOUNDS_FINAL_FANTASY_VII_VICTORY_FANFARE;
       break;
     case SOUND_LOW_BATTERY:
-      folder_track = TRACK_MUSICS_ZELDA_LOW_HEALTH;
+      folder_track = TRACK_SOUNDS_ZELDA_LOW_HEALTH;
       break;
   }
 
@@ -143,7 +160,7 @@ static void play_sound(sound_t sound)
   }
 }
 
-static void stop_sound(sound_t sound)
+void stop_sound(sound_t sound)
 {
   // stop sound if currently playing
   if(!dfplayer_is_busy()) {
@@ -187,8 +204,10 @@ static void draw_score(void)
       play_sound(SOUND_POINTS_GAIN);
     }
     play_sound(SOUND_POINTS_GAIN);
+    previous_total_score = total_score;
   } else if(total_score < previous_total_score) {
     // points loss (don't celebrate)
+    play_sound(SOUND_POINTS_LOSS);
     previous_total_score = total_score;
   }
 
@@ -256,6 +275,13 @@ static void update_display(void)
   draw_scrolling_robotter();
   draw_celebration();
 
+  // if robots have not updated the timer, play a special sound
+  uint16_t uptime = uptime_us() / 1000000;
+  if(match_state.timer_last_update != 0 && uptime >= match_state.timer_last_update + ROBOTS_ALIVE_TIMEOUT) {
+    play_sound(SOUND_ROBOTS_DEAD);
+    match_state.timer_last_update = 0;
+  }
+
   // if battery is low, display a red rectangle
   if(battery_discharged) {
     draw_rect(screen, &(draw_rect_t){0, 0, 6, 6}, RGB(0x30, 0, 0));
@@ -303,13 +329,17 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
       }
       break;
 
-    case ROME_MID_TM_MATCH_TIMER:
-      if(match_state.timer < MATCH_DURATION_SECS && frame->tm_match_timer.seconds >= MATCH_DURATION_SECS) {
-        // match end
+    case ROME_MID_TM_MATCH_TIMER: {
+      if(match_state.timer < MATCH_DURATION_SECS &&
+         frame->tm_match_timer.seconds >= MATCH_DURATION_SECS) {
         play_sound(SOUND_MATCH_END);
+      } else if(match_state.timer < MATCH_DURATION_SECS + AFTER_MATCH_DELAY_SECS &&
+                frame->tm_match_timer.seconds >= MATCH_DURATION_SECS + AFTER_MATCH_DELAY_SECS) {
+        play_sound(SOUND_AFTER_MATCH);
       }
       match_state.timer = frame->tm_match_timer.seconds;
-      break;
+      match_state.timer_last_update = uptime_us() / 1000000;
+    } break;
 
     case ROME_MID_MECA_TM_STATE: {
       rome_enum_meca_state_t new_state = frame->meca_tm_state.state;
@@ -318,7 +348,7 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
         if(new_state == ROME_ENUM_MECA_STATE_BUSY) {
           play_sound(SOUND_COLLECTING_WATER);
         } else {
-          stop_sound(SOUND_COLLECTING_WATER);
+          play_sound(SOUND_COLLECTING_WATER_END);
         }
         match_state.meca_state = new_state;
       }
@@ -396,7 +426,6 @@ int main(void)
   idle_set_callback(display_update, update_display);
 
   _delay_ms(500);
-  dfplayer_set_volume(0);
 
   // switch on audio
   amplifier_shutdown(false);
