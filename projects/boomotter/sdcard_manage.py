@@ -100,6 +100,11 @@ class SdCard:
         'sdcard_manage.py',
     ]
 
+    folder_names = {
+        '01': 'musics',
+        '02': 'sounds',
+    }
+
     def __init__(self, path):
         self.path = path
         self.reload()
@@ -118,8 +123,8 @@ class SdCard:
             subpath = os.path.join(self.path, p)
             if p == 'mp3':
                 self.mp3_folder = SdFolder(subpath, 4)
-            elif re.match(r"^\d\d( .*)?$", p):
-                num = int(p[:2])
+            elif re.match(r"^\d\d$", p):
+                num = int(p)
                 assert num not in self.num_folders
                 self.num_folders[num] = SdFolder(subpath, 3)
             elif not os.path.isfile(subpath):
@@ -173,9 +178,9 @@ class SdCard:
         num_enum = []
         for fnum, folder in self.num_folders.items():
             folder_name = os.path.basename(folder.path)
-            if ' ' in folder_name:
-                folder_name = self.basename_to_c_name(folder_name)
-            num_enum.extend(("%s_%s" % (folder_name, self.basename_to_c_name(p)), fnum + num) for num, p in folder.tracks.items())
+            if folder_name in self.folder_names:
+                folder_name = self.folder_names[folder_name]
+            num_enum.extend(("%s_%s" % (folder_name, self.basename_to_c_name(p)), fnum * 0x100 + num) for num, p in folder.tracks.items())
 
         tracks_list_h = os.path.join(self.path, "dfplayer_tracks.h")
         with open(tracks_list_h, 'w') as f:
@@ -255,6 +260,9 @@ def main():
             parser.error("cannot guess SD card path, use --path")
     if not os.path.ismount(args.path):
         parser.error("path '%s' is not a mountpoint" % args.path)
+
+    if not args.command:
+        parser.error("missing command")
 
     globals()["command_" + args.command.replace('-', '_')](parser, args)
 
