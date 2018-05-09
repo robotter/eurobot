@@ -378,20 +378,22 @@ order_result_t goto_pathfinding_node(uint8_t goal, float angle){
     //first is our other robot, the others are the detected robots
     pathfinding_obstacle_t obstacles[R3D2_OBJECTS_MAX+1] = {{0,0,0}};
 
+    obstacles[0].x = robot_state.partner_pos.x;
+    obstacles[0].y = robot_state.partner_pos.y;
+    obstacles[0].r = 400;
+
     //compute absolute position of detected robots
     for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
       r3d2_object_t *object = &robot_state.r3d2.objects[i];
       if (object->detected) {
         float da = float_modulo__(robot_state.current_pos.a + object->a+R3D2_OFFSET, 0, 2*M_PI);
-        obstacles[i].x = (float) robot_state.current_pos.x + object->r*cos(da);
-        obstacles[i].y = (float) robot_state.current_pos.y + object->r*sin(da);
-        obstacles[i].r = 400;
+        obstacles[i+1].x = (float) robot_state.current_pos.x + object->r*cos(da);
+        obstacles[i+1].y = (float) robot_state.current_pos.y + object->r*sin(da);
+        obstacles[i+1].r = 400;
         ROME_LOGF(&rome_paddock,DEBUG,"obstacle ra %f %f",object->r,da);
         ROME_LOGF(&rome_paddock,DEBUG,"obstacle xy %d %d",obstacles[i].x,obstacles[i].y);
       }
     }
-
-    //TODO : add galipette.eur position to obstacles
 
     pathfinder.obstacles = obstacles;
     pathfinder.obstacles_size = sizeof(obstacles)/sizeof(*obstacles);

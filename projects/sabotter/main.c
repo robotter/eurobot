@@ -161,7 +161,15 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
       return;
     } break;
-
+    case ROME_MID_TM_ROBOT_POSITION: {
+      if (frame->tm_robot_position.device != ROME_DEVICE){
+        robot_state.partner_pos.x = frame->tm_robot_position.x;
+        robot_state.partner_pos.y = frame->tm_robot_position.y;
+        robot_state.partner_pos.a = frame->tm_robot_position.a/1000.;
+        }
+      rome_reply_ack(intf, frame);
+      return;
+    }break;
     default:
       break;
   }
@@ -329,6 +337,11 @@ int main(void)
   //initialize pathfinding
   pathfinding_set_nodes(&pathfinder, pathfinding_graph);
   rome_send_pathfinding_graph(&pathfinder);
+
+  //initialize partner position
+  robot_state.partner_pos.x = 0;
+  robot_state.partner_pos.y = -1000;
+  robot_state.partner_pos.a = 0;
 
   // initialize asserv and meca, fold arms, ...
   portpin_outset(&LED_R_PP);
