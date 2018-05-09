@@ -80,7 +80,7 @@ void strat_prepare(void)
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
   goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   // y on building area
-  goto_xya(KX(900), 300, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  goto_xya(KX(800), 500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
 
   // check the state of the cylinder
@@ -158,7 +158,7 @@ order_result_t take_water(dispenser_t dispenser){
   int16_t far_pos = -(1500-610);
 
   //balleater configuration
-  int16_t balleater_depth = AUTOSET_OFFSET + 40;
+  int16_t balleater_depth = AUTOSET_OFFSET + 35;
   int16_t approach_depth = balleater_depth + 60;
   int16_t approach_side = 150;
 
@@ -204,11 +204,10 @@ order_result_t take_water(dispenser_t dispenser){
         return or;
         }
       //we did a very long move, so launch an autoset
-      //XXX on eirbot's table, we have a 3cm offset on the other side of the table...
-      autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET);// + 30);
-      //XXX
-      or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-      or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
+      or = goto_xya(KX(-1200), 150, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+      autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET);
+      or = goto_xya(KX(-1300), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+      or = goto_xya(KX(-1350), 300, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
       autoset(ROBOT_SIDE_BALLEATER,AUTOSET_AUX, KX(-1500+AUTOSET_OFFSET), 0);
       or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
       //prepare next move orders
@@ -259,7 +258,9 @@ order_result_t throw_water_watertower(void){
   _wait_meca_ground_clear();
 
   uint8_t balls_loaded = robot_state.cylinder_nb_good;
-  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_DISPENSER_NEAR,arfast(ROBOT_SIDE_TURBINE, TABLE_SIDE_MAIN));
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_DISPENSER_NEAR,arfast(ROBOT_SIDE_TURBINE, TABLE_SIDE_MAIN));
+  if (or != ORDER_SUCCESS)
+    return or;
   or = goto_xya(KX(1100), 1450, compute_throw_angle(1100,1450));
   ROME_SENDWAIT_MECA_SET_THROW_POWER(&rome_meca,1950);
   _wait_meca_ready();
@@ -290,17 +291,22 @@ order_result_t trash_water_treatment(void){
     angle = arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN);
   else
     angle = arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_MAIN);
+
   or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MIDDLE_BOT, angle);
+  if (or != ORDER_SUCCESS)
+    return or;
 
   //go in position to trash the bad water
   or = goto_xya(KX(-250),250+120, arfast(ROBOT_SIDE_TURBINE,TABLE_SIDE_DOWN));
+  if (or != ORDER_SUCCESS)
+    return or;
   _wait_meca_ready();
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_TRASH_TREATMENT);
   _wait_meca_ground_clear();
   update_score(10*balls_loaded);
 
-  or = goto_xya(KX(-250), 500, arfast(ROBOT_SIDE_TURBINE, TABLE_SIDE_DOWN));
-  or = goto_xya(KX(-250), 500, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+  or = goto_xya(KX(-250), 400, arfast(ROBOT_SIDE_TURBINE, TABLE_SIDE_DOWN));
+  or = goto_xya(KX(-250), 400, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
   autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, 250+AUTOSET_OFFSET);
   or = goto_xya(KX(-250), 550, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
 
@@ -355,9 +361,13 @@ void strat_run(void)
     }
 
     if (force_far_dispenser_first == true){
-      goto_xya(KX(1200), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-      autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
-      goto_xya(KX(1200), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+      order_result_t or = ORDER_FAILURE;
+      or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_TOWER, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+      if (or == ORDER_SUCCESS){
+        goto_xya(KX(1350), 1650, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+        autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
+        goto_xya(KX(1200), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+      }
     }
     else
       force_far_dispenser_first = true;
