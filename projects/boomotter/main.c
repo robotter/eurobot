@@ -17,7 +17,7 @@
 #include "dfplayer_mini_defs.h"
 #include "ws2812.h"
 #include "draw.h"
-#include "font_bitmap.inc.c"
+#include "resources.inc.c"
 #include "config.h"
 
 #define BATTERY_ALERT_LIMIT  10000
@@ -257,7 +257,10 @@ static void draw_scrolling_debug_team(void)
     }
   }
   scrolling_text_scroll(&scroll, -1);
+}
 
+static void draw_yellow_lines(void)
+{
   static uint8_t yellow_offset = 0;
   yellow_offset++;
   FOREACH_PIXEL(screen) {
@@ -268,6 +271,11 @@ static void draw_scrolling_debug_team(void)
       }
     }
   }
+}
+
+static void draw_lower_image(const image_t *image)
+{
+  draw_pixels_pgm(screen, (SCREEN_LW - image->width)/2, SCREEN_UH + (SCREEN_LH - image->height)/2, image->width, image->height, image->data);
 }
 
 static void draw_celebration(void)
@@ -294,11 +302,18 @@ static void draw_celebration(void)
 
 static void update_display(void)
 {
+  static uint8_t bug_frame;
   texture_clear(screen);
 
   if(match_state.timer_last_update == 0) {
     // stand mode
     draw_scrolling_debug_team();
+    if((++bug_frame / 8) % 2 == 0) {
+      draw_lower_image(&image_bug1);
+    } else {
+      draw_lower_image(&image_bug2);
+    }
+    draw_yellow_lines();
   } else {
     // match mode
     draw_score();

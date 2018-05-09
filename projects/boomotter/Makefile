@@ -6,7 +6,7 @@ SRCS = $(filter-out $(wildcard *.inc.c),$(wildcard *.c))
 ASRCS =
 TARGET = main
 MODULES = uart idle rome timer
-GEN_FILES = modules/font_bitmap.inc.c
+GEN_FILES = modules/resources.inc.c
 
 
 ## Target configuration
@@ -27,6 +27,6 @@ LDFLAGS += -g
 
 include $(AVARIX_DIR)/mk/project.mk
 
-$(gen_dir)/modules/font_bitmap.inc.c: gen_font_bitmap.py
-	./$< > $@
+$(gen_dir)/modules/resources.inc.c: gen_resources.py
+	./$< > $@ || (rm $@; false)
 

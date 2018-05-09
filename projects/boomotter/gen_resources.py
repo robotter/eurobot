@@ -17,6 +17,18 @@ const font_t font_%(name)s = {
 };
 """
 
+c_image_tpl = """\
+static const pixel_t image_%(name)s_data[] PROGMEM = {
+  %(data)s
+};
+
+const image_t image_%(name)s = {
+  .width = %(width)s,
+  .height = %(height)s,
+  .data = image_%(name)s_data,
+};
+"""
+
 
 class Font:
 
@@ -82,6 +94,43 @@ class Font:
             glyphs = "\n  ".join(glyphs),
             data = "\n  ".join(data),
         )
+
+
+class Image:
+    def __init__(self, name, palette, rgb):
+        self.name = name
+
+        # check palette
+        for c, color in palette.items():
+            assert c != ' ' and len(c) == 1, "wrong palette index"
+            assert len(color) == 3, "wrong color value"
+            assert all(0 <= v <= 255 for v in color), "wrong color component value"
+
+        # parse rows, get size
+        rows = rgb.strip("\n").split("\n")
+        self.height = len(rows)
+        assert self.height, "empty image"
+        self.width = max(len(row) for row in rows)
+        rows = [r.ljust(self.width, ' ') for r in rows]
+
+        # joint all pixels, check for invalid ones
+        pixels = ''.join(rows)
+        for c in set(pixels):
+            assert c == ' ' or c in palette, "unknown color character: %r" % c
+        self.pixels = [palette.get(c, (0, 0, 0)) for c in pixels]
+
+    def gen_c(self):
+        data = ["{0x%02x,0x%02x,0x%02x}," % b for b in self.pixels]
+        # split data in groups of 4 pixels
+        data = [" ".join(data[i:i+12]) for i in range(0, len(data), 12)]
+
+        return c_image_tpl % dict(
+            name = self.name,
+            height = self.height,
+            width = self.width,
+            data = "\n  ".join(data),
+        )
+
 
 
 font_base_orig_chars = """\
@@ -161,14 +210,70 @@ font_score_bitmap = """\
 """
 
 
+#image_bug_palette = {
+#    '#': (0x10,0x10,0x10),
+#    'x': (0x20,0x20,0x20),
+#    'o': (0x30,0,0),
+#    '|': (1,1,1),
+#}
+#image_bug_rgb = """\
+#    ###
+#x  #####  x
+# x##o#o##x
+#  #######
+#  ###|###
+# x###|###x
+#x  ##|##  x
+#    #|#
+#"""
+
+image_bug_palette = {
+    '#': (25,25,25),
+    'x': (10,10,10),
+    'o': (50,0,0),
+    '|': (10,10,10),
+    '.': (1,0,0),
+}
+image_bug1_rgb = """\
+    ###
+x  #...#  x
+ x#.o.o.#x
+  #.....#
+  #..|..#
+ x#..|..#x
+x  #.|.#  x
+    #|#
+"""
+image_bug2_rgb = """\
+    ###
+   #...#
+xx#.o.o.#xx
+  #.....#
+  #..|..#
+xx#..|..#xx
+   #.|.#
+    #|#
+"""
+
+
 def main():
     fonts = [
         Font("base", font_base_chars, font_base_bitmap),
         Font("score", font_score_chars, font_score_bitmap),
     ]
+    images = [
+        Image("bug1", image_bug_palette, image_bug1_rgb),
+        Image("bug2", image_bug_palette, image_bug2_rgb),
+    ]
+
     for font in fonts:
         print("")
         print(font.gen_c())
+
+    for image in images:
+        print("")
+        print(image.gen_c())
+
 
 if __name__ == "__main__":
     main()

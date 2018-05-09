@@ -117,6 +117,15 @@ void draw_rect(texture_t *tex, const draw_rect_t *rect, pixel_t color);
 void blend_rect(texture_t *tex, const draw_rect_t *rect, pixel_t color, blend_color_t blender);
 
 
+/// Image data
+typedef struct {
+  uint8_t height;
+  uint8_t width;
+  /// Image pixels (in progmem)
+  const pixel_t *data;
+} image_t;
+
+
 #define FONT_FIRST_CHAR ' '
 #define FONT_LAST_CHAR 0x7e
 
