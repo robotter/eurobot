@@ -133,7 +133,7 @@ static void play_sound(sound_t sound)
       folder_track = TRACK_MUSICS_THIS_AEROBIC_VIDEO_WINS_EVERYTHING_480P_EXTENDED;
       break;
     case SOUND_ROBOTS_DEAD:
-      folder_track = TRACK_SOUNDS_LE_CRI_DE_WILHELM;
+      folder_track = TRACK_SOUNDS_WIII_OUI_MESSSIRE;
       break;
     case SOUND_POINTS_GAIN:
       folder_track = TRACK_SOUNDS_ZELDA_SECRET_FOUND;
@@ -203,7 +203,6 @@ static void draw_score(void)
     } else {
       play_sound(SOUND_POINTS_GAIN);
     }
-    play_sound(SOUND_POINTS_GAIN);
     previous_total_score = total_score;
   } else if(total_score < previous_total_score) {
     // points loss (don't celebrate)
@@ -245,6 +244,32 @@ static void draw_scrolling_robotter(void)
   scrolling_text_scroll(&scroll, -1);
 }
 
+static void draw_scrolling_debug_team(void)
+{
+  static scrolling_text_t scroll;
+  if(scroll.text_width == 0) {
+    scrolling_text_init(&scroll, &font_base, "DEBUG TEAM  ", 2);
+  }
+  scrolling_text_draw(&scroll, screen, 0);
+  FOREACH_RECT_PIXEL(screen, screen_upper_rect) {
+    if(p->r) {
+      *p = RGB(0x10,0x10,0x40);
+    }
+  }
+  scrolling_text_scroll(&scroll, -1);
+
+  static uint8_t yellow_offset = 0;
+  yellow_offset++;
+  FOREACH_PIXEL(screen) {
+    uint8_t offset = yellow_offset / 4;
+    if(p->r == 0 && p->g == 0 && p->b == 0) {
+      if(((offset + x + y) / 4) % 2 == 0) {
+        *p = RGB(0x06,0x06,0);
+      }
+    }
+  }
+}
+
 static void draw_celebration(void)
 {
   static const pixel_t celebration_colors[] = {
@@ -271,14 +296,22 @@ static void update_display(void)
 {
   texture_clear(screen);
 
-  draw_score();
-  draw_scrolling_robotter();
-  draw_celebration();
+  if(match_state.timer_last_update == 0) {
+    // stand mode
+    draw_scrolling_debug_team();
+  } else {
+    // match mode
+    draw_score();
+    draw_scrolling_robotter();
+    draw_celebration();
+  }
 
   // if robots have not updated the timer, play a special sound
   uint16_t uptime = uptime_us() / 1000000;
   if(match_state.timer_last_update != 0 && uptime >= match_state.timer_last_update + ROBOTS_ALIVE_TIMEOUT) {
-    play_sound(SOUND_ROBOTS_DEAD);
+    if(match_state.scores.galipeur != 0 || match_state.scores.galipette != 0) {
+      play_sound(SOUND_ROBOTS_DEAD);
+    }
     match_state.timer_last_update = 0;
   }
 
