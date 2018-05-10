@@ -560,7 +560,6 @@ static void _htrajectory_update( htrajectory_t *htj )
       AUTOSET_CONFIGURATIONS[htj->autosetRobotSide];
     dx = SETTING_AUTOSET_SPEED*cos(autoconf.base);
     dy = SETTING_AUTOSET_SPEED*sin(autoconf.base);
-
     float alpha = MIN(1.0, 2.0*htj->autosetCount/SETTING_AUTOSET_ZEROCOUNT);
 
 #if defined(GALIPEUR)
@@ -574,22 +573,25 @@ static void _htrajectory_update( htrajectory_t *htj )
       return;
     }
 #elif defined(GALIPETTE)
+    
+    float hack_x = -2500000;
+    float hack_a = -30000;
     if(bumpers_pushed()) {
-      hrobot_set_motors(dx*alpha/2, dy*alpha/2, 0);
+      hrobot_set_motors(dx*alpha/2 + hack_x, dy*alpha/2, hack_a);
       htj->autosetMovingWaitCount = 0;
       htj->state = STATE_AUTOSET_MOVE_WAIT;
       return;
     }
     else {
       if(bumper_left_pushed()) {
-        hrobot_set_motors(dx*alpha/10, dy*alpha/10, 800000);
+        hrobot_set_motors(dx*alpha/10 + hack_x, dy*alpha/10, 800000 + hack_a);
       }
       else{
         if(bumper_right_pushed()) {
-          hrobot_set_motors(dx*alpha/10, dy*alpha/10, -800000);
+          hrobot_set_motors(dx*alpha/10 + hack_x, dy*alpha/10, -800000 + hack_a);
         }
         else {
-          hrobot_set_motors(dx*alpha, dy*alpha, 0.0);
+          hrobot_set_motors(dx*alpha + hack_x, dy*alpha, hack_a);
         }
       }
 
