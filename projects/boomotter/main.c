@@ -372,13 +372,21 @@ static void draw_loituma(void)
     &image_loituma_leek_nw,
   };
   tick++;
+
+  // head
   if((tick / 8) % 2 == 0) {
     draw_pixels_pgm(screen, SCREEN_LW + 1, 0, image_loituma_head_open.width, image_loituma_head_open.height, image_loituma_head_open.data);
   } else {
     draw_pixels_pgm(screen, SCREEN_LW + 1, 0, image_loituma_head_closed.width, image_loituma_head_closed.height, image_loituma_head_closed.data);
   }
+
+  // leek
   const image_t *img = leeks[tick % sizeof(leeks)/sizeof(*leeks)];
   draw_pixels_pgm(screen, 1, SCREEN_UH + 1, img->width, img->height, img->data);
+
+  if(!dfplayer_is_busy()) {
+    dfplayer_send_cmd(DF_PLAY_FOLDER_TRACK, TRACK_MUSICS_LOITUMA_IEVAS_POLKA_ORIGINAL);
+  }
 }
 
 static void draw_celebration(void)
