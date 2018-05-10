@@ -327,6 +327,9 @@ cylinder_move_t next_emptying_move(rome_enum_jevois_color_t color){
 void cylinder_set_idle(void){
   cylinder.state = CYLINDER_IDLE;
   cylinder.tm_optimal_move = ROME_ENUM_EMPTYING_MOVE_NONE;
+  balleater_off();
+  turbine_off();
+  ax12_cylinder_set_posmode();
 }
 
 void cylinder_init(void){
