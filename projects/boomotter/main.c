@@ -20,7 +20,7 @@
 #include "resources.inc.c"
 #include "config.h"
 
-#define BATTERY_ALERT_LIMIT  10000
+#define BATTERY_ALERT_LIMIT  12000
 
 rome_intf_t rome_intf;
 
