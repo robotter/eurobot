@@ -91,9 +91,8 @@ static void switch_mode(rome_enum_boomotter_mode_t mode)
     case ROME_ENUM_BOOMOTTER_MODE_MUSIC:
       // medium volume, loop tracks
       _delay_ms(50);
-      dfplayer_set_volume(10);
+      dfplayer_set_volume(15);
       _delay_ms(50);
-      //TODO start a random track, or randomize mp3 directory
       dfplayer_random_all();
       if(!dfplayer_is_busy()) {
         _delay_ms(50);
