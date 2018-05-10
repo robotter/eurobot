@@ -161,42 +161,42 @@ void strat_prepare(void)
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
 }
 
-#define BOOMOTTER_MAX_AGE_MS 3000UL
+#define BOOMOTTER_MAX_AGE_US 3e6
 
 bool boomotter_connected(void){
-  return (robot_state.boom_age + 1000*BOOMOTTER_MAX_AGE_MS > uptime_us());
+  return (robot_state.boom_age + BOOMOTTER_MAX_AGE_US > uptime_us());
 }
 
 
-order_result_t switch_on_boomotter(bool cube_present){
+order_result_t switch_on_boomotter(void){
   ROME_LOG(&rome_paddock,INFO,"go switching on boomotter");
   order_result_t or = ORDER_FAILURE;
   //go switching domotic panel first
-  if (cube_present){
-    ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_BUTTON_WITHCUBE);
-    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
-    int16_t traj[] = {
-      KX(340), 1750,
-      KX(340), 1820,
-      };
-    or = goto_traj(traj, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
-    //TODO check that boomotter is on before updating score
-    or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
-  }
-  else{
-    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-    or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-    if (1){//robot_state.team == TEAM_GREEN){
-      or = goto_xya_wait(KX(370),2000, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP), 2000);
-      or = goto_xya(KX(370),1950, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  uint32_t try_time = 0;
+  for(int16_t y = 1890; y < 2000; y+=30){
+    or = goto_xya_wait(KX(370), y, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP), 2000);
+    try_time = uptime(); 
+
+    bool done = false;
+    for(;;){
+      idle; 
+      if (uptime() - try_time > BOOMOTTER_MAX_AGE_US)
+        break;
+
+      if (boomotter_connected()){
+        done = true;
+        update_score(25);
+        break;
+      }
     }
-    else{
-      or = goto_xya_wait(KX(370),1890, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP), 1000);
-      or = goto_xya(KX(370),1850, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-    }
-    galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
-    or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+    if (done)
+      break;
   }
+  or = goto_xya(KX(370),1850, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
+  or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   bee_launcher_down();
   return or;
 }
@@ -205,17 +205,21 @@ order_result_t launch_bee(void){
   ROME_LOG(&rome_paddock,INFO,"go lauching the bee");
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
   order_result_t or = ORDER_FAILURE;
-  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BEE,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BEE,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   if (or != ORDER_SUCCESS)
     return or;
 
+  or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
+  or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  bee_launcher_down();
   or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
   galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, BUMPER_TO_CENTER_DIST);
   or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
   bee_launcher_down();
-  or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
   or = goto_xya(KX(1350),140, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  bee_launcher_push();
+  idle_delay_ms(200);
   float a=0;
   if (robot_state.team == TEAM_GREEN)
     a = arfast(ROBOT_SIDE_LEFT,TABLE_SIDE_UP);
@@ -305,30 +309,12 @@ void strat_run(void)
   //wait for galipeur to go
   idle_delay_ms(1000);
 
-  uint8_t boom_tries = 0;
-  for(;;){
-    switch_on_boomotter(false);
-    idle_delay_ms(BOOMOTTER_MAX_AGE_MS);
-    ROME_LOGF(&rome_paddock, DEBUG,"boomotter age %ld uptime %ld connected %d",robot_state.boom_age,uptime_us(), boomotter_connected());
-
-    boom_tries ++;
-
-    if (boomotter_connected()){
-      update_score(25);
-      break;
-    }
-
-    if(boom_tries > 3)
-      break;
-  }
+  switch_on_boomotter();
 
   //wait for galipeur to go trough the table to go for opposite dispensers
   for(;;){
     idle();
     if(KX(robot_state.partner_pos.x) < -100)
-      break;
-
-    if(KX(robot_state.partner_pos.y) > 1300)
       break;
 
     if (robot_state.match_time > 50)
