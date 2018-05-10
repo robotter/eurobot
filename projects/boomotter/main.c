@@ -62,6 +62,8 @@ typedef struct {
   rome_enum_meca_state_t meca_state;
   // Currently playing sound
   sound_t current_sound;
+  // True if current sound has been actually started
+  bool current_sound_started;
 
 } match_state_t;
 
@@ -112,17 +114,8 @@ static void switch_mode(rome_enum_boomotter_mode_t mode)
   boomotter_mode = mode;
 }
 
-static void play_sound(sound_t sound)
+static void start_sound(sound_t sound)
 {
-  if(!dfplayer_is_busy()) {
-    match_state.current_sound = SOUND_NONE;
-  }
-  if(sound <= match_state.current_sound) {
-    // sound with higher priority is playing
-    return;
-  }
-
-  match_state.current_sound = sound;
   uint16_t folder_track = 0;
   switch(sound) {
     case SOUND_NONE:
@@ -165,14 +158,30 @@ static void play_sound(sound_t sound)
   }
 }
 
+static void play_sound(sound_t sound)
+{
+  if(!dfplayer_is_busy()) {
+    match_state.current_sound = SOUND_NONE;
+  }
+  if(sound <= match_state.current_sound) {
+    // sound with higher priority is playing
+    return;
+  }
+  match_state.current_sound = sound;
+  match_state.current_sound_started = false;
+  start_sound(sound);
+}
+
 void stop_sound(sound_t sound)
 {
   // stop sound if currently playing
-  if(!dfplayer_is_busy()) {
-    return;  // not playing, no need to stop
-  } else if(sound == match_state.current_sound) {
-    dfplayer_pause();
+  if(dfplayer_is_busy()) {
+    if(sound == match_state.current_sound) {
+      dfplayer_pause();
+    }
   }
+  match_state.current_sound = SOUND_NONE;
+  match_state.current_sound_started = false;
 }
 
 
@@ -378,6 +387,16 @@ static void update_display(void)
       play_sound(SOUND_LOW_BATTERY);
     }
   }
+
+  // retry in case of play_sound() miss
+  if(match_state.current_sound != SOUND_NONE && !match_state.current_sound_started) {
+    if(dfplayer_is_busy()) {
+      match_state.current_sound_started = true;
+    } else {
+      start_sound(match_state.current_sound);
+    }
+  }
+
   display_screen(screen);
 }
 
