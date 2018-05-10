@@ -239,10 +239,6 @@ xx#..|..#xx
 """
 
 image_nyancat_palette = {
-    #'x': (10,10,10),
-    #'*': (10,1,1),
-    #'o': (1,0,1),
-    #'.': (4,1,1),
     'x': (0x20,0x20,0x20),
     '*': (0x20,0x01,0x01),
     'o': (0x03,0x00,0x03),
@@ -265,8 +261,123 @@ x *....xoxox
    x x x x
 """
 
+image_loituma_head_palette = {
+    '*': (0x18,0x06,0x00),
+    '.': (0x10,0x03,0x03),
+    '-': (1,1,1),
+    '=': (0x20,0x01,0x01),
+    'v': (0x20,0x00,0x20),
+}
+image_loituma_head_rgb_open = """\
+ *****
+**....*
+*.-.-.*
+*.....*
+**===**
+*vvvvv 
+"""
+image_loituma_head_rgb_closed = """\
+ *****
+**....*
+*.-.-.*
+*.....*
+**...**
+*vvvvv 
+"""
+
+image_loituma_leek_palette = {
+    'v': (0x00,0x30,0x00),
+    '|': (0x20,0x20,0x18),
+    'o': (0x20,0x20,0x20),
+}
+
+image_loituma_leek_rgb_n = """\
+  vvvv
+   vv
+   vv
+   ||
+   ||
+   ||
+   ||
+   oo
+"""
+
+image_loituma_leek_rgb_ne = """\
+    vvvvv
+     vvv
+     |v
+    ||
+   ||
+   ||
+  ||
+  oo
+"""
+
+image_loituma_leek_rgb_e = """\
 
 
+       v
+o||||vvv
+o||||vvv
+       v
+
+
+"""
+
+image_loituma_leek_rgb_se = """\
+ oo
+ ||
+  ||
+  ||
+   ||
+    |v
+    vvv
+   vvvvv
+"""
+
+image_loituma_leek_rgb_s = """\
+   oo
+   ||
+   ||
+   ||
+   ||
+   vv
+   vv
+  vvvv
+"""
+
+image_loituma_leek_rgb_sw = """\
+     oo
+     ||
+    ||
+    ||
+   ||
+  v|
+ vvv
+vvvvv
+"""
+
+image_loituma_leek_rgb_w = """\
+
+
+       v
+o||||vvv
+o||||vvv
+       v
+
+
+"""
+
+image_loituma_leek_rgb_nw = """\
+vvvvv
+ vvv
+  v|
+   ||
+    ||
+    ||
+     ||
+     oo
+"""
 
 def main():
     fonts = [
@@ -278,6 +389,16 @@ def main():
         Image("bug2", image_bug_palette, image_bug2_rgb),
         Image("nyancat1", image_nyancat_palette, image_nyancat_rgb1),
         Image("nyancat2", image_nyancat_palette, image_nyancat_rgb2),
+        Image("loituma_head_open", image_loituma_head_palette, image_loituma_head_rgb_open),
+        Image("loituma_head_closed", image_loituma_head_palette, image_loituma_head_rgb_closed),
+        Image("loituma_leek_n", image_loituma_leek_palette, image_loituma_leek_rgb_n),
+        Image("loituma_leek_ne", image_loituma_leek_palette, image_loituma_leek_rgb_ne),
+        Image("loituma_leek_e", image_loituma_leek_palette, image_loituma_leek_rgb_e),
+        Image("loituma_leek_se", image_loituma_leek_palette, image_loituma_leek_rgb_se),
+        Image("loituma_leek_s", image_loituma_leek_palette, image_loituma_leek_rgb_s),
+        Image("loituma_leek_sw", image_loituma_leek_palette, image_loituma_leek_rgb_sw),
+        Image("loituma_leek_w", image_loituma_leek_palette, image_loituma_leek_rgb_w),
+        Image("loituma_leek_nw", image_loituma_leek_palette, image_loituma_leek_rgb_nw),
     ]
 
     for font in fonts:

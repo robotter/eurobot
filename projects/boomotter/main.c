@@ -342,7 +342,7 @@ static void draw_nyancat(void)
     star_t *star = &stars[i];
     if(star->x == 0) {
       star->x = SCREEN_LW + initial_dx[rand() % sizeof(initial_dx)/sizeof(*initial_dx)];
-      star->y = SCREEN_UH + (rand() % SCREEN_LH);
+      star->y = SCREEN_UH + 1 + (rand() % (SCREEN_LH - 1));
       star->prescaler = rand() % 3;
     }
     if(star->x < SCREEN_UW) {
@@ -354,8 +354,31 @@ static void draw_nyancat(void)
   }
 
   if(!dfplayer_is_busy()) {
-    //dfplayer_send_cmd(DF_PLAY_FOLDER_TRACK, TRACK_MUSICS_NYAN_CAT);
+    dfplayer_send_cmd(DF_PLAY_FOLDER_TRACK, TRACK_MUSICS_NYAN_CAT);
   }
+}
+
+static void draw_loituma(void)
+{
+  static uint8_t tick;
+  static const image_t *leeks[] = {
+    &image_loituma_leek_n,
+    &image_loituma_leek_ne,
+    &image_loituma_leek_e,
+    &image_loituma_leek_se,
+    &image_loituma_leek_s,
+    &image_loituma_leek_sw,
+    &image_loituma_leek_w,
+    &image_loituma_leek_nw,
+  };
+  tick++;
+  if((tick / 8) % 2 == 0) {
+    draw_pixels_pgm(screen, SCREEN_LW + 1, 0, image_loituma_head_open.width, image_loituma_head_open.height, image_loituma_head_open.data);
+  } else {
+    draw_pixels_pgm(screen, SCREEN_LW + 1, 0, image_loituma_head_closed.width, image_loituma_head_closed.height, image_loituma_head_closed.data);
+  }
+  const image_t *img = leeks[tick % sizeof(leeks)/sizeof(*leeks)];
+  draw_pixels_pgm(screen, 1, SCREEN_UH + 1, img->width, img->height, img->data);
 }
 
 static void draw_celebration(void)
@@ -387,6 +410,8 @@ static void update_display(void)
 
   if(boomotter_mode == ROME_ENUM_BOOMOTTER_MODE_NYANCAT) {
     draw_nyancat();
+  } else if(boomotter_mode == ROME_ENUM_BOOMOTTER_MODE_LOITUMA) {
+    draw_loituma();
 
   } else if(match_state.timer_last_update == 0) {
     // stand mode

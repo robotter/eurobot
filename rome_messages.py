@@ -216,6 +216,7 @@ register_messages(
           'music',
           'silent',
           'nyancat',
+          'loituma',
       )),
       (Order, 'boomotter_set_mode', [('mode', 'boomotter_mode')]),
     ]),
