@@ -292,8 +292,13 @@ void strat_run(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
   cube_claw_close();
 
-  switch_on_boomotter(false);
+  //wait for galipeur to go
+  idle_delay_ms(1000);
 
+  switch_on_boomotter(false);
+  
+  //wait for galipeur to go trough the table to go for opposite dispensers
+  idle_delay_ms(25000);
   launch_bee();
 
   //look_at_the_card();

@@ -80,7 +80,7 @@ void strat_prepare(void)
   autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
   goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   // y on building area
-  goto_xya(KX(800), 500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  goto_xya(KX(800), 400, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
 
   // check the state of the cylinder
@@ -124,8 +124,8 @@ void set_speed(robot_speed_t s){
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
       break;
     case RS_FAST:
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 3, 0.1);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 80, 0.05);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 5, 0.1);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 60, 0.05);
       break;
     default:
       break;
@@ -155,7 +155,7 @@ order_result_t take_water(dispenser_t dispenser){
 
   //dispenser positions
   int16_t near_pos = 2000-840;
-  int16_t far_pos = -(1500-610);
+  int16_t far_pos = -(1500-620);
 
   //balleater configuration
   int16_t balleater_depth = AUTOSET_OFFSET + 35;
@@ -171,7 +171,7 @@ order_result_t take_water(dispenser_t dispenser){
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_PREPARE_LOAD_WATER);
   _wait_meca_ground_clear();
 
-  set_speed(RS_NORMAL);
+  set_speed(RS_FAST);
 
   switch(dispenser){
     case DISPENSER_NEAR:{
@@ -185,7 +185,7 @@ order_result_t take_water(dispenser_t dispenser){
       //dispenser near is alongside Y axis
       traj1[0] = KX(1500-approach_depth);
       traj1[1] = near_pos + approach_side;
-      traj1[2] = KX(1500-balleater_depth);
+      traj1[2] = KX(1500-(balleater_depth+10));
       traj1[3] = near_pos;
 
       traj2[0] = KX(1500-300);
@@ -207,7 +207,6 @@ order_result_t take_water(dispenser_t dispenser){
       or = goto_xya(KX(-1200), 150, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
       autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET);
       or = goto_xya(KX(-1300), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-      or = goto_xya(KX(-1350), 300, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
       autoset(ROBOT_SIDE_BALLEATER,AUTOSET_AUX, KX(-1500+AUTOSET_OFFSET), 0);
       or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
       //prepare next move orders
@@ -216,7 +215,7 @@ order_result_t take_water(dispenser_t dispenser){
       traj1[0] = KX(far_pos-approach_side);
       traj1[1] = approach_depth;
       traj1[2] = KX(far_pos);
-      traj1[3] = balleater_depth;
+      traj1[3] = balleater_depth-10;
 
       traj2[0] = KX(far_pos);
       traj2[1] = 500;
@@ -251,7 +250,7 @@ order_result_t take_water(dispenser_t dispenser){
 order_result_t throw_water_watertower(void){
   ROME_LOG(&rome_paddock,INFO,"Throwing water in watertower");
   order_result_t or;
-  set_speed(RS_NORMAL);
+  set_speed(RS_FAST);
 
   _wait_meca_ready();
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_PREPARE_THROW_WATERTOWER);
@@ -275,7 +274,7 @@ order_result_t throw_water_watertower(void){
 order_result_t trash_water_treatment(void){
   ROME_LOG(&rome_paddock,INFO,"Trashing water in treatment area");
   order_result_t or;
-  set_speed(RS_NORMAL);
+  set_speed(RS_FAST);
 
   _wait_meca_ready();
   ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_PREPARE_TRASH_TREATMENT);
@@ -297,7 +296,7 @@ order_result_t trash_water_treatment(void){
     return or;
 
   //go in position to trash the bad water
-  or = goto_xya(KX(-250),250+120, arfast(ROBOT_SIDE_TURBINE,TABLE_SIDE_DOWN));
+  or = goto_xya(KX(-250),250+130, arfast(ROBOT_SIDE_TURBINE,TABLE_SIDE_DOWN));
   if (or != ORDER_SUCCESS)
     return or;
   _wait_meca_ready();
