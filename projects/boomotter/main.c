@@ -138,13 +138,13 @@ static void play_sound(sound_t sound)
       folder_track = TRACK_MUSICS_THIS_AEROBIC_VIDEO_WINS_EVERYTHING_480P_EXTENDED;
       break;
     case SOUND_ROBOTS_DEAD:
-      folder_track = TRACK_SOUNDS_WIII_OUI_MESSSIRE;
+      folder_track = TRACK_SOUNDS_TRAVAIL_TERMINE;
       break;
     case SOUND_POINTS_GAIN:
       folder_track = TRACK_SOUNDS_ZELDA_SECRET_FOUND;
       break;
     case SOUND_BOOT:
-      folder_track = TRACK_SOUNDS_TRAVAIL_TERMINE;
+      folder_track = TRACK_SOUNDS_WIII_ENCORE_DU_TRAVAIL;
       break;
     case SOUND_COLLECTING_WATER:
       folder_track = TRACK_SOUNDS_BALLS_CHARGE;
