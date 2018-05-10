@@ -196,19 +196,21 @@ order_result_t take_water(dispenser_t dispenser){
       ROME_LOG(&rome_paddock,INFO,"Going to opposite dispenser");
       //send first position order
       //go to the bee corner to be near borders for autoset
-      or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_OPPOSITE_BEE, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+      or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_DISPENSER_FAR, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
       if (or!= ORDER_SUCCESS){
         ROME_LOG(&rome_paddock,INFO,"Aborting opposite dispenser");
         //go back near start area
         goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_TOWER, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
         return or;
         }
-      //we did a very long move, so launch an autoset
+      //we did a very long move, so try to launch an autoset
       or = goto_xya(KX(-1200), 150, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-      autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET);
-      or = goto_xya(KX(-1300), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-      autoset(ROBOT_SIDE_BALLEATER,AUTOSET_AUX, KX(-1500+AUTOSET_OFFSET), 0);
-      or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
+      if (or == ORDER_SUCCESS){
+        autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET);
+        or = goto_xya(KX(-1300), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+        autoset(ROBOT_SIDE_BALLEATER,AUTOSET_AUX, KX(-1500+AUTOSET_OFFSET), 0);
+        or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
+      }
       //prepare next move orders
       //dispenser far is alongside X axis
       angle = arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_DOWN);
