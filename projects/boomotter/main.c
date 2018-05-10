@@ -60,6 +60,7 @@ typedef struct {
   } scores;
   uint16_t timer;  // timer in sconds
   uint16_t timer_last_update;  // uptime in seconds
+  uint16_t after_match_uptime_s;  // uptime at which play after match
   rome_enum_meca_state_t meca_state;
   // Currently playing sound
   sound_t current_sound;
@@ -506,10 +507,13 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_TM_MATCH_TIMER: {
       if(match_state.timer < MATCH_DURATION_SECS &&
          frame->tm_match_timer.seconds >= MATCH_DURATION_SECS) {
+        match_state.after_match_uptime_s = uptime_us() / 1000000 + AFTER_MATCH_DELAY_SECS;
         play_sound(SOUND_MATCH_END);
-      } else if(match_state.timer < MATCH_DURATION_SECS + AFTER_MATCH_DELAY_SECS &&
-                frame->tm_match_timer.seconds >= MATCH_DURATION_SECS + AFTER_MATCH_DELAY_SECS) {
-        play_sound(SOUND_AFTER_MATCH);
+      } else if(match_state.after_match_uptime_s != 0) {
+        if(uptime_us() / 1000000 > match_state.after_match_uptime_s) {
+          play_sound(SOUND_AFTER_MATCH);
+          match_state.after_match_uptime_s = 0;
+        }
       }
       match_state.timer = frame->tm_match_timer.seconds;
       match_state.timer_last_update = uptime_us() / 1000000;
