@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <avarix.h>
 #include <avarix/intlvl.h>
 #include <avarix/portpin.h>
@@ -295,7 +296,8 @@ static void draw_lower_image(const image_t *image)
 static void draw_nyancat(void)
 {
   static uint8_t tick;
-  uint8_t frame = (++tick / 8) % 2;
+  tick++;
+  uint8_t frame = tick / 8 % 2;
   if(frame == 0) {
     draw_pixels_pgm(screen, SCREEN_UW - image_nyancat1.width, 0, image_nyancat1.width, image_nyancat1.height, image_nyancat1.data);
   } else {
@@ -303,6 +305,7 @@ static void draw_nyancat(void)
   }
 
   static const pixel_t rainbow_colors[] = {
+    {0x00,0x00,0x00},
     {0x18,0x00,0x00},
     {0x14,0x04,0x00},
     {0x10,0x10,0x00},
@@ -312,16 +315,46 @@ static void draw_nyancat(void)
     {0x00,0x00,0x00},
   };
 
-  FOREACH_RECT_PIXEL(screen, RECT(0, 0, 15, 6)) {
-    if(p->r != 0 || p->g != 0 || p->b != 0) {
-      break;
+  // rainbow
+  FOREACH_RECT_PIXEL(screen, RECT(0, 0, 12, 7)) {
+    if(p->r == 0 && p->g == 0 && p->b == 0) {
+      uint8_t color = y + (((tick / 4) % 2) ^ ((x / 3) % 2));
+      *p = rainbow_colors[color];
     }
-    uint8_t color = y + (((tick / 4) % 2)  ^ ((x / 3) % 2));
-    *p = rainbow_colors[color];
+  }
+
+  // sky
+  FOREACH_PIXEL(screen) {
+    if(p->r == 0 && p->g == 0 && p->b == 0) {
+      *p = RGB(0,0,4);
+    }
+  }
+
+  // stars
+  static const uint8_t initial_dx[] = {1, 5, 7, 12};
+  typedef struct {
+    uint8_t x;
+    uint8_t y;
+    uint8_t prescaler;
+  } star_t;
+  static star_t stars[6] = {0};
+  for(uint8_t i = 0; i < sizeof(stars)/sizeof(*stars); i++) {
+    star_t *star = &stars[i];
+    if(star->x == 0) {
+      star->x = SCREEN_LW + initial_dx[rand() % sizeof(initial_dx)/sizeof(*initial_dx)];
+      star->y = SCREEN_UH + (rand() % SCREEN_LH);
+      star->prescaler = rand() % 3;
+    }
+    if(star->x < SCREEN_UW) {
+      *TEXTURE_PIXEL(screen, star->x, star->y) = GRAY(1 << (7 - star->prescaler));
+    }
+    if(tick % (1 << star->prescaler) == 0) {
+      star->x--;
+    }
   }
 
   if(!dfplayer_is_busy()) {
-    dfplayer_send_cmd(DF_PLAY_FOLDER_TRACK, TRACK_MUSICS_NYAN_CAT);
+    //dfplayer_send_cmd(DF_PLAY_FOLDER_TRACK, TRACK_MUSICS_NYAN_CAT);
   }
 }
 
