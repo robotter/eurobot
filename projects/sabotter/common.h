@@ -73,6 +73,12 @@ typedef struct {
 
   //points count
   uint16_t points;
+
+  //boomotter
+  uint32_t boom_age;
+
+  //match timer
+  uint8_t match_time;
 } robot_state_t;
 
 extern robot_state_t robot_state;

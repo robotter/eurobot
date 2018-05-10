@@ -124,7 +124,7 @@ void set_speed(robot_speed_t s){
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
       break;
     case RS_FAST:
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 5, 0.1);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 10, 0.1);
       ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 60, 0.05);
       break;
     default:
@@ -196,28 +196,26 @@ order_result_t take_water(dispenser_t dispenser){
       ROME_LOG(&rome_paddock,INFO,"Going to opposite dispenser");
       //send first position order
       //go to the bee corner to be near borders for autoset
-      or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_DISPENSER_FAR, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-      if (or!= ORDER_SUCCESS){
+      or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_OPPOSITE_BEE, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+      if (or != ORDER_SUCCESS){
         ROME_LOG(&rome_paddock,INFO,"Aborting opposite dispenser");
         //go back near start area
         goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_TOWER, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
         return or;
-        }
+      }
       //we did a very long move, so try to launch an autoset
       or = goto_xya(KX(-1200), 150, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-      if (or == ORDER_SUCCESS){
-        autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET);
-        or = goto_xya(KX(-1300), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-        autoset(ROBOT_SIDE_BALLEATER,AUTOSET_AUX, KX(-1500+AUTOSET_OFFSET), 0);
-        or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
-      }
+      autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, AUTOSET_OFFSET);
+      or = goto_xya(KX(-1300), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+      autoset(ROBOT_SIDE_BALLEATER,AUTOSET_AUX, KX(-1500+AUTOSET_OFFSET), 0);
+      or = goto_xya(KX(-1200), 300, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
       //prepare next move orders
       //dispenser far is alongside X axis
       angle = arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_DOWN);
       traj1[0] = KX(far_pos-approach_side);
       traj1[1] = approach_depth;
       traj1[2] = KX(far_pos);
-      traj1[3] = balleater_depth-10;
+      traj1[3] = balleater_depth-25;
 
       traj2[0] = KX(far_pos);
       traj2[1] = 500;
@@ -346,44 +344,31 @@ void strat_run(void)
   order_result_t or_take_water_far   = ORDER_FAILURE;
   order_result_t or_empty_water_far  = ORDER_FAILURE;
 
-  bool force_far_dispenser_first = false;
-
   while (!( or_take_water_near  == ORDER_SUCCESS &&
             or_take_water_far   == ORDER_SUCCESS &&
             or_empty_water_near == ORDER_SUCCESS &&
             or_empty_water_far  == ORDER_SUCCESS )  ){
 
-    if (force_far_dispenser_first &&
-        or_take_water_far != ORDER_SUCCESS){
-
-      or_take_water_far = take_water(DISPENSER_FAR);
-
-      or_empty_water_far = empty_cylinder();
-    }
-
-    if (force_far_dispenser_first == true){
-      order_result_t or = ORDER_FAILURE;
-      or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_TOWER, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-      if (or == ORDER_SUCCESS){
-        goto_xya(KX(1350), 1650, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-        autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
-        goto_xya(KX(1200), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-      }
-    }
-    else
-      force_far_dispenser_first = true;
-
     if (or_take_water_near != ORDER_SUCCESS){
       or_take_water_near = take_water(DISPENSER_NEAR);
-
       or_empty_water_near = empty_cylinder();
     }
 
-    idle_delay_ms(200);
+    goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_TOWER, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+    goto_xya(KX(1350), 1650, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+    autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
+    goto_xya(KX(1200), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+    autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
+    goto_xya(KX(1200), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+
+    if (or_take_water_far != ORDER_SUCCESS){
+      or_take_water_far = take_water(DISPENSER_FAR);
+      or_empty_water_far = empty_cylinder();
+    }
   }
 
   ROME_LOG(&rome_paddock,INFO,"That's all folks !");
-  _delay_ms(3000);
+  idle_delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
   ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 0);
 }

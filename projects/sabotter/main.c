@@ -170,6 +170,12 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
       return;
     }break;
+    case ROME_MID_TM_BATTERY:{
+      if(frame->tm_battery.device == ROME_ENUM_DEVICE_BOOMOTTER){
+        robot_state.boom_age = uptime_us();
+        }
+      return;
+    }break;
     default:
       break;
   }
@@ -219,8 +225,7 @@ static void send_messages(void)
 static void match_end(void)
 {
   // count time second by second
-  static unsigned int match_time = 0;
-  if(++match_time >= 99) {
+  if(++robot_state.match_time >= 99) {
     ROME_LOG(&rome_paddock,INFO,"End of match");
     // end of match
     ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
@@ -231,7 +236,9 @@ static void match_end(void)
     portpin_outset(&LED_G_PP);
     portpin_outset(&LED_B_PP);
     for(;;) {
-      idle();
+      //send timer for boomotter stuff
+      ROME_SEND_TM_MATCH_TIMER(&rome_paddock, ROME_DEVICE, robot_state.match_time);
+      idle_delay_ms(500);
     }
   }
 }
@@ -343,6 +350,8 @@ int main(void)
   robot_state.partner_pos.y = -1000;
   robot_state.partner_pos.a = 0;
 
+  robot_state.boom_age = uptime_us();
+
   // initialize asserv and meca, fold arms, ...
   portpin_outset(&LED_R_PP);
   robot_state.points = 0;
@@ -354,6 +363,7 @@ int main(void)
 
   strat_wait_start();
 
+  robot_state.match_time = 0;
   TIMER_SET_CALLBACK_US(F0, 'A', 1e6, ROME_SEND_INTLVL, match_end);
 
   strat_run();

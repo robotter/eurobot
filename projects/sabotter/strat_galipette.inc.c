@@ -135,7 +135,7 @@ void strat_prepare(void)
   update_score(5);
 
   //the initial setting is diffrent depending on the team
-  if (robot_state.team == TEAM_GREEN){
+  if (0){//robot_state.team == TEAM_GREEN){
     set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
     galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
     goto_xya(KX(0), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
@@ -161,6 +161,12 @@ void strat_prepare(void)
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
 }
 
+#define BOOMOTTER_MAX_AGE_MS 3000UL
+
+bool boomotter_connected(void){
+  return (robot_state.boom_age + 1000*BOOMOTTER_MAX_AGE_MS > uptime_us());
+}
+
 
 order_result_t switch_on_boomotter(bool cube_present){
   ROME_LOG(&rome_paddock,INFO,"go switching on boomotter");
@@ -180,7 +186,7 @@ order_result_t switch_on_boomotter(bool cube_present){
   else{
     or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
     or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-    if (robot_state.team == TEAM_GREEN){
+    if (1){//robot_state.team == TEAM_GREEN){
       or = goto_xya_wait(KX(370),2000, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP), 2000);
       or = goto_xya(KX(370),1950, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
     }
@@ -192,7 +198,6 @@ order_result_t switch_on_boomotter(bool cube_present){
     or = goto_xya(KX(370),1750, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   }
   bee_launcher_down();
-  update_score(25);
   return or;
 }
 
@@ -211,10 +216,15 @@ order_result_t launch_bee(void){
   or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
   or = goto_xya(KX(1350),140, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  or = goto_xya(KX(1100),140, arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP));
-  bee_launcher_down();
+  float a=0;
+  if (robot_state.team == TEAM_GREEN)
+    a = arfast(ROBOT_SIDE_LEFT,TABLE_SIDE_UP);
+  else
+    a = arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP);
+  or = goto_xya(KX(1100),140, a);
   update_score(50);
   or = goto_xya(KX(1250),300, arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP));
+  bee_launcher_down();
 
   return or;
 
@@ -295,11 +305,41 @@ void strat_run(void)
   //wait for galipeur to go
   idle_delay_ms(1000);
 
-  switch_on_boomotter(false);
-  
+  uint8_t boom_tries = 0;
+  for(;;){
+    switch_on_boomotter(false);
+    idle_delay_ms(BOOMOTTER_MAX_AGE_MS);
+    ROME_LOGF(&rome_paddock, DEBUG,"boomotter age %ld uptime %ld connected %d",robot_state.boom_age,uptime_us(), boomotter_connected());
+
+    boom_tries ++;
+
+    if (boomotter_connected()){
+      update_score(25);
+      break;
+    }
+
+    if(boom_tries > 3)
+      break;
+  }
+
   //wait for galipeur to go trough the table to go for opposite dispensers
-  idle_delay_ms(25000);
-  launch_bee();
+  for(;;){
+    idle();
+    if(KX(robot_state.partner_pos.x) < -100)
+      break;
+
+    if(KX(robot_state.partner_pos.y) > 1300)
+      break;
+
+    if (robot_state.match_time > 50)
+      break;
+  }
+
+  order_result_t or = ORDER_FAILURE;
+  while (or != ORDER_SUCCESS){
+    or = launch_bee();
+    idle();
+  }
 
   //look_at_the_card();
 
@@ -308,9 +348,26 @@ void strat_run(void)
   //idle_delay_ms(2000);
   //cube_claw_open();
   //ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+ 
+  //reswitch on boomotter if it was switched off
+  //for(;;){
+  //  for(;;){
+  //    idle();
+  //    if(KX(robot_state.partner_pos.x) < 0)
+  //      break;
+
+  //    if(KX(robot_state.partner_pos.y) > 1300)
+  //      break;
+  //  }
+  //  if(!boomotter_connected()){
+  //    switch_on_boomotter(false);
+  //    idle_delay_ms(BOOMOTTER_MAX_AGE);
+  //  }
+  //  idle_delay_ms(1000);
+  //}
 
   ROME_LOG(&rome_paddock,INFO,"That's all folks !");
-  _delay_ms(3000);
+  idle_delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
 }
 
@@ -328,9 +385,6 @@ void strat_test(void)
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
 
   for(;;){
-    goto_xya(500,-500,0);
-    idle_delay_ms(10000);
-    goto_xya(0,0,0);
-    idle_delay_ms(10000);
+    idle_delay_ms(200);
   }
 }

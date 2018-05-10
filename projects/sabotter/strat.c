@@ -105,6 +105,7 @@ float arfast (robot_side_t face, table_side_t side){
       }
       break;
     default:
+      ROME_LOG(&rome_paddock,ERROR,"arfast : invalid angle consign");
       break;
   }
   return 0;
