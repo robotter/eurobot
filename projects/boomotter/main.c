@@ -66,6 +66,7 @@ typedef struct {
 } match_state_t;
 
 static match_state_t match_state;
+static rome_enum_boomotter_mode_t boomotter_mode;
 
 
 static void switch_mode(rome_enum_boomotter_mode_t mode)
@@ -83,7 +84,7 @@ static void switch_mode(rome_enum_boomotter_mode_t mode)
       }
       break;
 
-    case ROME_ENUM_BOOMOTTER_MODE_STAND:
+    case ROME_ENUM_BOOMOTTER_MODE_MUSIC:
       // medium volume, loop tracks
       _delay_ms(50);
       dfplayer_set_volume(10);
@@ -102,9 +103,13 @@ static void switch_mode(rome_enum_boomotter_mode_t mode)
       dfplayer_set_volume(0);
       break;
 
+    case ROME_ENUM_BOOMOTTER_MODE_NYANCAT:
+      break;
+
     default:
       break;
   }
+  boomotter_mode = mode;
 }
 
 static void play_sound(sound_t sound)
@@ -139,7 +144,7 @@ static void play_sound(sound_t sound)
       folder_track = TRACK_SOUNDS_ZELDA_SECRET_FOUND;
       break;
     case SOUND_BOOT:
-      folder_track = TRACK_SOUNDS_WIII_ENCORE_DU_TRAVAIL;
+      folder_track = TRACK_SOUNDS_TRAVAIL_TERMINE;
       break;
     case SOUND_COLLECTING_WATER:
       folder_track = TRACK_SOUNDS_BALLS_CHARGE;
@@ -278,6 +283,39 @@ static void draw_lower_image(const image_t *image)
   draw_pixels_pgm(screen, (SCREEN_LW - image->width)/2, SCREEN_UH + (SCREEN_LH - image->height)/2, image->width, image->height, image->data);
 }
 
+static void draw_nyancat(void)
+{
+  static uint8_t tick;
+  uint8_t frame = (++tick / 8) % 2;
+  if(frame == 0) {
+    draw_pixels_pgm(screen, SCREEN_UW - image_nyancat1.width, 0, image_nyancat1.width, image_nyancat1.height, image_nyancat1.data);
+  } else {
+    draw_pixels_pgm(screen, SCREEN_UW - image_nyancat2.width, 0, image_nyancat2.width, image_nyancat2.height, image_nyancat2.data);
+  }
+
+  static const pixel_t rainbow_colors[] = {
+    {0x18,0x00,0x00},
+    {0x14,0x04,0x00},
+    {0x10,0x10,0x00},
+    {0x00,0x18,0x00},
+    {0x00,0x10,0x10},
+    {0x10,0x00,0x10},
+    {0x00,0x00,0x00},
+  };
+
+  FOREACH_RECT_PIXEL(screen, RECT(0, 0, 15, 6)) {
+    if(p->r != 0 || p->g != 0 || p->b != 0) {
+      break;
+    }
+    uint8_t color = y + (((tick / 4) % 2)  ^ ((x / 3) % 2));
+    *p = rainbow_colors[color];
+  }
+
+  if(!dfplayer_is_busy()) {
+    dfplayer_send_cmd(DF_PLAY_FOLDER_TRACK, TRACK_MUSICS_NYAN_CAT);
+  }
+}
+
 static void draw_celebration(void)
 {
   static const pixel_t celebration_colors[] = {
@@ -305,7 +343,10 @@ static void update_display(void)
   static uint8_t bug_frame;
   texture_clear(screen);
 
-  if(match_state.timer_last_update == 0) {
+  if(boomotter_mode == ROME_ENUM_BOOMOTTER_MODE_NYANCAT) {
+    draw_nyancat();
+
+  } else if(match_state.timer_last_update == 0) {
     // stand mode
     draw_scrolling_debug_team();
     if((++bug_frame / 8) % 2 == 0) {
@@ -395,7 +436,7 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
         // meca state changed
         if(new_state == ROME_ENUM_MECA_STATE_BUSY) {
           play_sound(SOUND_COLLECTING_WATER);
-        } else {
+        } else if(match_state.meca_state == ROME_ENUM_MECA_STATE_BUSY) {
           play_sound(SOUND_COLLECTING_WATER_END);
         }
         match_state.meca_state = new_state;

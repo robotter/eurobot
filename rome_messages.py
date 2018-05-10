@@ -213,8 +213,9 @@ register_messages(
       (Order, 'boomotter_mp3_cmd', [('cmd', 'uint8'), ('param', 'uint16')]),
       rome_types.rome_enum('boomotter_mode', (
           'match',
-          'stand',
+          'music',
           'silent',
+          'nyancat',
       )),
       (Order, 'boomotter_set_mode', [('mode', 'boomotter_mode')]),
     ]),

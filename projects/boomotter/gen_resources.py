@@ -210,23 +210,6 @@ font_score_bitmap = """\
 """
 
 
-#image_bug_palette = {
-#    '#': (0x10,0x10,0x10),
-#    'x': (0x20,0x20,0x20),
-#    'o': (0x30,0,0),
-#    '|': (1,1,1),
-#}
-#image_bug_rgb = """\
-#    ###
-#x  #####  x
-# x##o#o##x
-#  #######
-#  ###|###
-# x###|###x
-#x  ##|##  x
-#    #|#
-#"""
-
 image_bug_palette = {
     '#': (25,25,25),
     'x': (10,10,10),
@@ -255,6 +238,35 @@ xx#..|..#xx
     #|#
 """
 
+image_nyancat_palette = {
+    #'x': (10,10,10),
+    #'*': (10,1,1),
+    #'o': (1,0,1),
+    #'.': (4,1,1),
+    'x': (0x20,0x20,0x20),
+    '*': (0x20,0x01,0x01),
+    'o': (0x03,0x00,0x03),
+    '.': (0x10,0x03,0x03),
+}
+image_nyancat_rgb1 = """\
+   ******
+  *......*
+  *.....xxx
+xx*....xoxox
+   *****xxx
+  x x x x
+"""
+image_nyancat_rgb2 = """\
+   ******
+  *.....xx
+x *....xoxox
+ x*.....xxx
+   ******
+   x x x x
+"""
+
+
+
 
 def main():
     fonts = [
@@ -264,6 +276,8 @@ def main():
     images = [
         Image("bug1", image_bug_palette, image_bug1_rgb),
         Image("bug2", image_bug_palette, image_bug2_rgb),
+        Image("nyancat1", image_nyancat_palette, image_nyancat_rgb1),
+        Image("nyancat2", image_nyancat_palette, image_nyancat_rgb2),
     ]
 
     for font in fonts:
