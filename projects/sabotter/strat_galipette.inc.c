@@ -89,8 +89,27 @@ void bee_launcher_push(void) {
   }
 }
 
+void bee_launcher_papush(void) {
+  switch(robot_state.team) {
+    case TEAM_ORANGE:
+      servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_RIGHT);
+      break;
+    case TEAM_GREEN:
+      servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_LEFT);
+      break;
+    
+    default:
+      break;
+  }
+}
+
 void galipette_autoset(robot_side_t robot_side, autoset_side_t table_side, float x, float y) {
   bee_launcher_push();
+  autoset(robot_side,table_side,x,y);
+}
+
+void galipette_autoset_papush(robot_side_t robot_side, autoset_side_t table_side, float x, float y) {
+  bee_launcher_papush();
   autoset(robot_side,table_side,x,y);
 }
 
@@ -134,23 +153,13 @@ void strat_prepare(void)
   //boomotter is on the table !
   update_score(5);
 
-  //the initial setting is diffrent depending on the team
-  if (0){//robot_state.team == TEAM_GREEN){
-    set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-    galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
-    goto_xya(KX(0), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-    goto_xya(KX(50), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-    galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
-    goto_xya(KX(1250), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  }
-  else{
-    set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-    galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
-    goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-    goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-    galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
-    goto_xya(KX(1000), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-  }
+  set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
+  goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
+  goto_xya(KX(1000), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+
   bee_launcher_down();
   goto_xya(KX(1350), 1800, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
 
@@ -177,12 +186,12 @@ order_result_t switch_on_boomotter(void){
   uint32_t try_time = 0;
   for(int16_t y = 1890; y < 2000; y+=30){
     or = goto_xya_wait(KX(370), y, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP), 2000);
-    try_time = uptime(); 
+    try_time = uptime_us(); 
 
     bool done = false;
     for(;;){
-      idle; 
-      if (uptime() - try_time > BOOMOTTER_MAX_AGE_US)
+      idle(); 
+      if (uptime_us() - try_time > BOOMOTTER_MAX_AGE_US)
         break;
 
       if (boomotter_connected()){
@@ -210,7 +219,7 @@ order_result_t launch_bee(void){
     return or;
 
   or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
+  galipette_autoset_papush(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
   or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   bee_launcher_down();
   or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
