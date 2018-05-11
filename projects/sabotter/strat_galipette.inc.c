@@ -215,8 +215,10 @@ order_result_t launch_bee(void){
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
   order_result_t or = ORDER_FAILURE;
   or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BEE,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
-  if (or != ORDER_SUCCESS)
+  if (or != ORDER_SUCCESS){
+    goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_DISPENSER_NEAR,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
     return or;
+  }
 
   or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   galipette_autoset_papush(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
