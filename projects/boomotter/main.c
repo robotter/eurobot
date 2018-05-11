@@ -108,7 +108,7 @@ static void switch_mode(rome_enum_boomotter_mode_t mode)
     case ROME_ENUM_BOOMOTTER_MODE_LOITUMA:
     case ROME_ENUM_BOOMOTTER_MODE_NYANCAT:
       if(dfplayer_is_busy()) {
-        dfplayer_set_pause(true);
+        dfplayer_stop();
       }
       break;
 
