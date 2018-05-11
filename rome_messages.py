@@ -219,6 +219,7 @@ register_messages(
           'loituma',
       )),
       (Order, 'boomotter_set_mode', [('mode', 'boomotter_mode')]),
+      (Order, 'boomotter_set_message', [('msg', 'string')]),
     ]),
 
     # SABOTTER

@@ -34,6 +34,7 @@ texture_t *const screen = (texture_t*)screen_data;
 
 static bool battery_discharged = false;
 static bool battery_on_stand = false;
+static char music_mode_message[40] = "NOISE TEAM  BOOMOTTER  ";
 
 // Match sounds, ordered by priority (higher is better)
 typedef enum {
@@ -442,7 +443,7 @@ static void draw_noise_team(void)
   // text
   static scrolling_text_t scroll;
   if(scroll.text_width == 0) {
-    scrolling_text_init(&scroll, &font_base, "NOISE TEAM   BOOMOTTER  ", 2);
+    scrolling_text_init(&scroll, &font_base, music_mode_message, 2);
   }
   scrolling_text_draw(&scroll, screen, 0);
   const pixel_t *text_color = &rainbow_colors[(tick / 8) % (sizeof(rainbow_colors)/sizeof(*rainbow_colors))];
@@ -546,6 +547,17 @@ static void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_BOOMOTTER_SET_MODE:
       switch_mode(frame->boomotter_set_mode.mode);
       break;
+
+    case ROME_MID_BOOMOTTER_SET_MESSAGE: {
+      uint8_t n = ROME_FRAME_VARARRAY_SIZE(frame, boomotter_set_message, msg);
+      if(n >= sizeof(music_mode_message) - 3) {
+        n = sizeof(music_mode_message) - 3;
+      }
+      memcpy(music_mode_message, frame->boomotter_set_message.msg, n);
+      music_mode_message[n] = ' ';
+      music_mode_message[n+1] = ' ';
+      music_mode_message[n+2] = '\0';
+    } break;
 
     case ROME_MID_TM_SCORE:
       switch(frame->tm_score.device) {
