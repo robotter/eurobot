@@ -103,6 +103,7 @@ class SdCard:
     folder_names = {
         '01': 'musics',
         '02': 'sounds',
+        '03': 'blagounettes',
     }
 
     def __init__(self, path):
