@@ -149,7 +149,7 @@ typedef struct {
 /// Compute the width of a character
 uint8_t get_char_width(const font_t *font, char c);
 /// Compute the width of a string
-uint8_t get_text_width(const font_t *font, const char *text);
+uint16_t get_text_width(const font_t *font, const char *text);
 
 /** @brief Blend a single character, return its width
  *
@@ -197,7 +197,7 @@ void blend_color_mul(pixel_t *p, pixel_t c);
 typedef struct {
   const font_t *font;
   const char *text;
-  uint8_t text_width;
+  uint16_t text_width;
   int16_t pos;
   uint8_t pos_prescaler;
 } scrolling_text_t;

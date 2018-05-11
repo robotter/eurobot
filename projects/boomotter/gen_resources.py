@@ -379,6 +379,34 @@ vvvvv
      oo
 """
 
+
+image_noise_palette = {
+    '#': (0x20,0x20,0x20),
+}
+image_noise_rgb1 = """\
+  ####
+ #    #
+#      #
+#  ##  #
+#  ##  #
+#      #
+ #    #
+  ####
+"""
+image_noise_rgb2 = """\
+   ####
+  #    #
+ #      #
+#   ##   #
+#  #  #  #
+#  #  #  #
+#   ##   #
+ #      #
+  #    #
+   ####
+"""
+
+
 def main():
     fonts = [
         Font("base", font_base_chars, font_base_bitmap),
@@ -399,6 +427,8 @@ def main():
         Image("loituma_leek_sw", image_loituma_leek_palette, image_loituma_leek_rgb_sw),
         Image("loituma_leek_w", image_loituma_leek_palette, image_loituma_leek_rgb_w),
         Image("loituma_leek_nw", image_loituma_leek_palette, image_loituma_leek_rgb_nw),
+        Image("noise1", image_noise_palette, image_noise_rgb1),
+        Image("noise2", image_noise_palette, image_noise_rgb2),
     ]
 
     for font in fonts:

@@ -425,6 +425,49 @@ static void draw_stand(void)
   draw_yellow_lines();
 }
 
+static void draw_noise_team(void)
+{
+  static uint8_t tick;
+  tick++;
+
+  static const pixel_t rainbow_colors[] = {
+    {0x48,0x00,0x00},
+    {0x3C,0x0C,0x00},
+    {0x30,0x30,0x00},
+    {0x00,0x48,0x00},
+    {0x00,0x30,0x30},
+    {0x30,0x00,0x30},
+  };
+
+  // text
+  static scrolling_text_t scroll;
+  if(scroll.text_width == 0) {
+    scrolling_text_init(&scroll, &font_base, "NOISE TEAM   BOOMOTTER  ", 2);
+  }
+  scrolling_text_draw(&scroll, screen, 0);
+  const pixel_t *text_color = &rainbow_colors[(tick / 8) % (sizeof(rainbow_colors)/sizeof(*rainbow_colors))];
+  FOREACH_RECT_PIXEL(screen, screen_upper_rect) {
+    if(p->r) {
+      *p = *text_color;
+    }
+  }
+  scrolling_text_scroll(&scroll, -1);
+
+  // image
+  if(tick / 2 % 4 == 0) {
+    draw_pixels_pgm(screen, 0, SCREEN_UH, image_noise2.width, image_noise2.height, image_noise2.data);
+  } else {
+    draw_pixels_pgm(screen, 1, SCREEN_UH + 1, image_noise1.width, image_noise1.height, image_noise1.data);
+  }
+
+  FOREACH_RECT_PIXEL(screen, screen_lower_rect) {
+    if(p->r) {
+      // read in memory, because it produces better looking results
+      *p = text_color[rand() % (sizeof(rainbow_colors)/sizeof(*rainbow_colors))];
+    }
+  }
+}
+
 static void draw_match(void)
 {
   draw_score();
@@ -443,6 +486,8 @@ static void update_display(void)
     draw_nyancat();
   } else if(boomotter_mode == ROME_ENUM_BOOMOTTER_MODE_LOITUMA) {
     draw_loituma();
+  } else if(boomotter_mode == ROME_ENUM_BOOMOTTER_MODE_MUSIC) {
+    draw_noise_team();
   } else if(match_state.timer_last_update == 0) {
     draw_stand();
   } else {

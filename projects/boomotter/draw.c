@@ -115,11 +115,11 @@ uint8_t get_char_width(const font_t *font, char c) {
   return width == 0 ? BAD_CHAR_WIDTH : width;
 }
 
-uint8_t get_text_width(const font_t *font, const char *c) {
+uint16_t get_text_width(const font_t *font, const char *c) {
   if(!*c) {
     return 0;
   }
-  uint8_t x = 0;
+  uint16_t x = 0;
   for(; *c; c++) {
     x += 1 + get_char_width(font, *c);
   }
@@ -191,10 +191,10 @@ void scrolling_text_init(scrolling_text_t *scroll, const font_t *font, const cha
 
 void scrolling_text_draw(const scrolling_text_t *scroll, texture_t *tex, int8_t y) {
   int8_t pos = scroll->pos / scroll->pos_prescaler;
-  for(int8_t x = pos; x < tex->width; x += scroll->text_width) {
+  for(int16_t x = pos; x < tex->width; x += scroll->text_width) {
     blend_text(tex, scroll->font, x, y, scroll->text, blend_gray_set);
   }
-  for(int8_t x = pos - scroll->text_width; x > -scroll->text_width; x -= scroll->text_width) {
+  for(int16_t x = pos - scroll->text_width; x > (int16_t)-scroll->text_width; x -= scroll->text_width) {
     blend_text(tex, scroll->font, x, y, scroll->text, blend_gray_set);
   }
 }
