@@ -94,7 +94,10 @@ class SdFolder:
 
 class SdCard:
 
+    silence_file = 'silence.mp3'
+
     ignored_root_files = [
+        silence_file,
         'README.txt',
         'dfplayer_tracks.h',
         'sdcard_manage.py',
