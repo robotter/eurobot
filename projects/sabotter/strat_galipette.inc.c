@@ -214,7 +214,7 @@ order_result_t launch_bee(void){
   ROME_LOG(&rome_paddock,INFO,"go lauching the bee");
   ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
   order_result_t or = ORDER_FAILURE;
-  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BEE,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BEE,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   if (or != ORDER_SUCCESS)
     return or;
 
