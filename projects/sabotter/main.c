@@ -346,7 +346,7 @@ int main(void)
   rome_send_pathfinding_graph(&pathfinder);
 
   //initialize partner position
-  robot_state.partner_pos.x = 0;
+  robot_state.partner_pos.x = 200;
   robot_state.partner_pos.y = -1000;
   robot_state.partner_pos.a = 0;
 

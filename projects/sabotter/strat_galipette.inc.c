@@ -326,7 +326,7 @@ void strat_run(void)
   //wait for galipeur to go trough the table to go for opposite dispensers
   for(;;){
     idle();
-    if(KX(robot_state.partner_pos.x) < -100)
+    if(KX(robot_state.partner_pos.x) < 100)
       break;
 
     if (robot_state.match_time > 50)
