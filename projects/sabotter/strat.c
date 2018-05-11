@@ -228,11 +228,13 @@ detection_path_t opponent_detected_carrot(int16_t x, int16_t y){
     ROME_LOG(&rome_paddock,INFO,"goto : opponent detected");
     ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, -R3D2_AVOID_MOVEBACK*cos(angle), -R3D2_AVOID_MOVEBACK*sin(angle), 0);
     for(;;){
+      idle();
       if(opponent_detected_in_corridor(angle, R3D2_CORRIDOR_WIDTH, R3D2_STOP_DISTANCE)) {
         ROME_LOG(&rome_paddock,DEBUG,"goto : opponent too close");
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
+          idle();
           time = uptime_us() - start_time_us;
           if((time) > ((uint32_t) 1000*DEFAULT_DETECTION_WAIT_MS)){
             ROME_LOGF(&rome_paddock,DEBUG,"goto : timeout %ld > %ld", time, (uint32_t) 1000*DEFAULT_DETECTION_WAIT_MS);
@@ -246,7 +248,6 @@ detection_path_t opponent_detected_carrot(int16_t x, int16_t y){
             ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
             return DETECTION_PATH_CLEARED;
           }
-          idle();
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
       }
@@ -260,7 +261,6 @@ detection_path_t opponent_detected_carrot(int16_t x, int16_t y){
           ROME_LOG(&rome_paddock,DEBUG,"goto : opponent went away, resume initial trajectory");
           return DETECTION_PATH_CLEARED;
         }
-        idle();
       }
     }
   }
@@ -277,10 +277,12 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t time
 
   uint32_t start_time_us = uptime_us();
   for(;;) {
+    idle();
     ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
     robot_state.asserv.a = 0;
     for(;;) {
+      idle();
       uint32_t time = uptime_us() - start_time_us;
       if((time) > ((uint32_t) timeout_ms*1000)){
         ROME_LOGF(&rome_paddock,INFO,"goto_xya : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
@@ -297,7 +299,6 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t time
         //resend order
         break;
       }
-      idle();
     }
   }
 }
@@ -311,10 +312,12 @@ static order_result_t goto_xya_synced_wait(int16_t x, int16_t y, float a, uint16
 
   uint32_t start_time_us = uptime_us();
   for(;;) {
+    idle();
     ROME_SENDWAIT_ASSERV_GOTO_XYA_SYNCED(&rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
     robot_state.asserv.a = 0;
     for(;;) {
+      idle();
       uint32_t time = uptime_us() - start_time_us;
       if((time) > ((uint32_t) timeout_ms*1000)){
         ROME_LOGF(&rome_paddock,INFO,"goto_xya_synced : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
@@ -331,7 +334,6 @@ static order_result_t goto_xya_synced_wait(int16_t x, int16_t y, float a, uint16
         //resend order
         break;
       }
-      idle();
     }
   }
 }
@@ -343,6 +345,7 @@ order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t timeou
   uint8_t path_i = 0;
   uint32_t start_time_us = uptime_us();
   for(;;) {
+    idle();
     uint8_t ln = n - path_i;
     ROME_SENDWAIT_ASSERV_RUN_TRAJ(&rome_asserv,1000*a,xy+path_i*2,ln);
     robot_state.asserv.xy = 0;
@@ -350,6 +353,7 @@ order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t timeou
     robot_state.asserv.path_i = path_i;
     robot_state.asserv.path_n = ln/2;
     for(;;) {
+      idle();
       uint32_t time = uptime_us() - start_time_us;
       if((time) > ((uint32_t) timeout_ms*1000)){
         ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
@@ -367,7 +371,6 @@ order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t timeou
         path_i = robot_state.asserv.path_i;
         break;
       }
-      idle();
     }
   }
 }
@@ -375,6 +378,7 @@ order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t timeou
 ///Execute pathfinding type trajectory
 order_result_t goto_pathfinding_node(uint8_t goal, float angle){
   for(;;){
+    idle();
     //update obstacles
     //first is our other robot, the others are the detected robots
     pathfinding_obstacle_t obstacles[R3D2_OBJECTS_MAX+1] = {{0,0,0}};
@@ -428,6 +432,7 @@ order_result_t goto_pathfinding_node(uint8_t goal, float angle){
     robot_state.asserv.xy = 0;
     robot_state.asserv.a = 0;
     for(;;) {
+      idle();
       uint32_t time = uptime_us() - start_time_us;
       if((time) > ((uint32_t) GOTO_TIMEOUT_MS*1000)){
         ROME_LOGF(&rome_paddock,INFO,"trajectory : timeout %ld > %ld", time, (uint32_t)GOTO_TIMEOUT_MS*1000);
@@ -446,6 +451,7 @@ order_result_t goto_pathfinding_node(uint8_t goal, float angle){
         ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, 0, 0, 0);
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
         for(;;){
+          idle();
           time = uptime_us() - start_time_us;
           if((time) > ((uint32_t) 1000*DEFAULT_DETECTION_WAIT_MS)){
             ROME_LOGF(&rome_paddock,DEBUG,"trajectory : timeout %ld > %ld", time, (uint32_t) 1000*DEFAULT_DETECTION_WAIT_MS);
@@ -459,20 +465,15 @@ order_result_t goto_pathfinding_node(uint8_t goal, float angle){
             ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
             break;
           }
-          idle();
         }
         ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
       }
       //if opponent is detected, compute a new trajectory
-      if(opponent_detected_in_corridor(angle, R3D2_CORRIDOR_WIDTH, R3D2_AVOID_DISTANCE_TRAJECTORY)){
+      if(opponent_detected_in_corridor(angle, R3D2_CORRIDOR_WIDTH, R3D2_AVOID_DISTANCE)){
         ROME_LOG(&rome_paddock,DEBUG,"opponenent detected, computing a new trajectory");
         break;
       }
-
-      idle();
     }
-
-    idle();
   }
   return ORDER_FAILURE;
 }
@@ -482,10 +483,12 @@ order_result_t goto_pathfinding_node(uint8_t goal, float angle){
 void goto_xya_panning(int16_t x, int16_t y, float pan_angle)
 {
   for(;;) {
+     idle();
     ROME_SENDWAIT_ASSERV_GOTO_XYA_PANNING(&rome_asserv, x, y, 1000*pan_angle);
     robot_state.asserv.xy = 0;
     robot_state.asserv.a = 0;
     for(;;) {
+     idle();
       if(robot_state.asserv.xy && robot_state.asserv.a) {
         return;
       }
@@ -497,7 +500,6 @@ void goto_xya_panning(int16_t x, int16_t y, float pan_angle)
         //resend order
         break;
       }
-      idle();
     }
   }
 }
@@ -507,10 +509,12 @@ static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t 
 {
   uint32_t start_time_us = uptime_us();
   for(;;) {
+    idle();
     ROME_SENDWAIT_ASSERV_GOTO_XY_REL(&rome_asserv, x, y, 1000*a);
     robot_state.asserv.xy = 0;
     robot_state.asserv.a = 0;
     for(;;) {
+     idle();
       uint32_t time = uptime_us() - start_time_us;
       if((time) > ((uint32_t) timeout_ms*1000)){
         ROME_LOGF(&rome_paddock,INFO,"goto_traj : timeout %ld > %ld", time, (uint32_t)timeout_ms*1000);
@@ -527,7 +531,6 @@ static order_result_t goto_xya_rel_wait(int16_t x, int16_t y, float a, uint16_t 
         //do not resend order, it would be osolete since we already moved
         return ORDER_DETECTION;
       }
-      idle();
     }
   }
 }
@@ -597,12 +600,12 @@ team_t strat_select_team(void)
   // wait for starting cord to be unplugged
   ROME_LOG(&rome_paddock,INFO,"Unplug starting cord ...");
   while(starting_cord_plugged()) {
+    idle();
     if((uptime_us() / 500000) % 2 == 0) {
       portpin_outset(&LED_B_PP);
     } else {
       portpin_outclr(&LED_B_PP);
     }
-    idle();
   }
 
   // wait for color to be selected
@@ -611,6 +614,7 @@ team_t strat_select_team(void)
   team_t team = TEAM_NONE;
   portpin_outclr(&LED_B_PP);
   for(;;) {
+    idle();
     if(portpin_in(&COLOR_SELECTOR_PP)) {
       portpin_outclr(&LED_R_PP);
       portpin_outset(&LED_G_PP);
@@ -626,7 +630,6 @@ team_t strat_select_team(void)
       portpin_outclr(&LED_B_PP);
       break;
     }
-    idle();
   }
 
   if(team == TEAM_GREEN)
@@ -647,6 +650,7 @@ void strat_wait_start(void)
 {
 
   while(starting_cord_plugged()) {
+    idle();
     if((uptime_us() / 500000) % 2 == 0) {
       if(robot_state.team == TEAM_ORANGE) {
         portpin_outset(&LED_R_PP);
@@ -662,7 +666,6 @@ void strat_wait_start(void)
       portpin_outclr(&LED_G_PP);
       portpin_outset(&LED_B_PP);
     }
-    idle();
   }
 
   portpin_outclr(&LED_R_PP);
