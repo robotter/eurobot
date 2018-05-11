@@ -21,8 +21,6 @@
 #include "resources.inc.c"
 #include "config.h"
 
-#define BATTERY_ALERT_LIMIT  12000
-
 rome_intf_t rome_intf;
 
 #define ROME_DEVICE  ROME_ENUM_DEVICE_BOOMOTTER
@@ -35,6 +33,7 @@ uint8_t screen_data[sizeof(texture_t) + sizeof(pixel_t) * SCREEN_W * SCREEN_H];
 texture_t *const screen = (texture_t*)screen_data;
 
 static bool battery_discharged = false;
+static bool battery_on_stand = false;
 
 // Match sounds, ordered by priority (higher is better)
 typedef enum {
@@ -414,31 +413,40 @@ static void draw_celebration(void)
   }
 }
 
+static void draw_stand(void)
+{
+  static uint8_t bug_frame;
+  draw_scrolling_debug_team();
+  if((++bug_frame / 8) % 2 == 0) {
+    draw_lower_image(&image_bug1);
+  } else {
+    draw_lower_image(&image_bug2);
+  }
+  draw_yellow_lines();
+}
+
+static void draw_match(void)
+{
+  draw_score();
+  draw_scrolling_robotter();
+  draw_celebration();
+}
+
 
 static void update_display(void)
 {
-  static uint8_t bug_frame;
   texture_clear(screen);
 
-  if(boomotter_mode == ROME_ENUM_BOOMOTTER_MODE_NYANCAT) {
+  if(!battery_on_stand) {
+    draw_match();
+  } else if(boomotter_mode == ROME_ENUM_BOOMOTTER_MODE_NYANCAT) {
     draw_nyancat();
   } else if(boomotter_mode == ROME_ENUM_BOOMOTTER_MODE_LOITUMA) {
     draw_loituma();
-
   } else if(match_state.timer_last_update == 0) {
-    // stand mode
-    draw_scrolling_debug_team();
-    if((++bug_frame / 8) % 2 == 0) {
-      draw_lower_image(&image_bug1);
-    } else {
-      draw_lower_image(&image_bug2);
-    }
-    draw_yellow_lines();
+    draw_stand();
   } else {
-    // match mode
-    draw_score();
-    draw_scrolling_robotter();
-    draw_celebration();
+    draw_match();
   }
 
   // if robots have not updated the timer, play a special sound
@@ -560,6 +568,7 @@ static void update_battery(void)
     it = 0;
     uint16_t voltage = battery_get_value();
     battery_discharged = voltage < BATTERY_ALERT_LIMIT;
+    battery_on_stand = voltage >= BATTERY_STAND_THRESHOLD;
     ROME_SEND_TM_BATTERY(&rome_intf, ROME_DEVICE, voltage);
   }
 }
