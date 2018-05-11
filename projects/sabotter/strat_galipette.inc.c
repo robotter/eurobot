@@ -361,6 +361,9 @@ void strat_run(void)
   //  idle_delay_ms(1000);
   //}
 
+  idle_delay_ms(500);
+  goto_xya(KX(1300),500,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+
   ROME_LOG(&rome_paddock,INFO,"That's all folks !");
   idle_delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
