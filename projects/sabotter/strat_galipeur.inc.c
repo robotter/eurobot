@@ -199,8 +199,8 @@ order_result_t take_water(dispenser_t dispenser){
       or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_OPPOSITE_BEE, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
       if (or != ORDER_SUCCESS){
         ROME_LOG(&rome_paddock,INFO,"Aborting opposite dispenser");
-        //go back near start area
-        goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_TOWER, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+        //go back in the middle
+        goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MIDDLE_BOT, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
         return or;
       }
       //we did a very long move, so try to launch an autoset
@@ -348,25 +348,29 @@ void strat_run(void)
             or_take_water_far   == ORDER_SUCCESS &&
             or_empty_water_near == ORDER_SUCCESS &&
             or_empty_water_far  == ORDER_SUCCESS )  ){
+    idle();
 
     if (or_take_water_near != ORDER_SUCCESS){
       or_take_water_near = take_water(DISPENSER_NEAR);
       or_empty_water_near = empty_cylinder();
     }
 
+    //go to the middle to reset the Y axis
     if (goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MIDDLE_BOT, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN)) 
           == ORDER_SUCCESS){
       goto_xya(KX(0), 500, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
       autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, 250+AUTOSET_OFFSET);
       goto_xya(KX(0), 550, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
 
-      if (or_take_water_far != ORDER_SUCCESS){
-        or_take_water_far = take_water(DISPENSER_FAR);
-        or_empty_water_far = empty_cylinder();
-      }
     }
+    //if oponent blocked us on the path to the middle, go back near starting area
     else {
       goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_TOWER, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+    }
+
+    if (or_take_water_far != ORDER_SUCCESS){
+      or_take_water_far = take_water(DISPENSER_FAR);
+      or_empty_water_far = empty_cylinder();
     }
   }
 
