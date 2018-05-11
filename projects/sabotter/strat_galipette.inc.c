@@ -239,7 +239,7 @@ order_result_t launch_bee(void){
     a = arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP);
   or = goto_xya(KX(1100),140, a);
   update_score(50);
-  or = goto_xya(KX(1250),300, arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP));
+  or = goto_xya(KX(1250),300, a);
   bee_launcher_down();
 
   return or;
