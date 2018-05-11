@@ -226,8 +226,9 @@ order_result_t launch_bee(void){
   galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_DOWN, 0, BUMPER_TO_CENTER_DIST);
   or = goto_xya(KX(1350),150, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
   bee_launcher_down();
-  or = goto_xya(KX(1350),140, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  or = goto_xya(KX(1350),200, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   bee_launcher_push();
+  or = goto_xya(KX(1350),140, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   idle_delay_ms(200);
   float a=0;
   if (robot_state.team == TEAM_GREEN)
