@@ -479,6 +479,7 @@ static void draw_match(void)
 
 static void update_display(void)
 {
+  portpin_outtgl(&LED_RUN_PP);
   texture_clear(screen);
 
   if(!battery_on_stand) {
@@ -521,6 +522,7 @@ static void update_display(void)
     }
   }
 
+  portpin_outtgl(&LED_RUN_PP);
   display_screen(screen);
 }
 
