@@ -61,7 +61,7 @@ void strat_init(void)
 void strat_prepare(void)
 {
   //initalise kx factor
-  robot_kx = robot_state.team == TEAM_GREEN ? -1 : 1;
+  robot_kx = TEAM_SIDE_VALUE(-1, 1);
 
   //send color to meca
   ROME_SENDWAIT_MECA_SET_ROBOT_COLOR(&rome_meca, robot_state.team == TEAM_GREEN);
@@ -135,11 +135,7 @@ void set_speed(robot_speed_t s){
 float compute_throw_angle(int16_t x, int16_t y){
   float target = atan2(KX(1320)-KX(x),2200-y);
   float robot = arfast(ROBOT_SIDE_TURBINE,TABLE_SIDE_UP);
-  //if (robot_state.team == TEAM_GREEN)
-  //  return robot + target;
-  //else
-    return robot - target;
-
+  return robot - target;
 }
 
 typedef enum{
@@ -287,11 +283,7 @@ order_result_t trash_water_treatment(void){
 
   //push away the cubes in front of treatment area
   //the angle is changed to avoid pushing cubes towards recyling area
-  float angle;
-  if (robot_state.team == TEAM_GREEN)
-    angle = arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN);
-  else
-    angle = arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_MAIN);
+  float angle = arfast(TEAM_SIDE_VALUE(ROBOT_SIDE_BACK, ROBOT_SIDE_BALLEATER), TABLE_SIDE_MAIN);
 
   or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MIDDLE_BOT, angle);
   if (or != ORDER_SUCCESS)

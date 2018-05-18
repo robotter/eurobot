@@ -141,7 +141,7 @@ void strat_prepare(void)
 {
   set_speed(RS_NORMAL);
   //initalise kx factor
-  robot_kx = robot_state.team == TEAM_GREEN ? -1 : 1;
+  robot_kx = TEAM_SIDE_VALUE(-1, 1);
 
   ROME_LOG(&rome_paddock,DEBUG,"Strat prepare");
 
@@ -232,11 +232,7 @@ order_result_t launch_bee(void){
   bee_launcher_push();
   or = goto_xya(KX(1350),140, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   idle_delay_ms(200);
-  float a=0;
-  if (robot_state.team == TEAM_GREEN)
-    a = arfast(ROBOT_SIDE_LEFT,TABLE_SIDE_UP);
-  else
-    a = arfast(ROBOT_SIDE_RIGHT,TABLE_SIDE_UP);
+  float a = arfast(ROBOT_SIDE_AUX, TABLE_SIDE_UP);
   or = goto_xya(KX(1100),140, a);
   update_score(50);
   or = goto_xya(KX(1250),300, a);
