@@ -308,7 +308,7 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
         hrobot_motors_invmatrix_correct[7] = frame->asserv_set_cmatrix.m7;
         hrobot_motors_invmatrix_correct[8] = frame->asserv_set_cmatrix.m8;
       }
-    }
+    } break;
 
     // forward orders to R3D2 board
     case ROME_MID_R3D2_SET_ROTATION:
