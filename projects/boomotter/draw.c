@@ -6,6 +6,9 @@
 const draw_rect_t screen_upper_rect = RECT(0, 0, SCREEN_UW, SCREEN_UH);
 const draw_rect_t screen_lower_rect = RECT(0, SCREEN_UH, SCREEN_LW, SCREEN_H);
 
+extern draw_rect_t bound_to_texture(const texture_t *tex, int8_t x, int8_t y, uint8_t w, uint8_t h);
+extern void texture_clear(texture_t *tex);
+
 
 void display_screen(const texture_t *tex) {
   ws2812_send_pixel(0, 0, 0);
