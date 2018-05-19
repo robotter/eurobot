@@ -432,7 +432,7 @@ void cylinder_update(void){
       balleater_on();
       cylinder.eating_ts = uptime_us();
       cylinder.state = CYLINDER_BALLEATER_WAIT_EATING;
-      //no break;
+      // fallthrough
 
     case CYLINDER_BALLEATER_WAIT_EATING:{
       bool delay = cylinder.eating_ts + CYLINDER_EATING_TIMEOUT_US > uptime_us();
@@ -487,14 +487,13 @@ void cylinder_update(void){
       // shift to next empty spot
       cylinder.position = cylinder_get_next_color_slot(jevois_cam_get_entry_color(&cam));
       cylinder.state = CYLINDER_EATING_FIND_EMPTY_ORDER_MOVING;
-      // no break
-    }
+    } // fallthrough
 
     case CYLINDER_TAKEBALLS:
       //first ball in dispenser should be a good one
       cylinder.position = cylinder_get_next_color_slot(cylinder.robot_color);
       cylinder.state = CYLINDER_EATING_FIND_EMPTY_ORDER_MOVING;
-      //no break
+      // fallthrough
 
     case CYLINDER_EATING_FIND_EMPTY_ORDER_MOVING:
       if(!cylinder_balleater_move())
@@ -553,7 +552,7 @@ void cylinder_update(void){
       if (!cylinder_turbine_move())
         break;
       cylinder.state = CYLINDER_THROWBALLS_PREPARE_MOVING;
-      //no break
+      // fallthrough
     case CYLINDER_THROWBALLS_PREPARE_MOVING:
       if (!cylinder_turbine_move_done())
         break;
@@ -580,7 +579,7 @@ void cylinder_update(void){
       cylinder.position = cylinder.next_move.end;
       cylinder.state = CYLINDER_THROWBALLS_ORDER_TURN;
       cylinder.throw_ts = uptime_us();
-      //no break
+      // fallthrough
 
     case CYLINDER_THROWBALLS_ORDER_TURN:{
       bool delay = cylinder.throw_ts + CYLINDER_TURBINE_STOP_DELAY_US < uptime_us();
@@ -600,7 +599,7 @@ void cylinder_update(void){
       turbine_off();
       cylinder.state = CYLINDER_THROWBALLS_STOPPING;
       cylinder.throw_ts = uptime_us();
-      //no break
+      // fallthrough
 
     case CYLINDER_THROWBALLS_STOPPING:{
       bool delay = cylinder.throw_ts + CYLINDER_TURBINE_STOP_DELAY_US < uptime_us();

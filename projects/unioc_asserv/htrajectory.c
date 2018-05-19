@@ -948,7 +948,7 @@ void htrajectory_panning_fsm( htrajectory_manager_t *man_data)
         (*(man_data->fsm_data.panning_data.acq_fn))(a);
       }
       man_data->fsm_data.panning_data.fsm_step = PANNING_FSM_CHECK_FOR_NEW_ANGLE_SP;
-      // no break to continue with PANNING_FSM_CHECK_FOR_NEW_ANGLE_SP
+      // fallthrough
 
     case PANNING_FSM_CHECK_FOR_NEW_ANGLE_SP :
       if (htrajectory_doneA(man_data->htj))
