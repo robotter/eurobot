@@ -1,0 +1,6 @@
+I2C vers carte magichanism : port E0/E1, ARM_ENCODER_[A,B]_3V3
+
+Fin de courses : ADCB[0,1]
+
+Direction et step moteur pas à pas : PC[0-3]_3V3
+ENABLE moteurs : ADCB[2,3]
