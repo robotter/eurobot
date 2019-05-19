@@ -162,23 +162,16 @@ register_messages(
       # activate/deactivate motor power
       (Order, 'meca_set_power', [('active','bool')]),
       # set robot color
-      (Order, 'meca_set_robot_color', [('green','bool')]),
-      # meca spot elevator commands
+      (Order, 'meca_set_robot_color', [('yellow','bool')]),
+      # meca commands
       rome_types.rome_enum('meca_command', (
           'none',
-          'check_empty',
-          'load_water',
-          'throw_watertower',
-          'trash_treatment',
-          'trash_beginmatch',
-          'throw_offcup',
-          'prepare_load_water',
-          'prepare_throw_watertower',
-          'prepare_trash_treatment',
+          'take_atoms',
+          'release_atoms',
+          'elevator_up',
+          'elevator_down',
           )),
-      (Order, 'meca_cmd', [('cmd','meca_command')]),
-      (Order, 'meca_set_throw_power', [('pwr', 'uint16')]),
-      (Order, 'meca_set_trash_power', [('pwr', 'uint16')]),
+      (Order, 'meca_cmd', [('cmd','meca_command'), ('side','bool')]),
       # generic analog servo commands
       (Order, 'meca_set_servo', [('id','uint8'),('value','uint16')]),
 
@@ -192,14 +185,8 @@ register_messages(
           'ready',  # meca ready for new commands
           )),
       ('meca_tm_state'  ,[('state','meca_state')]),
-      ('meca_tm_cylinder_state', [('nb_slots','uint8'),('nb_empty','uint8'),('nb_good','uint8'),('nb_bad','uint8'),('color','jevois_color[]')]),
-      rome_types.rome_enum('emptying_move', (
-            'none',
-            'watertower',
-            'treatment')),
-      ('meca_tm_cylinder_position', [('a','angle')]),
-      ('meca_tm_optimal_emptying_move', [('move','emptying_move')]),
-      ]),
+      ('meca_tm_arms_state', [('l_up','bool'),('r_up','bool'),('l_atoms','bool[3]'),('r_atoms','bool[3]')]),
+    ]),
 
     # PATHFINDING
     (0xB0, [

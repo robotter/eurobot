@@ -12,7 +12,7 @@
 #include "config.h"
 #include <pwm/motor.h>
 #include "servos.h"
-#include "cylinder.h"
+#include "arms.h"
 #include "jevois_cam.h"
 
 #define ROME_DEVICE  ROME_ENUM_DEVICE_GALIPEUR_MECA
@@ -39,32 +39,17 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_MECA_CMD: {
       ROME_LOGF(&rome_strat, DEBUG, "MECA: cmd %d",frame->meca_cmd.cmd);
       switch(frame->meca_cmd.cmd) {
-        case ROME_ENUM_MECA_COMMAND_CHECK_EMPTY:
-          cylinder_check_empty();
+        case ROME_ENUM_MECA_COMMAND_TAKE_ATOMS:
+          arm_take_atoms(frame->meca_cmd.side ? arm_l : arm_r);
           break;
-        case ROME_ENUM_MECA_COMMAND_PREPARE_LOAD_WATER:
-          cylinder_load_water(false);
+        case ROME_ENUM_MECA_COMMAND_RELEASE_ATOMS:
+          arm_release_atoms(frame->meca_cmd.side ? arm_l : arm_r);
           break;
-        case ROME_ENUM_MECA_COMMAND_LOAD_WATER:
-          cylinder_load_water(true);
+        case ROME_ENUM_MECA_COMMAND_ELEVATOR_UP:
+          arm_elevator_up(frame->meca_cmd.side ? arm_l : arm_r);
           break;
-        case ROME_ENUM_MECA_COMMAND_PREPARE_THROW_WATERTOWER:
-          cylinder_throw_watertower(false);
-          break;
-        case ROME_ENUM_MECA_COMMAND_THROW_WATERTOWER:
-          cylinder_throw_watertower(true);
-          break;
-        case ROME_ENUM_MECA_COMMAND_PREPARE_TRASH_TREATMENT:
-          cylinder_trash_treatment(false);
-          break;
-        case ROME_ENUM_MECA_COMMAND_TRASH_TREATMENT:
-          cylinder_trash_treatment(true);
-          break;
-        case ROME_ENUM_MECA_COMMAND_TRASH_BEGINMATCH:
-          cylinder_trash_beginmatch();
-          break;
-        case ROME_ENUM_MECA_COMMAND_THROW_OFFCUP:
-          cylinder_throw_offcup();
+        case ROME_ENUM_MECA_COMMAND_ELEVATOR_DOWN:
+          arm_elevator_down(frame->meca_cmd.side ? arm_l : arm_r);
           break;
         case ROME_ENUM_MECA_COMMAND_NONE:
         default:
@@ -72,6 +57,11 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       }
       rome_reply_ack(intf, frame);
     } break;
+
+    //case ROME_MID_MECA_SET_THROW_POWER:
+    //  cylinder_set_throw_power(frame->meca_set_throw_power.pwr);
+    //  rome_reply_ack(intf, frame);
+    //  break;
 
     case ROME_MID_MECA_SET_POWER: {
       uint8_t active = frame->meca_set_power.active;
@@ -83,23 +73,6 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       rome_reply_ack(intf, frame);
     } break;
 
-    case ROME_MID_MECA_SET_ROBOT_COLOR: {
-      uint8_t green = frame->meca_set_robot_color.green;
-      if(green) {
-        cylinder_set_robot_color(ROME_ENUM_JEVOIS_COLOR_GREEN);
-      } else {
-        cylinder_set_robot_color(ROME_ENUM_JEVOIS_COLOR_ORANGE);
-      }
-      rome_reply_ack(intf, frame);
-    } break;
-    case ROME_MID_MECA_SET_THROW_POWER:
-      cylinder_set_throw_power(frame->meca_set_throw_power.pwr);
-      rome_reply_ack(intf, frame);
-      break;
-    case ROME_MID_MECA_SET_TRASH_POWER:
-      cylinder_set_throw_power(frame->meca_set_trash_power.pwr);
-      rome_reply_ack(intf, frame);
-      break;
     default:
       break;
   }
@@ -116,6 +89,8 @@ void rome_jevois_handler(rome_intf_t *intf, const rome_frame_t *frame)
     lmt = uptime_us();
   }
 }
+
+#if 0 //no ax12 needed on galipeur this year
 
 //NOTE: ax12 methods MUST NOT be called with UART interrupts blocked, and from
 // a single "thread". Just call them from the main thread and you'll be safe.
@@ -182,6 +157,7 @@ ax12_t ax12 = {
   .recv = ax12_recv_char,
   .set_state = ax12_set_state,
 };
+#endif //AX12
 
 void update_match_timer(void)
 {
@@ -193,7 +169,7 @@ void update_match_timer(void)
 
   if(match_timer_ms > 1000 * (uint32_t)MATCH_DURATION_SECS) {
     portpin_outset(&LED_AN_PP(0));
-    cylinder_shutdown();
+    arms_shutdown();
   }
 }
 
@@ -210,23 +186,17 @@ void update_rome_jevois(void)
 
 void send_telemetry(void)
 {
-  ROME_SEND_MECA_TM_STATE(&rome_strat,cylinder_get_tm_state());
-  ROME_SEND_MECA_TM_OPTIMAL_EMPTYING_MOVE(&rome_strat,cylinder_get_tm_optimal_move());
-  ROME_SEND_MECA_TM_CYLINDER_STATE(&rome_strat,
-    CYLINDER_NB_POS,
-    cylinder_count_empty_slots(),
-    cylinder_count_good_water(),
-    cylinder_count_bad_water(),
-    cylinder.ball_color,
-    CYLINDER_NB_POS);
-  //convert ax12 angle to milli radians
-  int16_t a = ( cylinder_get_position() - cylinder_get_position_zero() )
-    *(300./1023.*M_PI/180.*1000.);
-  ROME_SEND_MECA_TM_CYLINDER_POSITION(&rome_strat, a );
-
+  ROME_SEND_MECA_TM_STATE(&rome_strat,arms_get_tm_state());
+  ROME_SEND_MECA_TM_ARMS_STATE(&rome_strat,
+    arm_l.up,
+    arm_r.up,
+    arm_l.atoms,
+    arm_r.atoms);
   ROME_SEND_TM_MATCH_TIMER(&rome_strat, ROME_DEVICE, match_timer_ms/1000);
 }
 
+void arm_l_update(void){ arm_update(arm_l); };
+void arm_r_update(void){ arm_update(arm_r); };
 
 int main(void)
 {
@@ -255,7 +225,7 @@ int main(void)
   // initialize uarts
   uart_init();
   uart_fopen(UART_STRAT);
-  portpin_dirset(&AX12_DIR_PP);
+  //portpin_dirset(&AX12_DIR_PP);
 
   servos_init();
 
@@ -271,9 +241,10 @@ int main(void)
   idle_set_callback(rome_strat_update, update_rome_strat);
   idle_set_callback(rome_telemetry, send_telemetry);
   idle_set_callback(rome_jevois_update, update_rome_jevois);
-  idle_set_callback(cylinder_update, cylinder_update);
+  idle_set_callback(arm_l_update, arm_l_update);
+  idle_set_callback(arm_r_update, arm_r_update);
 
-  cylinder_init();
+  arms_init();
 
   // Initialize ROME
   rome_intf_init(&rome_strat);
