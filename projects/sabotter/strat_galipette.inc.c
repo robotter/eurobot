@@ -37,19 +37,19 @@ typedef enum {
 void set_speed(robot_speed_t s){
   switch (s){
     case RS_SLOW:
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(&rome_asserv, 0.5, 0.05);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(ROME_DST_ASSERV, 1.5, 0.03);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(ROME_DST_ASSERV, 15, 0.03);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(ROME_DST_ASSERV, 0.5, 0.05);
       break;
     case RS_NORMAL:
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.05);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.05);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(&rome_asserv, 0.5, 0.05);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(ROME_DST_ASSERV, 2.5, 0.05);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(ROME_DST_ASSERV, 20, 0.05);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(ROME_DST_ASSERV, 0.5, 0.05);
       break;
     case RS_FAST:
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 3, 0.05);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 80, 0.05);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(&rome_asserv, 0.5, 0.05);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(ROME_DST_ASSERV, 3, 0.05);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(ROME_DST_ASSERV, 80, 0.05);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STOP(ROME_DST_ASSERV, 0.5, 0.05);
       break;
     default:
       break;
@@ -57,18 +57,18 @@ void set_speed(robot_speed_t s){
 }
 
 void cube_claw_start(void){
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_START);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_START);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_START);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_START);
 }
 
 void cube_claw_close(void){
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_CLOSED);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_CLOSED);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_CLOSED);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_CLOSED);
 }
 
 void cube_claw_open(void){
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_OPENED);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_OPENED);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_OPENED);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_OPENED);
 }
 
 void bee_launcher_down(void) {
@@ -115,15 +115,15 @@ void galipette_autoset_papush(robot_side_t robot_side, autoset_side_t table_side
 
 void strat_init(void)
 {
-  ROME_LOG(&rome_paddock,INFO,"Galipette : Strat init");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"Galipette : Strat init");
   // disable asserv
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
 
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
   cube_claw_open();
 
   // set R3D2 parameters
-  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,350,25);
+  ROME_SENDWAIT_R3D2_SET_ROTATION(ROME_DST_ASSERV,350,25);
 
   for(;;) {
     idle();
@@ -133,7 +133,7 @@ void strat_init(void)
 
 
   cube_claw_open();
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
   bee_launcher_down();
 }
 
@@ -143,13 +143,13 @@ void strat_prepare(void)
   //initalise kx factor
   robot_kx = TEAM_SIDE_VALUE(-1, 1);
 
-  ROME_LOG(&rome_paddock,DEBUG,"Strat prepare");
+  ROME_LOG(ROME_DST_PADDOCK, DEBUG,"Strat prepare");
 
   cube_claw_close();
   idle_delay_ms(200);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
 
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
   //boomotter is on the table !
   update_score(5);
 
@@ -166,8 +166,8 @@ void strat_prepare(void)
   //bee is on the table !
   update_score(5);
 
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 0);
 }
 
 #define BOOMOTTER_MAX_AGE_US 3e6
@@ -178,7 +178,7 @@ bool boomotter_connected(void){
 
 
 order_result_t switch_on_boomotter(void){
-  ROME_LOG(&rome_paddock,INFO,"go switching on boomotter");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"go switching on boomotter");
   order_result_t or = ORDER_FAILURE;
   //go switching domotic panel first
   or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
@@ -211,8 +211,8 @@ order_result_t switch_on_boomotter(void){
 }
 
 order_result_t launch_bee(void){
-  ROME_LOG(&rome_paddock,INFO,"go lauching the bee");
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"go lauching the bee");
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
   order_result_t or = ORDER_FAILURE;
   or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BEE,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   if (or != ORDER_SUCCESS){
@@ -252,44 +252,44 @@ order_result_t look_at_the_card(void){
 
 order_result_t take_cubes_in_front_of_contruction_area(void){
   order_result_t or = ORDER_FAILURE;
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
   or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CONSTRUCTION_AREA_CUBES,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
 
   //take a cube
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_MID);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_MID);
   or = goto_xya(KX(680),1250,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
   idle_delay_ms(500);
   cube_claw_open();
   goto_xya(KX(680),1230,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
   idle_delay_ms(500);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
   idle_delay_ms(500);
   or = goto_xya(KX(680),1260,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
   idle_delay_ms(500);
   cube_claw_close();
   idle_delay_ms(500);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
   goto_xya(KX(680),1230,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
   //take another one
   goto_xya(KX(1000),1500,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
   or = goto_xya(KX(880),1500,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_MID);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_MID);
   idle_delay_ms(500);
   cube_claw_open();
   goto_xya(KX(910),1500,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
   idle_delay_ms(500);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
   idle_delay_ms(500);
   or = goto_xya(KX(880),1500,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
   idle_delay_ms(500);
   cube_claw_close();
   idle_delay_ms(500);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
   goto_xya(KX(1000),1500,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
 
   //go constructing !
   goto_xya(KX(900),1800,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
-  ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
+  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
   idle_delay_ms(500);
   cube_claw_open();
   goto_xya(KX(910),1810,arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_UP));
@@ -310,8 +310,8 @@ order_result_t take_cubes_in_front_of_contruction_area(void){
 
 void strat_run(void)
 {
-  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
   cube_claw_close();
 
   //wait for galipeur to go
@@ -341,7 +341,7 @@ void strat_run(void)
 
   //idle_delay_ms(2000);
   //cube_claw_open();
-  //ROME_SENDWAIT_ASSERV_SET_SERVO(&rome_asserv, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
+  //ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
  
   //reswitch on boomotter if it was switched off
   //for(;;){
@@ -363,8 +363,8 @@ void strat_run(void)
   idle_delay_ms(500);
   goto_xya(KX(1300),500,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
 
-  ROME_LOG(&rome_paddock,INFO,"That's all folks !");
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"That's all folks !");
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
   for(;;){
     bee_launcher_push();
     idle_delay_ms(500);
@@ -379,7 +379,7 @@ void strat_run(void)
 
 void strat_test(void)
 {
-  ROME_LOG(&rome_paddock,INFO,"Strat test stuff");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"Strat test stuff");
   for(;;) {
     update_rome_interfaces();
     if(!robot_state.gyro_calibration)
@@ -387,8 +387,8 @@ void strat_test(void)
   }
 
   set_speed(RS_NORMAL);
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
 
   for(;;){
     idle_delay_ms(200);

@@ -29,6 +29,7 @@
 #include <timer/uptime.h>
 #include <idle/idle.h>
 #include <rome/rome.h>
+#include <xbee/xbee.h>
 #include "strat.h"
 #include "common.h"
 #include "config.h"
@@ -39,12 +40,12 @@
 // battery monitoring
 BATTMON_t battery;
 
-// ROME interfaces
-rome_intf_t rome_asserv;
+// ROME and XBee interfaces
+rome_reader_t rome_asserv_reader;
 #ifdef UART_MECA
-rome_intf_t rome_meca;
+rome_reader_t rome_meca_reader;
 #endif
-rome_intf_t rome_paddock;
+xbee_intf_t xbee_paddock;
 
 #if (defined GALIPEUR)
 # define ROME_DEVICE  ROME_ENUM_DEVICE_GALIPEUR_STRAT
@@ -57,7 +58,7 @@ pathfinding_t pathfinder;
 
 // message handlers
 
-static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
+static void rome_asserv_handler(const rome_frame_t *frame)
 {
   switch(frame->mid) {
     case ROME_MID_ACK: {
@@ -109,10 +110,10 @@ static void rome_asserv_handler(rome_intf_t *intf, const rome_frame_t *frame)
   }
 
   // forward
-  rome_send(&rome_paddock, frame);
+  rome_send(ROME_DST_BROADCAST, frame); //TODO don't broadcast everything
 }
 
-static void rome_meca_handler(rome_intf_t *intf, const rome_frame_t *frame)
+static void rome_meca_handler(const rome_frame_t *frame)
 {
   switch(frame->mid) {
     case ROME_MID_ACK: {
@@ -138,10 +139,10 @@ static void rome_meca_handler(rome_intf_t *intf, const rome_frame_t *frame)
   }
 
   // forward
-  rome_send(&rome_paddock, frame);
+  rome_send(ROME_DST_BROADCAST, frame); //TODO don't broadcast everything
 }
 
-static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
+static void rome_xbee_handler(uint16_t addr, const rome_frame_t *frame)
 {
   portpin_outtgl(&LED1_PP);
   switch(frame->mid) {
@@ -154,13 +155,13 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
     } break;
     case ROME_MID_STRAT_TEST:  {
       strat_test();
-    }break;
+    } break;
     case ROME_MID_STRAT_SET_SERVO: {
-      ROME_LOGF(&rome_paddock, DEBUG, "strat: set servo %u to %u", frame->strat_set_servo.id, frame->strat_set_servo.value);
+      ROME_LOGF(ROME_DST_PADDOCK, DEBUG, "strat: set servo %u to %u", frame->strat_set_servo.id, frame->strat_set_servo.value);
 #if defined(GALIPETTE)
       servo_set(frame->strat_set_servo.id, frame->strat_set_servo.value);
 #endif
-      rome_reply_ack(intf, frame);
+      rome_reply_ack(ROME_DST_XBEE(addr), frame);
       return;
     } break;
     case ROME_MID_TM_ROBOT_POSITION: {
@@ -168,35 +169,54 @@ static void rome_paddock_handler(rome_intf_t *intf, const rome_frame_t *frame)
         robot_state.partner_pos.x = frame->tm_robot_position.x;
         robot_state.partner_pos.y = frame->tm_robot_position.y;
         robot_state.partner_pos.a = frame->tm_robot_position.a/1000.;
-        }
-      rome_reply_ack(intf, frame);
+      }
+      rome_reply_ack(ROME_DST_XBEE(addr), frame);
       return;
-    }break;
+    } break;
     case ROME_MID_TM_BATTERY:{
       if(frame->tm_battery.device == ROME_ENUM_DEVICE_BOOMOTTER){
         robot_state.boom_age = uptime_us();
-        }
+      }
       return;
-    }break;
+    } break;
     default:
       break;
   }
 
   // forward to other interfaces
-  rome_send(&rome_asserv, frame);
+  rome_send(ROME_DST_ASSERV, frame);
 #ifdef UART_MECA
-  rome_send(&rome_meca, frame);
+  rome_send(ROME_DST_MECA, frame);
 #endif
 }
+
+static void xbee_paddock_handler(xbee_intf_t *intf, const xbee_frame_t *frame)
+{
+  switch(frame->api_id) {
+    case XBEE_ID_RX16: {
+      const rome_frame_t *rome_frame = rome_parse_frame(frame->rx16.data, frame->length - 5);
+      if(rome_frame) {
+        const uint16_t addr = (frame->rx16.addr_be << 8) | (frame->rx16.addr_be & 0xff);
+        rome_xbee_handler(addr, rome_frame);
+      }
+    } break;
+    default:
+      break;  // ignore
+  }
+}
+
 
 // Handle input from all ROME interfaces
 void update_rome_interfaces(void)
 {
-  rome_handle_input(&rome_asserv);
+  const rome_frame_t *frame;
+  while((frame = rome_reader_read(&rome_asserv_reader))) rome_asserv_handler(frame);
 #ifdef UART_MECA
-  rome_handle_input(&rome_meca);
+  while((frame = rome_reader_read(&rome_meca_reader))) rome_meca_handler(frame);
+#else
+  (void)rome_meca_handler;
 #endif
-  rome_handle_input(&rome_paddock);
+  xbee_handle_input(&xbee_paddock);
 }
 
 
@@ -212,7 +232,7 @@ static void update_battery(void)
     BATTMON_monitor(&battery);
     uint16_t voltage = battery.FilterMemory;
     // send telemetry message
-    ROME_SEND_TM_BATTERY(&rome_paddock, ROME_DEVICE, voltage);
+    ROME_SEND_TM_BATTERY(ROME_DST_BROADCAST, ROME_DEVICE, voltage);
     portpin_outtgl(&LED0_PP);
   }
 
@@ -220,7 +240,7 @@ static void update_battery(void)
 
 static void send_messages(void)
 {
-  ROME_SEND_TM_SCORE(&rome_paddock, ROME_DEVICE, robot_state.points);
+  ROME_SEND_TM_SCORE(ROME_DST_BROADCAST, ROME_DEVICE, robot_state.points);
 }
 
 /// Scheduler function called at match end
@@ -228,18 +248,18 @@ static void match_end(void)
 {
   // count time second by second
   if(++robot_state.match_time >= 99) {
-    ROME_LOG(&rome_paddock,INFO,"End of match");
+    ROME_LOG(ROME_DST_PADDOCK,INFO,"End of match");
     // end of match
-    ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
+    ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
 #ifdef UART_MECA
-    ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 0);
+    ROME_SENDWAIT_MECA_SET_POWER(ROME_DST_MECA, 0);
 #endif
     portpin_outset(&LED_R_PP);
     portpin_outset(&LED_G_PP);
     portpin_outset(&LED_B_PP);
     for(;;) {
       //send timer for boomotter stuff
-      ROME_SEND_TM_MATCH_TIMER(&rome_paddock, ROME_DEVICE, robot_state.match_time);
+      ROME_SEND_TM_MATCH_TIMER(ROME_DST_BROADCAST, ROME_DEVICE, robot_state.match_time);
       idle_delay_ms(500);
     }
   }
@@ -249,7 +269,7 @@ void rome_send_pathfinding_graph(const pathfinding_t *finder)
 {
   for(uint8_t i=0; i<finder->nodes_size; i++) {
     const pathfinding_node_t *node = &finder->nodes[i];
-    ROME_SEND_PATHFINDING_NODE(&rome_paddock, i, node->x, node->y, node->neighbors, node->neighbors_size);
+    ROME_SEND_PATHFINDING_NODE(ROME_DST_PADDOCK, i, node->x, node->y, node->neighbors, node->neighbors_size);
   }
 }
 
@@ -287,28 +307,18 @@ int main(void)
   __asm__("sei");
 
 
-  //----------------------------------------------------------------------
-  // Initialize ROME
-  rome_intf_init(&rome_asserv);
-  rome_asserv.uart = ROME_ASSERV_UART;
-  rome_asserv.handler = rome_asserv_handler;
-
-#ifdef ROME_MECA_UART
-  rome_intf_init(&rome_meca);
-  rome_meca.uart = ROME_MECA_UART;
-  rome_meca.handler = rome_meca_handler;
-#else
-  (void)rome_meca_handler;
+  // Initialize XBee and ROME
+  xbee_intf_init(&xbee_paddock, XBEE_PADDOCK_UART);
+  xbee_paddock.handler = xbee_paddock_handler;
+  rome_reader_init(&rome_asserv_reader, ROME_ASSERV_UART);
+#ifdef UART_MECA
+  rome_reader_init(&rome_meca_reader, ROME_MECA_UART);
 #endif
 
-  rome_intf_init(&rome_paddock);
-  rome_paddock.uart = ROME_PADDOCK_UART;
-  rome_paddock.handler = rome_paddock_handler;
-
 #if defined(GALIPEUR)
-  ROME_LOG(&rome_paddock, INFO, "strat galipeur booting");
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "strat galipeur booting");
 #elif defined(GALIPETTE)
-  ROME_LOG(&rome_paddock, INFO, "strat galipette booting");
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "strat galipette booting");
 #endif
 
   // starting cord and color selector

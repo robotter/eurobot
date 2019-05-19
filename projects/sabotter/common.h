@@ -1,14 +1,18 @@
 #ifndef COMMON_H__
 #define COMMON_H__
 
+#include <xbee/xbee.h>
 #include <stdint.h>
 
 // Various common definitions including stuff defined in main.c
 
 // ROME interfaces
-extern rome_intf_t rome_asserv;
-extern rome_intf_t rome_meca;
-extern rome_intf_t rome_paddock;
+extern xbee_intf_t xbee_paddock;
+#define ROME_DST_ASSERV  ROME_ASSERV_UART
+#define ROME_DST_MECA  ROME_MECA_UART
+#define ROME_DST_XBEE(addr)  ROME_XBEE_DST(&xbee_paddock, (addr))
+#define ROME_DST_BROADCAST  ROME_DST_XBEE(XBEE_BROADCAST)
+#define ROME_DST_PADDOCK  ROME_DST_XBEE(0x7061)
 
 // Handle input from all ROME interfaces
 void update_rome_interfaces(void);

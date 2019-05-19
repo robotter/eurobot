@@ -6,11 +6,11 @@
 void _wait_meca_ready(void){
   //force meca state busy
   robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
-  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ready");
+  ROME_LOG(ROME_DST_PADDOCK, DEBUG,"strat : wait meca ready");
   for (;;){
     idle();
     if((robot_state.meca_state == ROME_ENUM_MECA_STATE_READY)){
-      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ready");
+      ROME_LOG(ROME_DST_PADDOCK, DEBUG,"strat : meca ready");
       return;
     }
   }
@@ -19,12 +19,12 @@ void _wait_meca_ready(void){
 void _wait_meca_ground_clear(void){
   //force meca state busy
   robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
-  ROME_LOG(&rome_paddock,DEBUG,"strat : wait meca ground clear");
+  ROME_LOG(ROME_DST_PADDOCK, DEBUG,"strat : wait meca ground clear");
   for (;;){
     idle();
     if((robot_state.meca_state == ROME_ENUM_MECA_STATE_GROUND_CLEAR ||
       robot_state.meca_state == ROME_ENUM_MECA_STATE_READY)){
-      ROME_LOG(&rome_paddock,DEBUG,"strat : meca ground clear");
+      ROME_LOG(ROME_DST_PADDOCK, DEBUG,"strat : meca ground clear");
       return;
     }
   }
@@ -36,17 +36,17 @@ bool cylinder_is_empty(void){
 
 void strat_init(void)
 {
-  ROME_LOG(&rome_paddock,INFO,"Galipeur : Strat init");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"Galipeur : Strat init");
   // disable asserv
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(ROME_DST_ASSERV, 2.5, 0.1);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(ROME_DST_ASSERV, 20, 0.1);
 
   // initialize meca
-  ROME_LOG(&rome_paddock,INFO,"Init meca");
-  ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 1);
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"Init meca");
+  ROME_SENDWAIT_MECA_SET_POWER(ROME_DST_MECA, 1);
   // set R3D2 parameters
-  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,0,25);
+  ROME_SENDWAIT_R3D2_SET_ROTATION(ROME_DST_ASSERV,0,25);
 
   for(;;) {
     update_rome_interfaces();
@@ -55,7 +55,7 @@ void strat_init(void)
   }
 
   // set R3D2 parameters
-  ROME_SENDWAIT_R3D2_SET_ROTATION(&rome_asserv,200,25);
+  ROME_SENDWAIT_R3D2_SET_ROTATION(ROME_DST_ASSERV,200,25);
 }
 
 void strat_prepare(void)
@@ -64,15 +64,15 @@ void strat_prepare(void)
   robot_kx = TEAM_SIDE_VALUE(-1, 1);
 
   //send color to meca
-  ROME_SENDWAIT_MECA_SET_ROBOT_COLOR(&rome_meca, robot_state.team == TEAM_YELLOW);
+  ROME_SENDWAIT_MECA_SET_ROBOT_COLOR(ROME_DST_MECA, robot_state.team == TEAM_YELLOW);
 
-  ROME_LOG(&rome_paddock,DEBUG,"Strat prepare");
+  ROME_LOG(ROME_DST_PADDOCK, DEBUG,"Strat prepare");
   // initialize asserv
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
   set_xya_wait(0,0,0);
-  ROME_SENDWAIT_ASSERV_GOTO_XY(&rome_asserv, 0, 0, 0);
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
-  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
+  ROME_SENDWAIT_ASSERV_GOTO_XY(ROME_DST_ASSERV, 0, 0, 0);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(ROME_DST_ASSERV, 1.5, 0.03);
+  ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(ROME_DST_ASSERV, 15, 0.03);
 
   // autoset robot
   // x in starting area
@@ -85,7 +85,7 @@ void strat_prepare(void)
 
   // check the state of the cylinder
   _wait_meca_ready();
-  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_CHECK_EMPTY);
+  ROME_SENDWAIT_MECA_CMD(ROME_DST_MECA,ROME_ENUM_MECA_COMMAND_CHECK_EMPTY);
 
   //evade the border, leaving space for galipette
   goto_xya(KX(900), 1600, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
@@ -97,14 +97,14 @@ void strat_prepare(void)
   _wait_meca_ready();
   if (!cylinder_is_empty()){
     _wait_meca_ready();
-    ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_TRASH_BEGINMATCH);
+    ROME_SENDWAIT_MECA_CMD(ROME_DST_MECA,ROME_ENUM_MECA_COMMAND_TRASH_BEGINMATCH);
   }
 
   //wait for meca to end all orders before shutting down asserv
   _wait_meca_ready();
 
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 0);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 0);
 
 }
 
@@ -112,20 +112,20 @@ void strat_prepare(void)
 void set_speed(robot_speed_t s){
   switch (s){
     case RS_VERYSLOW:
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 10, 0.03);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(ROME_DST_ASSERV, 1.5, 0.03);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(ROME_DST_ASSERV, 10, 0.03);
       break;
     case RS_SLOW:
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 1.5, 0.03);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 15, 0.03);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(ROME_DST_ASSERV, 1.5, 0.03);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(ROME_DST_ASSERV, 15, 0.03);
       break;
     case RS_NORMAL:
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 2.5, 0.1);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 20, 0.1);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(ROME_DST_ASSERV, 2.5, 0.1);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(ROME_DST_ASSERV, 20, 0.1);
       break;
     case RS_FAST:
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(&rome_asserv, 5, 0.1);
-      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(&rome_asserv, 60, 0.05);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(ROME_DST_ASSERV, 5, 0.1);
+      ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(ROME_DST_ASSERV, 60, 0.05);
       break;
     default:
       break;
@@ -164,14 +164,14 @@ order_result_t take_water(dispenser_t dispenser){
 
   //prepare meca to take water
   _wait_meca_ready();
-  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_PREPARE_LOAD_WATER);
+  ROME_SENDWAIT_MECA_CMD(ROME_DST_MECA,ROME_ENUM_MECA_COMMAND_PREPARE_LOAD_WATER);
   _wait_meca_ground_clear();
 
   set_speed(RS_FAST);
 
   switch(dispenser){
     case DISPENSER_NEAR:{
-      ROME_LOG(&rome_paddock,DEBUG,"Going to start area dispenser");
+      ROME_LOG(ROME_DST_PADDOCK, DEBUG,"Going to start area dispenser");
       angle = arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_MAIN);
       //send first position order
       or = goto_xya(KX(1200), near_pos + approach_side, angle);
@@ -189,12 +189,12 @@ order_result_t take_water(dispenser_t dispenser){
       break;
     }
     case DISPENSER_FAR:{
-      ROME_LOG(&rome_paddock,INFO,"Going to opposite dispenser");
+      ROME_LOG(ROME_DST_PADDOCK, INFO,"Going to opposite dispenser");
       //send first position order
       //go to the bee corner to be near borders for autoset
       or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_OPPOSITE_BEE, arfast(ROBOT_SIDE_BALLEATER, TABLE_SIDE_AUX));
       if (or != ORDER_SUCCESS){
-        ROME_LOG(&rome_paddock,INFO,"Aborting opposite dispenser");
+        ROME_LOG(ROME_DST_PADDOCK, INFO,"Aborting opposite dispenser");
         //go back in the middle
         goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MIDDLE_BOT, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
         return or;
@@ -229,7 +229,7 @@ order_result_t take_water(dispenser_t dispenser){
 
   //take the water
   _wait_meca_ready();
-  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_LOAD_WATER);
+  ROME_SENDWAIT_MECA_CMD(ROME_DST_MECA,ROME_ENUM_MECA_COMMAND_LOAD_WATER);
   _wait_meca_ground_clear();
 
   set_speed(RS_NORMAL);
@@ -245,12 +245,12 @@ order_result_t take_water(dispenser_t dispenser){
 }
 
 order_result_t throw_water_watertower(void){
-  ROME_LOG(&rome_paddock,INFO,"Throwing water in watertower");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"Throwing water in watertower");
   order_result_t or;
   set_speed(RS_FAST);
 
   _wait_meca_ready();
-  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_PREPARE_THROW_WATERTOWER);
+  ROME_SENDWAIT_MECA_CMD(ROME_DST_MECA,ROME_ENUM_MECA_COMMAND_PREPARE_THROW_WATERTOWER);
   _wait_meca_ground_clear();
 
   uint8_t balls_loaded = robot_state.cylinder_nb_good;
@@ -258,9 +258,9 @@ order_result_t throw_water_watertower(void){
   if (or != ORDER_SUCCESS)
     return or;
   or = goto_xya(KX(1100), 1450, compute_throw_angle(1100,1450));
-  ROME_SENDWAIT_MECA_SET_THROW_POWER(&rome_meca,1950);
+  ROME_SENDWAIT_MECA_SET_THROW_POWER(ROME_DST_MECA,1950);
   _wait_meca_ready();
-  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_THROW_WATERTOWER);
+  ROME_SENDWAIT_MECA_CMD(ROME_DST_MECA,ROME_ENUM_MECA_COMMAND_THROW_WATERTOWER);
   _wait_meca_ground_clear();
   update_score(5*balls_loaded);
 
@@ -270,12 +270,12 @@ order_result_t throw_water_watertower(void){
 
 
 order_result_t trash_water_treatment(void){
-  ROME_LOG(&rome_paddock,INFO,"Trashing water in treatment area");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"Trashing water in treatment area");
   order_result_t or;
   set_speed(RS_FAST);
 
   _wait_meca_ready();
-  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_PREPARE_TRASH_TREATMENT);
+  ROME_SENDWAIT_MECA_CMD(ROME_DST_MECA,ROME_ENUM_MECA_COMMAND_PREPARE_TRASH_TREATMENT);
   _wait_meca_ground_clear();
 
   //store nb balls for scoring purpose
@@ -294,7 +294,7 @@ order_result_t trash_water_treatment(void){
   if (or != ORDER_SUCCESS)
     return or;
   _wait_meca_ready();
-  ROME_SENDWAIT_MECA_CMD(&rome_meca,ROME_ENUM_MECA_COMMAND_TRASH_TREATMENT);
+  ROME_SENDWAIT_MECA_CMD(ROME_DST_MECA,ROME_ENUM_MECA_COMMAND_TRASH_TREATMENT);
   _wait_meca_ground_clear();
   update_score(10*balls_loaded);
 
@@ -327,9 +327,9 @@ order_result_t empty_cylinder(void){
 
 void strat_run(void)
 {
-  ROME_LOG(&rome_paddock,INFO,"Go !!!");
-  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"Go !!!");
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
 
   order_result_t or_take_water_near  = ORDER_FAILURE;
   order_result_t or_empty_water_near = ORDER_FAILURE;
@@ -366,15 +366,15 @@ void strat_run(void)
     }
   }
 
-  ROME_LOG(&rome_paddock,INFO,"That's all folks !");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"That's all folks !");
   idle_delay_ms(3000);
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 0);
-  ROME_SENDWAIT_MECA_SET_POWER(&rome_meca, 0);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
+  ROME_SENDWAIT_MECA_SET_POWER(ROME_DST_MECA, 0);
 }
 
 void strat_test(void)
 {
-  ROME_LOG(&rome_paddock,INFO,"Strat test stuff");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"Strat test stuff");
   for(;;) {
     idle();
     if(!robot_state.gyro_calibration)
@@ -385,32 +385,32 @@ void strat_test(void)
   #if 0
   set_xya_wait(0,0,0);
   goto_xya(0,0,0);
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
 
-  ROME_LOG(&rome_paddock,INFO,"go");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"go");
   goto_xya(0,700,0);
-  ROME_LOG(&rome_paddock,INFO,"back");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"back");
   goto_xya(0,0,0);
 
   #else
-  ROME_SENDWAIT_ASSERV_ACTIVATE(&rome_asserv, 1);
-  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(&rome_asserv, 1);
-  ROME_LOG(&rome_paddock,INFO,"go");
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"go");
   goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_DISPENSER_FAR,
                         arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
 
 
   idle_delay_ms(5000);
-  ROME_LOG(&rome_paddock,INFO,"back");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"back");
   goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ORANGE_WATER_TOWER,
                         arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
 
-  ROME_LOG(&rome_paddock,INFO,"align to start a new test");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"align to start a new test");
   goto_xya(KX(1300), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   #endif
 
-  ROME_LOG(&rome_paddock,INFO,"Strat test stuff end ...");
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"Strat test stuff end ...");
 
   for(;;) {
     idle();

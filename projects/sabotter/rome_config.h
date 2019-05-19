@@ -8,6 +8,8 @@
 //@{
 
 
+#define ROME_ENABLE_XBEE_API
+
 /** @brief Disabled interrupt level when sending ROME frames
  *
  * If ROME frames are sent from the main and and an interrupt routine, frames

@@ -383,12 +383,10 @@ int main(void)
 
   PORTQ.OUT = 3;
   // Initialize ROME
-  rome_intf_init(&rome);
-  rome.uart = uartD0;
+  rome_intf_init_uart(&rome, uartD0);
   rome.handler = rome_handler;
 
-  rome_intf_init(&rome_r3d2);
-  rome_r3d2.uart = uartE0;
+  rome_intf_init_uart(&rome_r3d2, uartE0);
   rome_r3d2.handler = rome_r3d2_handler;
 
 #if defined(GALIPETTE)
