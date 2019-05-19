@@ -2,6 +2,7 @@
 #define ARMS_H
 
 #include <rome/rome.h>
+#include "barometer.h"
 
 typedef enum{
   ARM_INIT = 0,
@@ -28,6 +29,7 @@ typedef struct {
   arm_state_t state;
   bool up;
   bool atoms[3];
+  barometer_t baro;
 }arm_t;
 
 extern arm_t arm_l;

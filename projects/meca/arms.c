@@ -24,6 +24,10 @@ arm_t arm_r;
 void arms_init(void){
   arm_l.tm_state = ROME_ENUM_MECA_STATE_BUSY;
   arm_r.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+  // left arm, barometer ADCA4
+  barometer_init(&arm_l.baro, &ADCA, ADC_CH_MUXPOS_PIN4_gc);
+  // right arm, barometer ADCA5
+  barometer_init(&arm_r.baro, &ADCA, ADC_CH_MUXPOS_PIN5_gc);
 }
 
 uint8_t arms_get_tm_state(void){
@@ -46,7 +50,10 @@ void arm_elevator_down(arm_t arm){
 }
 
 void arm_update(arm_t arm){
+
 }
 
 void arms_shutdown(void){
+  arm_release_atoms(arm_l);
+  arm_release_atoms(arm_r);
 }
