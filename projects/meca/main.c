@@ -14,6 +14,7 @@
 #include "servos.h"
 #include "arms.h"
 #include "jevois_cam.h"
+#include <i2c/i2c.h>
 
 #define ROME_DEVICE  ROME_ENUM_DEVICE_GALIPEUR_MECA
 
@@ -40,16 +41,16 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       ROME_LOGF(&rome_strat, DEBUG, "MECA: cmd %d",frame->meca_cmd.cmd);
       switch(frame->meca_cmd.cmd) {
         case ROME_ENUM_MECA_COMMAND_TAKE_ATOMS:
-          arm_take_atoms(frame->meca_cmd.side ? arm_l : arm_r);
+          arm_take_atoms(frame->meca_cmd.side ? &arm_l : &arm_r);
           break;
         case ROME_ENUM_MECA_COMMAND_RELEASE_ATOMS:
-          arm_release_atoms(frame->meca_cmd.side ? arm_l : arm_r);
+          arm_release_atoms(frame->meca_cmd.side ? &arm_l : &arm_r);
           break;
         case ROME_ENUM_MECA_COMMAND_ELEVATOR_UP:
-          arm_elevator_up(frame->meca_cmd.side ? arm_l : arm_r);
+          arm_elevator_up(frame->meca_cmd.side ? &arm_l : &arm_r);
           break;
         case ROME_ENUM_MECA_COMMAND_ELEVATOR_DOWN:
-          arm_elevator_down(frame->meca_cmd.side ? arm_l : arm_r);
+          arm_elevator_down(frame->meca_cmd.side ? &arm_l : &arm_r);
           break;
         case ROME_ENUM_MECA_COMMAND_NONE:
         default:
@@ -195,8 +196,8 @@ void send_telemetry(void)
   ROME_SEND_TM_MATCH_TIMER(&rome_strat, ROME_DEVICE, match_timer_ms/1000);
 }
 
-void arm_l_update(void){ arm_update(arm_l); };
-void arm_r_update(void){ arm_update(arm_r); };
+void arm_l_update(void){ arm_update(&arm_l); };
+void arm_r_update(void){ arm_update(&arm_r); };
 
 int main(void)
 {
@@ -221,6 +222,8 @@ int main(void)
   portpin_outclr(&LED_RUN_PP);
   portpin_outclr(&LED_ERROR_PP);
   portpin_outclr(&LED_COM_PP);
+
+  i2c_init();
 
   // initialize uarts
   uart_init();

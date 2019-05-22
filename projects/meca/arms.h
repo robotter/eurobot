@@ -22,6 +22,9 @@ typedef enum{
   ARM_RELEASE_ATOMS = 30,
 
   ARM_CHECK_SUCKERS = 40,
+  ARM_CHECK_LEFT_SUCKER,
+  ARM_CHECK_CENTER_SUCKER,
+  ARM_CHECK_RIGHT_SUCKER,
 }arm_state_t;
 
 typedef struct {
@@ -29,19 +32,21 @@ typedef struct {
   arm_state_t state;
   bool up;
   bool atoms[3];
+  bool side;
+  uint16_t pressure;
   barometer_t baro;
 }arm_t;
 
 extern arm_t arm_l;
 extern arm_t arm_r;
 
-void arm_take_atoms(arm_t arm);
-void arm_release_atoms(arm_t arm);
-void arm_elevator_up(arm_t arm);
-void arm_elevator_down(arm_t arm);
+void arm_take_atoms(arm_t* arm);
+void arm_release_atoms(arm_t* arm);
+void arm_elevator_up(arm_t* arm);
+void arm_elevator_down(arm_t* arm);
 uint8_t arms_get_tm_state(void);
 void arms_init(void);
-void arm_update(arm_t arm);
+void arm_update(arm_t* arm);
 void arms_shutdown(void);
 
 #endif//ARMS_H

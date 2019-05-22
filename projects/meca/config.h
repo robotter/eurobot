@@ -15,7 +15,11 @@
 // AX-12 recv timeout, in microseconds
 #define AX12_TIMEOUT_US  40000
 
-// pinout
+// meca defaut action timeout
+#define MECA_TIMEOUT_US 10000000
+
+
+// general pinout
 
 #define LED_AN_PP(n)  PORTPIN(A,n)
 #define LED_RUN_PP  PORTPIN(K,0)
@@ -69,44 +73,28 @@
 #define SERVO13_PP  SERVO_DIG6_PP
 #define SERVO14_PP  SERVO_DIG7_PP
 
-//Cylinder settings
+//atom manipulator
 
-//choose servo type, AX or MX
-#define USE_AX12
-
-//AX12 settings
-#ifdef USE_AX12
-
-#define CYLINDER_AX12_ID 5
-#define CYLINDER_BALLEATER_POS { 6, 142, 288, 435, 578, 721, 863, 1002 }
-#define CYLINDER_TURBINE_POS_OFFSET 830
-#define CYLINDER_TURBINE_POS { 836, 972, 720, 22, 159, 311, 454, 596 }
-#define CYLINDER_WHEELMODE_SPEED 400
-#define CYLINDER_AX12_ARRIVED_WINDOW 6
-
-#endif
+//elevators stepper motor control pins
+#define LEFT_MOTOR_STEP_PIN       PORTPIN(C,0)
+#define RIGHT_MOTOR_STEP_PIN      PORTPIN(C,2)
+#define LEFT_ARM_MOTOR_DIR_PIN    PORTPIN(C,1)
+#define RIGHT_ARM_MOTOR_DIR_PIN   PORTPIN(C,3)
+#define LEFT_ARM_MOTOR_EN_PIN     PORTPIN(B,2)
+#define RIGHT_ARM_MOTOR_EN_PIN    PORTPIN(B,3)
+//elevator upper side has limit switches
+#define LEFT_MOTOR_STOP_PIN PORTPIN(B,0)
+#define RIGHT_MOTOR_STOP_PIN PORTPIN(B,1)
 
 
-//MX12 settings
-#ifdef USE_MX12
-#define CYLINDER_MX12_ID 1
+//pumps and valves are controlled by the magichanism's mosboard
+//interface is I2C E
+#define ARM_I2C_ADDR 0x30
+#define ARM_PUMP(x)          x ? 0b00000000 : 0b00000000
+#define ARM_LEFT_VALVE(x)    x ? 0b00000000 : 0b00000000
+#define ARM_CENTER_VALVE(x)  x ? 0b00000000 : 0b00000000
+#define ARM_RIGHT_VALVE(x)   x ? 0b00000000 : 0b00000000
 
-#define CYLINDER_BALLEATER_POS_MIN 665
-#define CYLINDER_BALLEATER_POS_MAX 3960
-#define CYLINDER_TURBINE_POS_OFFSET 2746
-
-#endif
-
-#define CYLINDER_NB_POS 8
-
-#define CYLINDER_MOVING_DELAY_US         300000
-#define CYLINDER_BALL_DROP_DELAY_US      500000
-#define CYLINDER_TURBINE_STOP_DELAY_US   700000
-#define CYLINDER_BALL_FLYING_DELAY_US    1500000
-#define CYLINDER_TURBINE_BOOT_DELAY_US   2000000
-
-#define CYLINDER_EATING_TIMEOUT_US       2500000
-
-#define MECA_TIMEOUT_US 10000000
+#define BARO_VOID_PRESSURE 250
 
 #endif

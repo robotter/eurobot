@@ -5,7 +5,7 @@ include ../../config.mk
 SRCS = main.c servos.c arms.c jevois_cam.c barometer.c
 ASRCS =
 TARGET = main
-MODULES = uart pwm ax12 timer rome idle
+MODULES = i2c uart pwm timer rome idle
 
 
 ## Target configuration
