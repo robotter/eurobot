@@ -48,17 +48,19 @@ void callback_left_motor(void) {
 }
 
 void callback_right_motor(void) {
+  portpin_outtgl(&LED_AN_PP(3));
   INTLVL_DISABLE_BLOCK(INTLVL_MED) {
     if (steppers[0].consign == 0) {
+      portpin_outtgl(&LED_AN_PP(2));
       steppers[0].arrived = true;
       TIMER_CLEAR_CALLBACK(E1, 'B');
     }
     else {
       portpin_outtgl(&RIGHT_MOTOR_STEP_PIN);
       if (steppers[0].consign > 0)
-        steppers[0].consign ++;
-      else
         steppers[0].consign --;
+      else
+        steppers[0].consign ++;
     }
   }
 }
@@ -66,25 +68,35 @@ void callback_right_motor(void) {
 void stepper_motor_init(void) {
   //init pins
   portpin_dirset(&LEFT_MOTOR_STEP_PIN    );
-  portpin_dirset(&LEFT_MOTOR_STEP_PIN    );
+  portpin_outclr(&LEFT_MOTOR_STEP_PIN    );
+
   portpin_dirset(&RIGHT_MOTOR_STEP_PIN   );
-  portpin_dirset(&LEFT_ARM_MOTOR_DIR_PIN );
-  portpin_dirset(&RIGHT_ARM_MOTOR_DIR_PIN);
-  portpin_dirset(&LEFT_ARM_MOTOR_EN_PIN  );
-  portpin_outclr(&RIGHT_ARM_MOTOR_EN_PIN );
   portpin_outclr(&RIGHT_MOTOR_STEP_PIN   );
+
+  portpin_dirset(&LEFT_ARM_MOTOR_DIR_PIN );
   portpin_outclr(&LEFT_ARM_MOTOR_DIR_PIN );
+
+  portpin_dirset(&RIGHT_ARM_MOTOR_DIR_PIN);
   portpin_outclr(&RIGHT_ARM_MOTOR_DIR_PIN);
+
+  portpin_dirset(&LEFT_ARM_MOTOR_EN_PIN  );
   portpin_outclr(&LEFT_ARM_MOTOR_EN_PIN  );
+
+  portpin_dirset(&RIGHT_ARM_MOTOR_EN_PIN );
   portpin_outclr(&RIGHT_ARM_MOTOR_EN_PIN );
+
+  steppers[0].arrived = false;
+  steppers[1].arrived = false;
 }
 
 void stepper_motor_move(bool side, int16_t value) {
   INTLVL_DISABLE_BLOCK(INTLVL_MED) {
-    steppers[side].consign = value;
+    steppers[side].consign = 2*value;
   }
+  steppers[side].arrived = false;
 
   if (value == 0){
+    steppers[side].arrived = true;
     return;
   }
 
@@ -94,8 +106,7 @@ void stepper_motor_move(bool side, int16_t value) {
     else
       portpin_outset(&LEFT_ARM_MOTOR_DIR_PIN );
     portpin_outset(&LEFT_ARM_MOTOR_EN_PIN  );
-    portpin_outtgl(&LEFT_MOTOR_STEP_PIN);
-    TIMER_SET_CALLBACK_US(E1, 'A', UPDATE_MATCH_TIMER_TICK_US, INTLVL_MED, callback_left_motor);
+    TIMER_SET_CALLBACK_US(E1, 'A', 100, INTLVL_MED, callback_left_motor);
   }
   else {
     if (value > 0)
@@ -103,8 +114,7 @@ void stepper_motor_move(bool side, int16_t value) {
     else
       portpin_outset(&RIGHT_ARM_MOTOR_DIR_PIN );
     portpin_outset(&RIGHT_ARM_MOTOR_EN_PIN  );
-    portpin_outtgl(&RIGHT_MOTOR_STEP_PIN);
-    TIMER_SET_CALLBACK_US(E1, 'B', UPDATE_MATCH_TIMER_TICK_US, INTLVL_MED, callback_right_motor);
+    TIMER_SET_CALLBACK_US(E1, 'B', 100, INTLVL_MED, callback_right_motor);
   }
 }
 

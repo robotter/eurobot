@@ -30,6 +30,7 @@ typedef enum{
 
   ARM_ELEVATOR_GO_UP,
   ARM_ELEVATOR_WAIT_UP,
+  ARM_ELEVATOR_WAIT_UP_DEBOUNCE,
 
   ARM_ELEVATOR_GO_DOWN,
   ARM_ELEVATOR_WAIT_DOWN,
@@ -52,6 +53,7 @@ typedef struct {
   bool side;
   uint16_t pressure;
   barometer_t baro;
+  uint32_t debounce_time;
 }arm_t;
 
 extern arm_t arm_l;

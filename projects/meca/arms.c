@@ -45,7 +45,7 @@ arm_t arm_r;
 //i2c interface with magichanism's mosboard
 i2cm_t *const mosboard_i2c = i2cC;
 
-uint8_t mosboard_word;
+uint8_t mosboard_word = 0x00;
 
 void suck_left_atom(bool side,bool b){
   if (b)
@@ -82,13 +82,16 @@ void pump_power(bool side,bool b){
     mosboard_word &= ~(ARM_PUMP(side));
 }
 
+uint8_t mosboard_buffer[3];
 void mosboard_update(void){
- //send frame to mosboard
- uint8_t buffer[3];
- buffer[0] = 0x01;
- buffer[1] = mosboard_word;
- buffer[1] = ~mosboard_word;
- i2cm_send(mosboard_i2c, 0x30, buffer, 3);
+  return;
+  //send frame to mosboard
+  INTLVL_DISABLE_BLOCK(INTLVL_MED) {
+    mosboard_buffer[0] = 0x01;
+    mosboard_buffer[1] = mosboard_word;
+    mosboard_buffer[2] = ~mosboard_word;
+    i2cm_send(mosboard_i2c, 0x30, mosboard_buffer, 3);
+  }
 }
 
 void arms_init(void){
@@ -103,17 +106,20 @@ void arms_init(void){
   // right arm, barometer ADCA5
   barometer_init(&arm_r.baro, &ADCA, ADC_CH_MUXPOS_PIN5_gc);
 
-  portpin_dirclr(&LEFT_MOTOR_STOP_PIN);
-  portpin_dirclr(&RIGHT_MOTOR_STOP_PIN);
-  arms_shutdown();
+  portpin_dirclr(&LEFT_ELEVATOR_STOP_PIN);
+  PORTPIN_CTRL(&LEFT_ELEVATOR_STOP_PIN) = PORT_OPC_PULLUP_gc;
+
+  portpin_dirclr(&RIGHT_ELEVATOR_STOP_PIN);
+  PORTPIN_CTRL(&RIGHT_ELEVATOR_STOP_PIN) = PORT_OPC_PULLUP_gc;
+
   stepper_motor_init();
 }
 
 bool is_arm_up(arm_t* arm){
   if (arm->side)
-    return portpin_in(&LEFT_MOTOR_STOP_PIN);
+    return !(portpin_in(&LEFT_ELEVATOR_STOP_PIN));
   else
-    return portpin_in(&RIGHT_MOTOR_STOP_PIN);
+    return !(portpin_in(&RIGHT_ELEVATOR_STOP_PIN));
 }
 
 uint8_t arms_get_tm_state(void){
@@ -149,12 +155,16 @@ void arm_set_idle(arm_t* arm){
 }
 
 void arm_update(arm_t* arm){
+  if (is_arm_up(arm))
+    portpin_outset(&LED_AN_PP(arm->side));
+  else
+    portpin_outclr(&LED_AN_PP(arm->side));
 
+  #if 0
   static arm_state_t r_os = 1;
   static arm_state_t l_os = 1;
   static uint32_t l_lsct = 0;
   static uint32_t r_lsct = 0;
-
   if (arm->side){
     if (l_os != arm->state){
       //if state changed, the meca is doing something and isn't blocked
@@ -183,14 +193,21 @@ void arm_update(arm_t* arm){
       arm_set_idle(arm);
     }
   }
+  #endif
 
   switch (arm->state){
     case ARM_INIT:
+      //turn off pumps and valves
+      mosboard_word = 0;
+      mosboard_update();
       //reset arm to top position if it isn't there yet
       arm->up = is_arm_up(arm);
-      if (!arm->up)
+      if (!arm->up) {
         stepper_motor_move(arm->side, 100);
         arm->state = ARM_ELEVATOR_WAIT_UP;
+        break;
+      }
+      arm_set_idle(arm);
       break;
 
     case ARM_IDLE:
@@ -201,16 +218,32 @@ void arm_update(arm_t* arm){
       stepper_motor_move(arm->side, 15000);
       arm->state = ARM_ELEVATOR_WAIT_UP;
       break;
+
     case ARM_ELEVATOR_WAIT_UP:
       if(stepper_motor_arrived(arm->side)){
+        portpin_outtgl(&LED_AN_PP(3));
         if (is_arm_up(arm)){
-          arm->up = true;
-          arm_set_idle(arm);
+          arm->state = ARM_ELEVATOR_WAIT_UP_DEBOUNCE;
+          arm->debounce_time = uptime_us();
+          break;
         }
-        else
-          //motor should be up and doesn't, try to continue moving up
-          stepper_motor_move(arm->side, 100);
+        //motor should be up and doesn't, try to continue moving up
+        stepper_motor_move(arm->side, 100);
+        break;
       }
+      break;
+
+    case ARM_ELEVATOR_WAIT_UP_DEBOUNCE:
+      if(uptime_us() - arm->debounce_time < 1000)
+        break;
+
+      if (is_arm_up(arm)) {
+        arm->up = true;
+        stepper_motor_move(arm->side, 0);
+        arm_set_idle(arm);
+      }
+      else
+        arm->state = ARM_ELEVATOR_WAIT_UP;
       break;
 
     case ARM_ELEVATOR_GO_DOWN:
@@ -221,6 +254,7 @@ void arm_update(arm_t* arm){
     case ARM_ELEVATOR_WAIT_DOWN:
       if(stepper_motor_arrived(arm->side)){
         arm->up = false;
+        stepper_motor_move(arm->side, 0);
         arm_set_idle(arm);
       }
       break;
@@ -245,6 +279,7 @@ void arm_update(arm_t* arm){
       suck_right_atom(arm->side,false);
       arm->atoms[2] = false;
       mosboard_update();
+      arm_set_idle(arm);
       break;
 
     case ARM_CHECK_SUCKERS:
@@ -300,11 +335,8 @@ void arm_update(arm_t* arm){
       break;
 
     default:
-    break;
-
+      break;
   }
-
-  mosboard_update();
 }
 
 void arms_shutdown(void){

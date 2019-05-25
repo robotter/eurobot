@@ -27,7 +27,6 @@
 #include <idle/idle.h>
 #include <rome/rome.h>
 #include "config.h"
-#include <pwm/motor.h>
 #include "arms.h"
 #include "jevois_cam.h"
 #include <i2c/i2c.h>
@@ -244,7 +243,6 @@ int main(void)
   // initialize uarts
   uart_init();
   uart_fopen(UART_STRAT);
-  //portpin_dirset(&AX12_DIR_PP);
 
   // Initialize jevois camera
   jevois_cam_init(&cam);
