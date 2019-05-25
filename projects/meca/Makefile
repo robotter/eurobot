@@ -2,10 +2,10 @@ include ../../config.mk
 
 ## Project configuration
 
-SRCS = main.c servos.c arms.c jevois_cam.c barometer.c
+SRCS = main.c arms.c jevois_cam.c barometer.c stepper_motor.c
 ASRCS =
 TARGET = main
-MODULES = i2c uart pwm timer rome idle
+MODULES = i2c uart timer rome idle
 
 
 ## Target configuration

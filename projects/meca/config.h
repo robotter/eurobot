@@ -76,10 +76,10 @@
 //atom manipulator
 
 //elevators stepper motor control pins
-#define LEFT_MOTOR_STEP_PIN       PORTPIN(C,0)
-#define RIGHT_MOTOR_STEP_PIN      PORTPIN(C,2)
-#define LEFT_ARM_MOTOR_DIR_PIN    PORTPIN(C,1)
-#define RIGHT_ARM_MOTOR_DIR_PIN   PORTPIN(C,3)
+#define LEFT_MOTOR_STEP_PIN       PORTPIN(D,0)
+#define RIGHT_MOTOR_STEP_PIN      PORTPIN(D,2)
+#define LEFT_ARM_MOTOR_DIR_PIN    PORTPIN(D,1)
+#define RIGHT_ARM_MOTOR_DIR_PIN   PORTPIN(D,3)
 #define LEFT_ARM_MOTOR_EN_PIN     PORTPIN(B,2)
 #define RIGHT_ARM_MOTOR_EN_PIN    PORTPIN(B,3)
 //elevator upper side has limit switches

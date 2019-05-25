@@ -18,7 +18,7 @@
 //@{
 
 /// Enable I2Cx in master mode
-#define I2CE_MASTER
+#define I2CC_MASTER
 
 /// Bus baudrate in Hz (master only)
 #define I2C_BAUDRATE  100000

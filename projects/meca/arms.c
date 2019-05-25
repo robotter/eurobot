@@ -1,9 +1,26 @@
+/*
+ *  Copyright RobOtter (2016)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 #include <avr/io.h>
 #include <avarix.h>
 #include <avarix/portpin.h>
 #include <ax12/ax12.h>
 #include "config.h"
-#include "servos.h"
+#include "stepper_motor.h"
 #include <clock/clock.h>
 #include <util/delay.h>
 #include "arms.h"
@@ -26,7 +43,8 @@ arm_t arm_r;
 #define RIGHT_SIDE false
 
 //i2c interface with magichanism's mosboard
-i2cm_t mosboard_i2c;
+i2cm_t *const mosboard_i2c = i2cC;
+
 uint8_t mosboard_word;
 
 void suck_left_atom(bool side,bool b){
@@ -70,7 +88,7 @@ void mosboard_update(void){
  buffer[0] = 0x01;
  buffer[1] = mosboard_word;
  buffer[1] = ~mosboard_word;
- i2cm_send(&mosboard_i2c, 0x30, buffer, 3);
+ i2cm_send(mosboard_i2c, 0x30, buffer, 3);
 }
 
 void arms_init(void){
@@ -88,6 +106,7 @@ void arms_init(void){
   portpin_dirclr(&LEFT_MOTOR_STOP_PIN);
   portpin_dirclr(&RIGHT_MOTOR_STOP_PIN);
   arms_shutdown();
+  stepper_motor_init();
 }
 
 bool is_arm_up(arm_t* arm){
@@ -170,7 +189,8 @@ void arm_update(arm_t* arm){
       //reset arm to top position if it isn't there yet
       arm->up = is_arm_up(arm);
       if (!arm->up)
-        arm->state = ARM_ELEVATOR_GO_UP;
+        stepper_motor_move(arm->side, 100);
+        arm->state = ARM_ELEVATOR_WAIT_UP;
       break;
 
     case ARM_IDLE:
@@ -178,21 +198,28 @@ void arm_update(arm_t* arm){
 
     case ARM_ELEVATOR_GO_UP:
       //go up and wait for elevator up
+      stepper_motor_move(arm->side, 15000);
       arm->state = ARM_ELEVATOR_WAIT_UP;
       break;
     case ARM_ELEVATOR_WAIT_UP:
-      if (is_arm_up(arm)){
-        arm->up = true;
-        arm_set_idle(arm);
+      if(stepper_motor_arrived(arm->side)){
+        if (is_arm_up(arm)){
+          arm->up = true;
+          arm_set_idle(arm);
+        }
+        else
+          //motor should be up and doesn't, try to continue moving up
+          stepper_motor_move(arm->side, 100);
       }
       break;
 
     case ARM_ELEVATOR_GO_DOWN:
       //go down and wait for elevator down
+      stepper_motor_move(arm->side, -15000);
       arm->state = ARM_ELEVATOR_WAIT_DOWN;
       break;
     case ARM_ELEVATOR_WAIT_DOWN:
-      if(false){
+      if(stepper_motor_arrived(arm->side)){
         arm->up = false;
         arm_set_idle(arm);
       }
