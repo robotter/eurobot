@@ -125,12 +125,14 @@ static void rome_meca_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_MECA_TM_STATE:
       robot_state.meca_state = frame->meca_tm_state.state;
       break;
+    #if 0
     case ROME_MID_MECA_TM_CYLINDER_STATE:
       robot_state.cylinder_nb_slots = frame->meca_tm_cylinder_state.nb_slots;
       robot_state.cylinder_nb_empty = frame->meca_tm_cylinder_state.nb_empty;
       robot_state.cylinder_nb_good = frame->meca_tm_cylinder_state.nb_good;
       robot_state.cylinder_nb_bad = frame->meca_tm_cylinder_state.nb_bad;
       break;
+    #endif
     default:
       break;
   }

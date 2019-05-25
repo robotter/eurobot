@@ -77,10 +77,10 @@ void bee_launcher_down(void) {
 
 void bee_launcher_push(void) {
   switch(robot_state.team) {
-    case TEAM_GREEN:
+    case TEAM_YELLOW:
       servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_RIGHT);
       break;
-    case TEAM_ORANGE:
+    case TEAM_PURPLE:
       servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_LEFT);
       break;
     
@@ -91,10 +91,10 @@ void bee_launcher_push(void) {
 
 void bee_launcher_papush(void) {
   switch(robot_state.team) {
-    case TEAM_ORANGE:
+    case TEAM_YELLOW:
       servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_RIGHT);
       break;
-    case TEAM_GREEN:
+    case TEAM_PURPLE:
       servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_LEFT);
       break;
     

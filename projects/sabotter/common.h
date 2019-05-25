@@ -23,8 +23,8 @@ typedef struct {
 /// Team color (or side)
 typedef enum {
   TEAM_NONE,
-  TEAM_GREEN,
-  TEAM_ORANGE,
+  TEAM_YELLOW,
+  TEAM_PURPLE,
 } team_t;
 
 // Robot state

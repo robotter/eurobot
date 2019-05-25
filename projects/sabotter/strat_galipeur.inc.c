@@ -64,7 +64,7 @@ void strat_prepare(void)
   robot_kx = TEAM_SIDE_VALUE(-1, 1);
 
   //send color to meca
-  ROME_SENDWAIT_MECA_SET_ROBOT_COLOR(&rome_meca, robot_state.team == TEAM_GREEN);
+  ROME_SENDWAIT_MECA_SET_ROBOT_COLOR(&rome_meca, robot_state.team == TEAM_YELLOW);
 
   ROME_LOG(&rome_paddock,DEBUG,"Strat prepare");
   // initialize asserv

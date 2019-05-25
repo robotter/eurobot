@@ -57,7 +57,7 @@ typedef enum {
 } table_side_t;
 
 // Return first value if left tam (x<0), second value if right team (x>0)
-#define TEAM_SIDE_VALUE(left,right)  (robot_state.team == TEAM_GREEN ? (left) : (right))
+#define TEAM_SIDE_VALUE(left,right)  (robot_state.team == TEAM_YELLOW ? (left) : (right))
 
 #define TABLE_SIDE_MAIN  TEAM_SIDE_VALUE(TABLE_SIDE_LEFT, TABLE_SIDE_RIGHT)
 #define TABLE_SIDE_AUX  TEAM_SIDE_VALUE(TABLE_SIDE_RIGHT, TABLE_SIDE_LEFT)
@@ -569,15 +569,15 @@ team_t strat_select_team(void)
   for(;;) {
     idle();
     if(portpin_in(&COLOR_SELECTOR_PP)) {
-      portpin_outclr(&LED_R_PP);
-      portpin_outset(&LED_G_PP);
-      portpin_outclr(&LED_B_PP);
-      team = TEAM_GREEN;
-    } else {
       portpin_outset(&LED_R_PP);
       portpin_outset(&LED_G_PP);
       portpin_outclr(&LED_B_PP);
-      team = TEAM_ORANGE;
+      team = TEAM_YELLOW;
+    } else {
+      portpin_outset(&LED_R_PP);
+      portpin_outclr(&LED_G_PP);
+      portpin_outset(&LED_B_PP);
+      team = TEAM_PURPLE;
     }
     if(starting_cord_plugged()) {
       portpin_outclr(&LED_B_PP);
@@ -585,10 +585,10 @@ team_t strat_select_team(void)
     }
   }
 
-  if(team == TEAM_GREEN)
-    ROME_LOG(&rome_paddock,INFO,"Color : GREEN !");
+  if(team == TEAM_YELLOW)
+    ROME_LOG(&rome_paddock,INFO,"Color : YELLOW !");
   else
-    ROME_LOG(&rome_paddock,INFO,"Color : ORANGE !");
+    ROME_LOG(&rome_paddock,INFO,"Color : PURPLE !");
 
   // wait 2s before next step
   uint32_t tend = uptime_us() + 2e6;
@@ -605,14 +605,14 @@ void strat_wait_start(void)
   while(starting_cord_plugged()) {
     idle();
     if((uptime_us() / 500000) % 2 == 0) {
-      if(robot_state.team == TEAM_ORANGE) {
+      if(robot_state.team == TEAM_YELLOW) {
         portpin_outset(&LED_R_PP);
         portpin_outset(&LED_G_PP);
         portpin_outclr(&LED_B_PP);
       } else {
-        portpin_outclr(&LED_R_PP);
-        portpin_outset(&LED_G_PP);
-        portpin_outclr(&LED_B_PP);
+        portpin_outset(&LED_R_PP);
+        portpin_outclr(&LED_G_PP);
+        portpin_outset(&LED_B_PP);
       }
     } else {
       portpin_outclr(&LED_R_PP);
