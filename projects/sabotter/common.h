@@ -63,11 +63,11 @@ typedef struct {
   } r3d2;
   // MECA (galipeur)
   uint8_t meca_state;
-  // cylinder
-  uint8_t cylinder_nb_slots;
-  uint8_t cylinder_nb_empty;
-  uint8_t cylinder_nb_good;
-  uint8_t cylinder_nb_bad;
+  // atoms manipulators
+  bool left_up;
+  bool right_up;
+  bool left_atoms[3];
+  bool right_atoms[3];
 
   //galipette bumpers
   struct{
