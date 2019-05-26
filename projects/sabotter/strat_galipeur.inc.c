@@ -3,14 +3,15 @@
 #define ROBOT_SIDE_BALLEATER (ROBOT_SIDE_LEFT)
 #define ROBOT_SIDE_TURBINE (ROBOT_SIDE_RIGHT)
 
+
 void _wait_meca_ready(void){
   //force meca state busy
   robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
-  ROME_LOG(ROME_DST_PADDOCK, DEBUG,"strat : wait meca ready");
+  ROME_LOG(ROME_DST_PADDOCK, DEBUG, "strat : wait meca ready");
   for (;;){
     idle();
     if((robot_state.meca_state == ROME_ENUM_MECA_STATE_READY)){
-      ROME_LOG(ROME_DST_PADDOCK, DEBUG,"strat : meca ready");
+      ROME_LOG(ROME_DST_PADDOCK, DEBUG, "strat : meca ready");
       return;
     }
   }
@@ -19,12 +20,12 @@ void _wait_meca_ready(void){
 void _wait_meca_ground_clear(void){
   //force meca state busy
   robot_state.meca_state = ROME_ENUM_MECA_STATE_BUSY;
-  ROME_LOG(ROME_DST_PADDOCK, DEBUG,"strat : wait meca ground clear");
+  ROME_LOG(ROME_DST_PADDOCK, DEBUG, "strat : wait meca ground clear");
   for (;;){
     idle();
     if((robot_state.meca_state == ROME_ENUM_MECA_STATE_GROUND_CLEAR ||
       robot_state.meca_state == ROME_ENUM_MECA_STATE_READY)){
-      ROME_LOG(ROME_DST_PADDOCK, DEBUG,"strat : meca ground clear");
+      ROME_LOG(ROME_DST_PADDOCK, DEBUG, "strat : meca ground clear");
       return;
     }
   }
@@ -32,7 +33,7 @@ void _wait_meca_ground_clear(void){
 
 void strat_init(void)
 {
-  ROME_LOG(ROME_DST_PADDOCK, INFO,"Galipeur : Strat init");
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Galipeur : Strat init");
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(ROME_DST_ASSERV, 2.5, 0.1);
@@ -114,12 +115,6 @@ void set_speed(robot_speed_t s){
     default:
       break;
   }
-}
-
-float compute_throw_angle(int16_t x, int16_t y){
-  float target = atan2(KX(1320)-KX(x),2200-y);
-  float robot = arfast(ROBOT_SIDE_TURBINE,TABLE_SIDE_UP);
-  return robot - target;
 }
 
 #if 0 // 2018
@@ -313,7 +308,7 @@ order_result_t empty_cylinder(void){
 
 void strat_run(void)
 {
-  ROME_LOG(ROME_DST_PADDOCK, INFO,"Go !!!");
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Go !!!");
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
 
@@ -335,7 +330,7 @@ void strat_run(void)
     }
 
     //go to the middle to reset the Y axis
-    if (goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MIDDLE_BOT, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN)) 
+    if (goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MIDDLE_BOT, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN)) 
           == ORDER_SUCCESS){
       goto_xya(KX(0), 500, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
       autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, 250+AUTOSET_OFFSET);
@@ -354,7 +349,7 @@ void strat_run(void)
   }
 #endif
 
-  ROME_LOG(ROME_DST_PADDOCK, INFO,"That's all folks !");
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "That's all folks !");
   idle_delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
   ROME_SENDWAIT_MECA_SET_POWER(ROME_DST_MECA, 0);
@@ -362,36 +357,20 @@ void strat_run(void)
 
 void strat_test(void)
 {
-  ROME_LOG(ROME_DST_PADDOCK, INFO,"Strat test stuff");
-  for(;;) {
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Strat test stuff");
+  while(robot_state.gyro_calibration) {
     idle();
-    if(!robot_state.gyro_calibration)
-      break;
   }
 
   set_speed(RS_NORMAL);
-#if 0 // 2018
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
-  ROME_LOG(ROME_DST_PADDOCK, INFO,"go");
-  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_WATER_DISPENSER_FAR,
-                        arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "go");
 
-
-  idle_delay_ms(5000);
-  ROME_LOG(ROME_DST_PADDOCK, INFO,"back");
-  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ORANGE_WATER_TOWER,
-                        arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-
-  ROME_LOG(ROME_DST_PADDOCK, INFO,"align to start a new test");
-  goto_xya(KX(1300), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-#endif
-
-  ROME_LOG(ROME_DST_PADDOCK, INFO,"Strat test stuff end ...");
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Strat test stuff end ...");
 
   for(;;) {
     idle();
   }
-
 }
 

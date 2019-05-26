@@ -68,7 +68,7 @@ typedef enum {
 #define KX(x) (robot_kx*(x))
 
 // align robot face along table side
-float arfast (robot_side_t face, table_side_t side) {
+float arfast(robot_side_t face, table_side_t side) {
   switch(face){
     case ROBOT_SIDE_LEFT:
       switch(side){
