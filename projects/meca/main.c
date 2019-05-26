@@ -74,11 +74,6 @@ void rome_strat_handler(const rome_frame_t *frame)
       rome_reply_ack(UART_STRAT, frame);
     } break;
 
-    //case ROME_MID_MECA_SET_THROW_POWER:
-    //  cylinder_set_throw_power(frame->meca_set_throw_power.pwr);
-    //  rome_reply_ack(intf, frame);
-    //  break;
-
     case ROME_MID_MECA_SET_POWER: {
       uint8_t active = frame->meca_set_power.active;
       if(active) {
@@ -98,9 +93,9 @@ void rome_jevois_handler(const rome_frame_t *frame)
 {
   jevois_cam_process_rome(&cam, frame);
 
-  //send to strat (and then paddock) one message every 100ms
+  // send to strat (and then paddock) one message every 100ms
   static uint32_t lmt = 0;
-  if (uptime_us() - lmt > 100000){
+  if (uptime_us() - lmt > 100000) {
     rome_send_uart(UART_STRAT, frame);
     lmt = uptime_us();
   }

@@ -21,7 +21,7 @@
 #include <rome/rome.h>
 #include "barometer.h"
 
-typedef enum{
+typedef enum {
   ARM_INIT = 0,
   ARM_IDLE,
 
@@ -43,7 +43,7 @@ typedef enum{
   ARM_CHECK_LEFT_SUCKER,
   ARM_CHECK_CENTER_SUCKER,
   ARM_CHECK_RIGHT_SUCKER,
-}arm_state_t;
+} arm_state_t;
 
 typedef struct {
   uint8_t tm_state;
@@ -54,18 +54,18 @@ typedef struct {
   uint16_t pressure;
   barometer_t baro;
   uint32_t debounce_time;
-}arm_t;
+} arm_t;
 
 extern arm_t arm_l;
 extern arm_t arm_r;
 
-void arm_take_atoms(arm_t* arm);
-void arm_release_atoms(arm_t* arm);
-void arm_elevator_up(arm_t* arm);
-void arm_elevator_down(arm_t* arm);
+void arm_take_atoms(arm_t *arm);
+void arm_release_atoms(arm_t *arm);
+void arm_elevator_up(arm_t *arm);
+void arm_elevator_down(arm_t *arm);
 uint8_t arms_get_tm_state(void);
 void arms_init(void);
-void arm_update(arm_t* arm);
+void arm_update(arm_t *arm);
 void arms_shutdown(void);
 
 #endif//ARMS_H
