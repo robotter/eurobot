@@ -1,80 +1,149 @@
+import math
+
 set_max_path_size(20)
 set_node_cost(50)
 
-add_graph('pathfinding_graph', {
-    'middle_top'  : (0, 1700),
-    'middle_midh' : (0, 1200),
-    'middle_midl' : (0, 800),
-    'middle_bot'  : (0, 600),
+team_names = ('yellow', 'purple')  # (left side, right side)
 
-    'orange_top'  : (650, 1700),
-    'orange_midh' : (600, 1100),
-    'orange_midl' : (550, 800),
+nodes = {}
+vertices = []
 
-    'orange_water_tower'          : (1200, 1650),
-    'orange_water_dispenser_near' : (1200, 1200),
-    'orange_bot_corner'           : (1000, 600),
-    'orange_bee'                  : (1200, 300),
+# Substitue patterns with team names
+# The following patterns are replaced:
+#   {t}  team name
+#   {o}  other team name
+def format_team_pattern(s, side):
+    if side == 0:
+        return s.replace('{t}', team_names[0]).replace('{o}', team_names[1])
+    else:
+        return s.replace('{t}', team_names[1]).replace('{o}', team_names[0])
 
-    'orange_water_dispenser_far'  : (-890, 400),
+def add_team_elements(team_nodes, team_vertices):
+    for name, (x, y) in team_nodes.items():
+        nodes[format_team_pattern(name, 0)] = (-x, y)
+        nodes[format_team_pattern(name, 1)] = (x, y)
+    for name in team_vertices:
+        vertices.append(format_team_pattern(name, 0))
+        vertices.append(format_team_pattern(name, 1))
 
-    'green_top'   : (-650, 1700),
-    'green_midh'  : (-600, 1100),
-    'green_midl'  : (-550, 800),
+def auto_node_name(x, y):
+    if x == 0:
+        return "xy_%s_%s" % (x, y)
+    elif x < 0:
+        return "xy_%s_%s_%s" % (team_names[0], -x, y)
+    else:
+        return "xy_%s_%s_%s" % (team_names[1], x, y)
 
-    'green_water_tower'          : (-1200, 1650),
-    'green_water_dispenser_near' : (-1200, 1200),
-    'green_bot_corner'           : (-1000, 600),
-    'green_bee'                  : (-1200, 300),
+def distance(xy0, xy1):
+    return math.sqrt((xy0[0]-xy1[0])**2 + (xy0[1]-xy1[1])**2)
 
-    'green_water_dispenser_far'  : (890, 400),
+def distance_segment(o, a, b):
+    """Compute distance from point o to segment [ab]"""
+    xo, yo = o
+    xa, ya = a
+    xb, yb = b
+    xab, yab = xb-xa, yb-ya
 
-    'a' : (1000,1500),
-    'b' : (300,1500),
-    'c' : (-300,1500),
-    'd' : (-1000,1500),
-    'e' : (900,900),
-    'f' : (300,1000),
-    'g' : (-300,1000),
-    'h' : (-900,900),
+    # compute the projected p of o on ab
+    dap = xab*(xo-xa) + yab*(yo-ya)
+    u = dap / distance(a, b)
+    if u <= 0:
+        return distance(o, a)
+    elif u >= 1:
+        return distance(o, b)
+    else:
+        return distance(o, (dap * xab + xa, dap * yab + yb))
 
-  }, [
-  #vertical vertexes
-  'middle_top middle_midh middle_midl middle_bot',
-  'orange_midh orange_midl',
-  'green_midh green_midl',
-  'orange_water_tower orange_water_dispenser_near',
-  'orange_bot_corner orange_bee',
-  'green_water_tower green_water_dispenser_near',
-  'green_bot_corner green_bee',
 
-  #horizontal vertexes
-  'green_water_tower          green_top  middle_top  orange_top  orange_water_tower',
-  'green_water_dispenser_near green_midh middle_midh orange_midh orange_water_dispenser_near',
-  'green_bot_corner           green_midl middle_midl orange_midl orange_bot_corner',
-  'green_bee orange_water_dispenser_far',
-  'orange_bee green_water_dispenser_far',
+def find_closest_node(nodes, xy0):
+    return min(nodes.items(), key=lambda n_xy: distance(n_xy[1], xy0))[0]
 
-  #diagonals
-  'green_water_tower           d green_midh g middle_midl',
-  'green_water_dispenser_near  h green_midl middle_bot',
-  'green_bee  orange_water_dispenser_far green_midl g middle_midh b orange_top',
-  'green_bot_corner            h green_midh c middle_top',
-  'green_water_dispenser_near  d green_top',
-  'green_bot_corner orange_water_dispenser_far',
-  'orange_bot_corner green_water_dispenser_far',
+def add_triangle_grid(x1, y0, y1, r, obstacles):
 
-  'orange_water_tower          a orange_midh f middle_midl',
-  'orange_water_dispenser_near e orange_midl middle_bot',
-  'orange_bee  green_water_dispenser_far orange_midl f middle_midh c green_top',
-  'orange_bot_corner           e orange_midh b middle_top',
-  'orange_water_dispenser_near a orange_top',
+    # Iterate on possible node positions.
+    # Shift y depending on x parity.
+    #
+    # 2 o---o---o
+    #    \ / \ /
+    # 1 --o---o--
+    #    / \ / \
+    # 0 o---o---o
+    #   0 1 2 3 4
 
-  #shortcuts
-  #'green_water_dispenser_near green_water_dispenser_far',
-  #'green_top orange_midh',
-  #'green_top orange_midl',
-  #'orange_water_dispenser_near orange_water_dispenser_far',
+    grid_node_names = {}  # {(ix, iy): name}
+    new_nodes = {}
+    dx, dy = r/2, r * math.sin(math.pi/3)
+    ix_max = int(x1 / dx)
+    iy_max = int((y1-y0) / dy)
+    for ix in range(-ix_max, ix_max+1):
+        for iy in range(0, iy_max+1):
+            # skip points in the middle of horizonal sides
+            if (ix + iy) % 2 == 1:
+                continue
+            xy = (int(ix*dx), int(y0+iy*dy))
+            ixy = ix, iy
+            # skip positions blocked by an obstacle
+            if any(distance(xy, xyo) < ro for xyo, ro in obstacles):
+                continue
+            # skip positions close to an existing node
+            if nodes and distance(nodes[find_closest_node(nodes, xy)], xy) < r/2:
+                continue
+            name = auto_node_name(*xy)
+            new_nodes[name] = xy
+            grid_node_names[ixy] = name
 
-  ])
+    # add vertices for grid nodes close to existing nodes
+    for name0, xy0 in new_nodes.items():
+        for name1, xy1 in nodes.items():
+            if distance(xy0, xy1) < 1.5 * r:
+                if not any(distance_segment(xyo, xy0, xy1) < ro for xyo, ro in obstacles):
+                    vertices.append((name0, name1))
+
+    # merge the nodes (after all uses of the original `nodes`)
+    nodes.update(new_nodes)
+
+    # Add vertices for all grid nodes
+    # close to each other.              \ /
+    # Check vertices above and right:    o---
+    for ix in range(-ix_max, ix_max+1):
+        for iy in range(0, iy_max+1):
+            name0 = grid_node_names.get((ix, iy))
+            if name0 is None:
+                continue
+            for dix, diy in ((-1, 1), (1, 1), (2, 0)):
+                name1 = grid_node_names.get((ix + dix, iy + diy))
+                if name1 is None:
+                    continue
+                xy0, xy1 = nodes[name0], nodes[name1]
+                if not any(distance_segment(xyo, xy0, xy1) < ro for xyo, ro in obstacles):
+                    vertices.append((name0, name1))
+
+
+# Definition of nodes and vertices
+# Team elements are given for right side team (X>0)
+
+
+add_team_elements({
+    '{t}_ramp_entrance': (1275, 550),
+    '{t}_small_dispenser': (1275, 250),
+    '{t}_large_dispenser': (750, 700),
+    '{t}_goldenium': (725, 1822),
+    '{t}_accelerated_blue': (212, 1822),
+    '{t}_balance': (200, 700),
+}, [
+    '{t}_ramp_entrance {t}_small_dispenser',
+    # galipette path
+    '{o}_accelerated_blue {o}_goldenium {t}_balance',
+])
+
+# make sure the grid does not overlap the start area
+add_triangle_grid(1050, 600, 1800, 250, [
+    # balance separator
+    ((0, 580), 100),
+    # chaos areas
+    ((500, 950), 150+50),
+    ((-500, 950), 150+50),
+])
+
+add_graph('pathfinding_graph', nodes, vertices)
 
