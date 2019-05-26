@@ -16,10 +16,10 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include <avr/io.h>
+#include <clock/clock.h>
 #include <util/delay.h>
 #include <avarix.h>
 #include <avarix/portpin.h>
-#include <clock/clock.h>
 #include <i2c/i2c.h>
 #include <timer/uptime.h>
 #include "arms.h"
@@ -37,50 +37,41 @@ i2cm_t *const mosboard_i2c = i2cC;
 
 static uint8_t mosboard_word = 0x00;
 
-void suck_left_atom(bool side, bool b) {
-  if (b)
-    mosboard_word |= ARM_LEFT_VALVE(side);
-  else
-    mosboard_word &= ~(ARM_LEFT_VALVE(side));
-}
-
-void suck_center_atom(bool side, bool b) {
-  if (b)
-    mosboard_word |= ARM_CENTER_VALVE(side);
-  else
-    mosboard_word &= ~(ARM_CENTER_VALVE(side));
-}
-
-void suck_right_atom(bool side, bool b) {
-  if (b)
-    mosboard_word |= ARM_RIGHT_VALVE(side);
-  else
-    mosboard_word &= ~(ARM_RIGHT_VALVE(side));
-}
-
-void suck_all_atom(bool side, bool b) {
-  if (b)
-    mosboard_word |= ARM_RIGHT_VALVE(side);
-  else
-    mosboard_word &= ~(ARM_RIGHT_VALVE(side));
-}
-
-void pump_power(bool side, bool b) {
-  if (b)
-    mosboard_word |= ARM_PUMP(side);
-  else
-    mosboard_word &= ~(ARM_PUMP(side));
-}
-
-
+/// Update mosboard state from mosboard_word
 void mosboard_update(void) {
   return;
-  //send frame to mosboard
+  // send frame to mosboard
   INTLVL_DISABLE_BLOCK(INTLVL_MED) {
     uint8_t buffer[3] = {0x01, mosboard_word, ~mosboard_word};
     i2cm_send(mosboard_i2c, 0x30, buffer, ARRAY_LEN(buffer));
   }
 }
+
+void set_suckers_state(uint8_t state, uint8_t mask) {
+  mosboard_word = (mosboard_word & ~mask) | state;
+  mosboard_update();
+}
+
+#define ARM_STATE_MASK(x)  (ARM_PUMP(x) | ARM_LEFT_VALVE(x) | ARM_CENTER_VALVE(x) | ARM_RIGHT_VALVE(x))
+
+/// Enable the pump and given suckers
+#define suckers_enable(arm, left, center, right) \
+    set_suckers_state( \
+      ARM_PUMP((arm)->side) | \
+      ((left) ? ARM_LEFT_VALVE((arm)->side) : 0) | \
+      ((center) ? ARM_CENTER_VALVE((arm)->side) : 0) | \
+      ((right) ? ARM_RIGHT_VALVE((arm)->side) : 0), \
+      ARM_STATE_MASK((arm)->side))
+
+/// Disable the pump and all the suckers
+#define suckers_disable(arm) \
+    set_suckers_state(0, ARM_STATE_MASK((arm)->side))
+
+/// Return true if the arm's vacuum is making void
+#define VACUUM_OK(arm) \
+    (barometer_get_pressure(&(arm)->baro) < BARO_VOID_PRESSURE)
+
+
 
 void arms_init(void) {
   arm_l.tm_state = ROME_ENUM_MECA_STATE_BUSY;
@@ -154,8 +145,8 @@ void arm_update(arm_t *arm) {
   static uint32_t r_lsct = 0;
   if (arm->side) {
     if (l_os != arm->state) {
-      //if state changed, the meca is doing something and isn't blocked
-      //idle and init stages are the only exeptions
+      // if state changed, the meca is doing something and isn't blocked
+      // idle and init stages are the only exeptions
       if (arm->state != ARM_IDLE && arm->state != ARM_INIT)
         l_lsct = uptime_us();
     }
@@ -168,8 +159,8 @@ void arm_update(arm_t *arm) {
   }
   else{
     if (r_os != arm->state) {
-      //if state changed, the meca is doing something and isn't blocked
-      //idle and init stages are the only exeptions
+      // if state changed, the meca is doing something and isn't blocked
+      // idle and init stages are the only exeptions
       if (arm->state != ARM_IDLE && arm->state != ARM_INIT)
         r_lsct = uptime_us();
     }
@@ -184,10 +175,10 @@ void arm_update(arm_t *arm) {
 
   switch (arm->state) {
     case ARM_INIT:
-      //turn off pumps and valves
+      // turn off pumps and valves
       mosboard_word = 0;
       mosboard_update();
-      //reset arm to top position if it isn't there yet
+      // reset arm to top position if it isn't there yet
       if (is_arm_up(arm)) {
         stepper_motor_move(arm->side, 100);
         arm->state = ARM_ELEVATOR_WAIT_UP;
@@ -202,7 +193,7 @@ void arm_update(arm_t *arm) {
 
     case ARM_ELEVATOR_GO_UP:
       arm_r.elevator = ROME_ENUM_MECA_ELEVATOR_MOVING;
-      //go up and wait for elevator up
+      // go up and wait for elevator up
       stepper_motor_move(arm->side, 15000);
       arm->state = ARM_ELEVATOR_WAIT_UP;
       break;
@@ -214,7 +205,7 @@ void arm_update(arm_t *arm) {
           arm->debounce_time = uptime_us();
           break;
         }
-        //motor should be up and doesn't, try to continue moving up
+        // motor should be up and doesn't, try to continue moving up
         stepper_motor_move(arm->side, 100);
         break;
       }
@@ -228,17 +219,18 @@ void arm_update(arm_t *arm) {
         arm_r.elevator = ROME_ENUM_MECA_ELEVATOR_UP;
         stepper_motor_move(arm->side, 0);
         arm_set_idle(arm);
-      }
-      else
+      } else {
         arm->state = ARM_ELEVATOR_WAIT_UP;
+      }
       break;
 
     case ARM_ELEVATOR_GO_DOWN:
       arm_r.elevator = ROME_ENUM_MECA_ELEVATOR_MOVING;
-      //go down and wait for elevator down
+      // go down and wait for elevator down
       stepper_motor_move(arm->side, -15000);
       arm->state = ARM_ELEVATOR_WAIT_DOWN;
       break;
+
     case ARM_ELEVATOR_WAIT_DOWN:
       if(stepper_motor_arrived(arm->side)) {
         arm_r.elevator = ROME_ENUM_MECA_ELEVATOR_DOWN;
@@ -248,77 +240,55 @@ void arm_update(arm_t *arm) {
       break;
 
     case ARM_TAKE_ATOMS:
-      suck_left_atom(arm->side, true);
-      suck_center_atom(arm->side, true);
-      suck_right_atom(arm->side, true);
-      pump_power(arm->side, true);
-      mosboard_update();
-
-      //check barometer to know if there are atoms
+      suckers_enable(arm, 1, 1, 1);
+      // check barometer to know if there are atoms
       arm->state = ARM_CHECK_SUCKERS;
       break;
 
     case ARM_RELEASE_ATOMS:
-      pump_power(arm->side, false);
-      suck_left_atom(arm->side, false);
       arm->atoms[0] = false;
-      suck_center_atom(arm->side, false);
       arm->atoms[1] = false;
-      suck_right_atom(arm->side, false);
       arm->atoms[2] = false;
-      mosboard_update();
+      suckers_disable(arm);
       arm_set_idle(arm);
       break;
 
     case ARM_CHECK_SUCKERS:
-      if (barometer_get_pressure(&arm->baro) < BARO_VOID_PRESSURE) {
+      if (VACUUM_OK(arm)) {
+        // all atoms have been grabbed
         arm->atoms[0] = true;
         arm->atoms[1] = true;
         arm->atoms[2] = true;
         arm_set_idle(arm);
         break;
       }
-      //if it failed, check suckers one by one
-      suck_left_atom(&arm->side, true);
-      suck_center_atom(&arm->side, false);
-      suck_right_atom(&arm->side, false);
-      mosboard_update();
+      // if it failed, check suckers one by one
+      // start with the left one
+      suckers_enable(arm, 1, 0, 0);
       arm->state = ARM_CHECK_LEFT_SUCKER;
       break;
 
     case ARM_CHECK_LEFT_SUCKER:
-      //update left sucker state and then check center sucker
-      if (barometer_get_pressure(&arm->baro) < BARO_VOID_PRESSURE) {
-        arm->atoms[0] = true;
-      } else {
-        arm->atoms[0] = false;
-        suck_left_atom(&arm->side, false);
-        mosboard_update();
-      }
+      // update left sucker state
+      arm->atoms[0] = VACUUM_OK(arm);
+      // then check center sucker
+      suckers_enable(arm, arm->atoms[0], 1, 0);
       arm->state = ARM_CHECK_CENTER_SUCKER;
       break;
 
     case ARM_CHECK_CENTER_SUCKER:
-      //update center sucker state and then check right sucker
-      if (barometer_get_pressure(&arm->baro) < BARO_VOID_PRESSURE) {
-        arm->atoms[1] = true;
-      } else {
-        arm->atoms[1] = false;
-        suck_center_atom(&arm->side, false);
-        mosboard_update();
-      }
+      // update center sucker state
+      arm->atoms[1] = VACUUM_OK(arm);
+      // then check right sucker
+      suckers_enable(arm, arm->atoms[0], arm->atoms[1], 1);
       arm->state = ARM_CHECK_RIGHT_SUCKER;
       break;
 
     case ARM_CHECK_RIGHT_SUCKER:
-      //update right sucker state and then it's over !
-      if (barometer_get_pressure(&arm->baro) < BARO_VOID_PRESSURE) {
-        arm->atoms[2] = true;
-      } else {
-        arm->atoms[2] = false;
-        suck_right_atom(&arm->side, false);
-        mosboard_update();
-      }
+      // update right sucker state
+      arm->atoms[2] = VACUUM_OK(arm);
+      // then it's over
+      suckers_enable(arm, arm->atoms[0], arm->atoms[1], arm->atoms[2]);
       arm_set_idle(arm);
       break;
 
@@ -328,7 +298,8 @@ void arm_update(arm_t *arm) {
 }
 
 void arms_shutdown(void) {
-  arm_release_atoms(&arm_l);
-  arm_release_atoms(&arm_r);
+  // disable everything
+  mosboard_word = 0;
   mosboard_update();
 }
+

@@ -43,6 +43,7 @@ typedef enum {
   ARM_CHECK_LEFT_SUCKER,
   ARM_CHECK_CENTER_SUCKER,
   ARM_CHECK_RIGHT_SUCKER,
+
 } arm_state_t;
 
 typedef struct {

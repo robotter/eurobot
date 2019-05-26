@@ -19,6 +19,9 @@
 #ifndef STEPPER_MOTOR_H
 #define STEPPER_MOTOR_H
 
+#include <stdbool.h>
+#include <stdint.h>
+
 void stepper_motor_init(void);
 
 void stepper_motor_move(bool side, int16_t value);
