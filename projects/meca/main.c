@@ -110,9 +110,8 @@ void rome_jevois_handler(const rome_frame_t *frame)
 void update_rome_interfaces(void)
 {
   portpin_outtgl(&LED_COM_PP);
-  const rome_frame_t *frame;
-  while((frame = rome_reader_read(&rome_strat))) rome_strat_handler(frame);
-  while((frame = rome_reader_read(&rome_jevois))) rome_jevois_handler(frame);
+  rome_reader_handle_input(&rome_strat, rome_strat_handler);
+  rome_reader_handle_input(&rome_jevois, rome_jevois_handler);
 }
 
 #if 0 //no ax12 needed on galipeur this year

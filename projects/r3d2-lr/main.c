@@ -56,8 +56,7 @@ int main(void)
   RST.STATUS = 0;
 
   for(;;) {
-    const rome_frame_t *frame;
-    while((frame = rome_reader_read(&rome_reader))) rome_handler(frame);
+    rome_reader_handle_input(&rome_reader, rome_handler);
     r3d2_update();
   }
 }

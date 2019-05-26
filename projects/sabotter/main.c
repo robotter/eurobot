@@ -212,10 +212,9 @@ static void xbee_paddock_handler(xbee_intf_t *intf, const xbee_frame_t *frame)
 // Handle input from all ROME interfaces
 void update_rome_interfaces(void)
 {
-  const rome_frame_t *frame;
-  while((frame = rome_reader_read(&rome_asserv_reader))) rome_asserv_handler(frame);
+  rome_reader_handle_input(&rome_asserv_reader, rome_asserv_handler);
 #ifdef UART_MECA
-  while((frame = rome_reader_read(&rome_meca_reader))) rome_meca_handler(frame);
+  rome_reader_handle_input(&rome_meca_reader, rome_meca_handler);
 #endif
   xbee_handle_input(&xbee_paddock);
 }
