@@ -48,7 +48,7 @@ typedef enum{
 typedef struct {
   uint8_t tm_state;
   arm_state_t state;
-  bool up;
+  uint8_t elevator;
   bool atoms[3];
   bool side;
   uint16_t pressure;

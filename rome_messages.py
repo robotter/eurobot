@@ -185,7 +185,12 @@ register_messages(
           'ready',  # meca ready for new commands
           )),
       ('meca_tm_state'  ,[('state','meca_state')]),
-      ('meca_tm_arms_state', [('l_up','bool'),('r_up','bool'),('l_atoms','bool[3]'),('r_atoms','bool[3]')]),
+      rome_types.rome_enum('meca_elevator', (
+        'moving',
+        'down',
+        'up',
+      )),
+      ('meca_tm_arms_state', [('l_elev','meca_elevator'),('r_elev','meca_elevator'),('l_atoms','bool[3]'),('r_atoms','bool[3]')]),
     ]),
 
     # PATHFINDING

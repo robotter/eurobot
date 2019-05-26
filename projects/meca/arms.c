@@ -29,8 +29,6 @@
 
 extern ax12_t ax12;
 
-extern rome_intf_t rome_strat;
-
 #define RETRY_AND_UPDATE(fcall) while(!(fcall)) { \
   portpin_outtgl(&LED_AN_PP(0)); \
   _delay_ms(10); \
@@ -97,6 +95,8 @@ void mosboard_update(void){
 void arms_init(void){
   arm_l.tm_state = ROME_ENUM_MECA_STATE_BUSY;
   arm_r.tm_state = ROME_ENUM_MECA_STATE_BUSY;
+  arm_r.elevator = ROME_ENUM_MECA_ELEVATOR_MOVING;
+  arm_l.elevator = ROME_ENUM_MECA_ELEVATOR_MOVING;
   arm_l.state = ARM_INIT;
   arm_r.state = ARM_INIT;
   arm_l.side = LEFT_SIDE;
@@ -175,7 +175,7 @@ void arm_update(arm_t* arm){
     l_os = arm->state;
 
     if(uptime_us() - l_lsct > MECA_TIMEOUT_US){
-      ROME_LOGF(&rome_strat, DEBUG,"left arm state timeout");
+      ROME_LOGF(UART_STRAT, DEBUG,"left arm state timeout");
       arm_set_idle(arm);
     }
   }
@@ -189,7 +189,7 @@ void arm_update(arm_t* arm){
     r_os = arm->state;
 
     if(uptime_us() - r_lsct > MECA_TIMEOUT_US){
-      ROME_LOGF(&rome_strat, DEBUG,"left arm state timeout");
+      ROME_LOGF(UART_STRAT, DEBUG,"left arm state timeout");
       arm_set_idle(arm);
     }
   }
@@ -201,12 +201,12 @@ void arm_update(arm_t* arm){
       mosboard_word = 0;
       mosboard_update();
       //reset arm to top position if it isn't there yet
-      arm->up = is_arm_up(arm);
-      if (!arm->up) {
+      if (is_arm_up(arm)) {
         stepper_motor_move(arm->side, 100);
         arm->state = ARM_ELEVATOR_WAIT_UP;
         break;
       }
+      arm_r.elevator = ROME_ENUM_MECA_ELEVATOR_UP;
       arm_set_idle(arm);
       break;
 
@@ -214,6 +214,7 @@ void arm_update(arm_t* arm){
       break;
 
     case ARM_ELEVATOR_GO_UP:
+      arm_r.elevator = ROME_ENUM_MECA_ELEVATOR_MOVING;
       //go up and wait for elevator up
       stepper_motor_move(arm->side, 15000);
       arm->state = ARM_ELEVATOR_WAIT_UP;
@@ -221,7 +222,6 @@ void arm_update(arm_t* arm){
 
     case ARM_ELEVATOR_WAIT_UP:
       if(stepper_motor_arrived(arm->side)){
-        portpin_outtgl(&LED_AN_PP(3));
         if (is_arm_up(arm)){
           arm->state = ARM_ELEVATOR_WAIT_UP_DEBOUNCE;
           arm->debounce_time = uptime_us();
@@ -238,7 +238,7 @@ void arm_update(arm_t* arm){
         break;
 
       if (is_arm_up(arm)) {
-        arm->up = true;
+        arm_r.elevator = ROME_ENUM_MECA_ELEVATOR_UP;
         stepper_motor_move(arm->side, 0);
         arm_set_idle(arm);
       }
@@ -247,13 +247,14 @@ void arm_update(arm_t* arm){
       break;
 
     case ARM_ELEVATOR_GO_DOWN:
+      arm_r.elevator = ROME_ENUM_MECA_ELEVATOR_MOVING;
       //go down and wait for elevator down
       stepper_motor_move(arm->side, -15000);
       arm->state = ARM_ELEVATOR_WAIT_DOWN;
       break;
     case ARM_ELEVATOR_WAIT_DOWN:
       if(stepper_motor_arrived(arm->side)){
-        arm->up = false;
+        arm_r.elevator = ROME_ENUM_MECA_ELEVATOR_DOWN;
         stepper_motor_move(arm->side, 0);
         arm_set_idle(arm);
       }

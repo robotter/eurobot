@@ -64,8 +64,8 @@ typedef struct {
   // MECA (galipeur)
   uint8_t meca_state;
   // atoms manipulators
-  bool left_up;
-  bool right_up;
+  uint8_t left_elevator;
+  uint8_t right_elevator;
   bool left_atoms[3];
   bool right_atoms[3];
 

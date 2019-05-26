@@ -39,21 +39,21 @@ bool match_started = false;
 uint32_t match_timer_ms = 0;
 
 // ROME interfaces
-rome_intf_t rome_strat;
-rome_intf_t rome_jevois;
+rome_reader_t rome_strat;
+rome_reader_t rome_jevois;
 
 jevois_cam_t cam;
 
-void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
+void rome_strat_handler(const rome_frame_t *frame)
 {
   switch(frame->mid) {
     case ROME_MID_START_TIMER: {
       match_started = true;
-      rome_reply_ack(intf, frame);
+      rome_reply_ack(UART_STRAT, frame);
     } break;
 
     case ROME_MID_MECA_CMD: {
-      ROME_LOGF(&rome_strat, DEBUG, "MECA: cmd %d",frame->meca_cmd.cmd);
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: cmd %d",frame->meca_cmd.cmd);
       switch(frame->meca_cmd.cmd) {
         case ROME_ENUM_MECA_COMMAND_TAKE_ATOMS:
           arm_take_atoms(frame->meca_cmd.side ? &arm_l : &arm_r);
@@ -71,7 +71,7 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
         default:
           break;
       }
-      rome_reply_ack(intf, frame);
+      rome_reply_ack(UART_STRAT, frame);
     } break;
 
     //case ROME_MID_MECA_SET_THROW_POWER:
@@ -86,7 +86,7 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
       } else {
         portpin_outclr(&LED_RUN_PP);
       }
-      rome_reply_ack(intf, frame);
+      rome_reply_ack(UART_STRAT, frame);
     } break;
 
     default:
@@ -94,16 +94,25 @@ void rome_strat_handler(rome_intf_t *intf, const rome_frame_t *frame)
   }
 }
 
-void rome_jevois_handler(rome_intf_t *intf, const rome_frame_t *frame)
+void rome_jevois_handler(const rome_frame_t *frame)
 {
   jevois_cam_process_rome(&cam, frame);
 
   //send to strat (and then paddock) one message every 100ms
   static uint32_t lmt = 0;
   if (uptime_us() - lmt > 100000){
-    rome_send(&rome_strat, frame);
+    rome_send_uart(UART_STRAT, frame);
     lmt = uptime_us();
   }
+}
+
+// Handle input from all ROME interfaces
+void update_rome_interfaces(void)
+{
+  portpin_outtgl(&LED_COM_PP);
+  const rome_frame_t *frame;
+  while((frame = rome_reader_read(&rome_strat))) rome_strat_handler(frame);
+  while((frame = rome_reader_read(&rome_jevois))) rome_jevois_handler(frame);
 }
 
 #if 0 //no ax12 needed on galipeur this year
@@ -189,26 +198,15 @@ void update_match_timer(void)
   }
 }
 
-void update_rome_strat(void)
-{
-  portpin_outtgl(&LED_COM_PP);
-  rome_handle_input(&rome_strat);
-}
-
-void update_rome_jevois(void)
-{
-  rome_handle_input(&rome_jevois);
-}
-
 void send_telemetry(void)
 {
-  ROME_SEND_MECA_TM_STATE(&rome_strat,arms_get_tm_state());
-  ROME_SEND_MECA_TM_ARMS_STATE(&rome_strat,
-    arm_l.up,
-    arm_r.up,
+  ROME_SEND_MECA_TM_STATE(UART_STRAT,arms_get_tm_state());
+  ROME_SEND_MECA_TM_ARMS_STATE(UART_STRAT,
+    arm_l.elevator,
+    arm_r.elevator,
     arm_l.atoms,
     arm_r.atoms);
-  ROME_SEND_TM_MATCH_TIMER(&rome_strat, ROME_DEVICE, match_timer_ms/1000);
+  ROME_SEND_TM_MATCH_TIMER(UART_STRAT, ROME_DEVICE, match_timer_ms/1000);
 }
 
 void arm_l_update(void){ arm_update(&arm_l); };
@@ -253,22 +251,16 @@ int main(void)
   uptime_init();
   TIMER_SET_CALLBACK_US(E0, 'B', UPDATE_MATCH_TIMER_TICK_US, INTLVL_HI, update_match_timer);
 
-  idle_set_callback(rome_strat_update, update_rome_strat);
+  idle_set_callback(rome_update, update_rome_interfaces);
   idle_set_callback(rome_telemetry, send_telemetry);
-  idle_set_callback(rome_jevois_update, update_rome_jevois);
   idle_set_callback(arm_l_update, arm_l_update);
   idle_set_callback(arm_r_update, arm_r_update);
 
   arms_init();
 
   // Initialize ROME
-  rome_intf_init(&rome_strat);
-  rome_strat.uart = UART_STRAT;
-  rome_strat.handler = rome_strat_handler;
-
-  rome_intf_init(&rome_jevois);
-  rome_jevois.uart = UART_JEVOIS;
-  rome_jevois.handler = rome_jevois_handler;
+  rome_reader_init(&rome_strat, UART_STRAT);
+  rome_reader_init(&rome_jevois, UART_JEVOIS);
 
   for(;;) {
     idle();
