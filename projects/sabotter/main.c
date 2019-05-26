@@ -30,12 +30,13 @@
 #include <idle/idle.h>
 #include <rome/rome.h>
 #include <xbee/xbee.h>
+#include <pathfinding/pathfinding.h>
 #include "strat.h"
 #include "common.h"
 #include "config.h"
 #include "battery_monitor.h"
-#include <pathfinding/pathfinding.h>
 #include "servos.h"
+#include "leds.h"
 
 // battery monitoring
 BATTMON_t battery;
@@ -249,9 +250,7 @@ static void match_end(void)
 #ifdef UART_MECA
     ROME_SENDWAIT_MECA_SET_POWER(ROME_DST_MECA, 0);
 #endif
-    portpin_outset(&LED_R_PP);
-    portpin_outset(&LED_G_PP);
-    portpin_outset(&LED_B_PP);
+    LED_RGB_SET(LED_COLOR_WHITE);
     for(;;) {
       //send timer for boomotter stuff
       ROME_SEND_TM_MATCH_TIMER(ROME_DST_BROADCAST, ROME_DEVICE, robot_state.match_time);
@@ -337,9 +336,9 @@ int main(void)
   if(voltage < BATTERY_ALERT_LIMIT) {
     for(;;) {
       if((uptime_us() / 500000) % 2 == 0) {
-        portpin_outset(&LED_R_PP);
+        LED_RGB_SET(LED_COLOR_RED);
       } else {
-        portpin_outclr(&LED_R_PP);
+        LED_RGB_SET(LED_COLOR_BLACK);
       }
       idle();
     }
@@ -357,10 +356,10 @@ int main(void)
   robot_state.boom_age = uptime_us();
 
   // initialize asserv and meca, fold arms, ...
-  portpin_outset(&LED_R_PP);
+  LED_RGB_SET(LED_COLOR_RED);
   robot_state.points = 0;
   strat_init();
-  portpin_outclr(&LED_R_PP);
+  LED_RGB_SET(LED_COLOR_BLACK);
   robot_state.team = strat_select_team();
 
   strat_prepare();

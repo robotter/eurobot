@@ -8,10 +8,11 @@
 #include <timer/uptime.h>
 #include <idle/idle.h>
 #include <rome/rome.h>
+#include <pathfinding/pathfinding.h>
 #include "strat.h"
 #include "config.h"
 #include "common.h"
-#include <pathfinding/pathfinding.h>
+#include "leds.h"
 
 #define ANGLE_TYPE__ float
 #include "modulo.inc.h"
@@ -543,9 +544,9 @@ team_t strat_select_team(void)
   while(starting_cord_plugged()) {
     idle();
     if((uptime_us() / 500000) % 2 == 0) {
-      portpin_outset(&LED_B_PP);
+      LED_RGB_SET(LED_COLOR_BLUE);
     } else {
-      portpin_outclr(&LED_B_PP);
+      LED_RGB_SET(LED_COLOR_BLACK);
     }
   }
 
@@ -553,22 +554,17 @@ team_t strat_select_team(void)
   // color is selected when starting cord is plugged
   ROME_LOG(ROME_DST_PADDOCK, INFO,"Select color ...");
   team_t team = TEAM_NONE;
-  portpin_outclr(&LED_B_PP);
   for(;;) {
     idle();
     if(portpin_in(&COLOR_SELECTOR_PP)) {
-      portpin_outset(&LED_R_PP);
-      portpin_outset(&LED_G_PP);
-      portpin_outclr(&LED_B_PP);
+      LED_RGB_SET(LED_COLOR_YELLOW);
       team = TEAM_YELLOW;
     } else {
-      portpin_outset(&LED_R_PP);
-      portpin_outclr(&LED_G_PP);
-      portpin_outset(&LED_B_PP);
+      LED_RGB_SET(LED_COLOR_MAGENTA);
       team = TEAM_PURPLE;
     }
     if(starting_cord_plugged()) {
-      portpin_outclr(&LED_B_PP);
+      LED_RGB_SET(LED_COLOR_BLACK);
       break;
     }
   }
@@ -589,29 +585,20 @@ team_t strat_select_team(void)
 
 void strat_wait_start(void)
 {
-
   while(starting_cord_plugged()) {
     idle();
     if((uptime_us() / 500000) % 2 == 0) {
       if(robot_state.team == TEAM_YELLOW) {
-        portpin_outset(&LED_R_PP);
-        portpin_outset(&LED_G_PP);
-        portpin_outclr(&LED_B_PP);
+        LED_RGB_SET(LED_COLOR_YELLOW);
       } else {
-        portpin_outset(&LED_R_PP);
-        portpin_outclr(&LED_G_PP);
-        portpin_outset(&LED_B_PP);
+        LED_RGB_SET(LED_COLOR_MAGENTA);
       }
     } else {
-      portpin_outclr(&LED_R_PP);
-      portpin_outclr(&LED_G_PP);
-      portpin_outset(&LED_B_PP);
+      LED_RGB_SET(LED_COLOR_BLUE);
     }
   }
 
-  portpin_outclr(&LED_R_PP);
-  portpin_outclr(&LED_G_PP);
-  portpin_outclr(&LED_B_PP);
+  LED_RGB_SET(LED_COLOR_BLACK);
   ROME_SENDWAIT_START_TIMER(ROME_DST_ASSERV);
 #if (defined UART_MECA)
   ROME_SENDWAIT_START_TIMER(ROME_DST_MECA);
