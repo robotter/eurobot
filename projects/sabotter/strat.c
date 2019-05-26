@@ -1,3 +1,4 @@
+#include <avarix.h>
 #include <math.h>
 #include <stdlib.h>
 #include <clock/clock.h>
@@ -16,8 +17,10 @@
 #include "modulo.inc.h"
 #undef ANGLE_TYPE__
 
+// Default timeout for "goto" orders
 #define GOTO_TIMEOUT_MS  10000
-#define DEFAULT_WAIT_MS  2000
+// Time to wait before returning a DETECTION_PATH_BLOCKED status
+#define DETECTION_WAIT_MS 2000
 
 extern pathfinding_t pathfinder;
 
@@ -31,7 +34,7 @@ robot_state_t robot_state;
 // this avoids optimization errors
 static float robot_kx;
 
-typedef enum{
+typedef enum {
   RS_VERYSLOW = 0,
   RS_SLOW,
   RS_NORMAL,
@@ -64,7 +67,7 @@ typedef enum {
 #define KX(x) (robot_kx*(x))
 
 // align robot face along table side
-float arfast (robot_side_t face, table_side_t side){
+float arfast (robot_side_t face, table_side_t side) {
   switch(face){
     case ROBOT_SIDE_LEFT:
       switch(side){
@@ -103,15 +106,15 @@ float arfast (robot_side_t face, table_side_t side){
       }
       break;
     default:
-      ROME_LOG(ROME_DST_PADDOCK, ERROR,"arfast : invalid angle consign");
+      ROME_LOG(ROME_DST_PADDOCK, ERROR, "arfast : invalid angle consign");
       break;
   }
   return 0;
 }
 
-void update_score(uint16_t points){
+void update_score(uint16_t points) {
   robot_state.points += points;
-  ROME_LOGF(ROME_DST_PADDOCK, INFO,"score : %u", robot_state.points);
+  ROME_LOGF(ROME_DST_PADDOCK, INFO, "score : %u", robot_state.points);
 }
 
 typedef enum {
@@ -124,20 +127,12 @@ typedef enum {
 } order_result_t;
 
 /// delay for some ms
-void idle_delay_ms(uint32_t time_ms){
+void idle_delay_ms(uint32_t time_ms) {
   uint32_t start_time_us = uptime_us();
-  while((uptime_us() - start_time_us) < (time_ms*1000))
+  while(uptime_us() - start_time_us < time_ms*1000)
     idle();
 }
 
-
-/// Check an order_result_t, return it if not success
-#define ORDER_CHECK(expr)  do { \
-    order_result_t or = (expr); \
-    if(or != ORDER_SUCCESS) { \
-      return or; \
-    } \
-  } while(0)
 
 // Aliases using default waiting time
 #define goto_xya(x,y,a)  goto_xya_wait((x),(y),(a),GOTO_TIMEOUT_MS)
@@ -151,24 +146,20 @@ void idle_delay_ms(uint32_t time_ms){
 
 
 #define IN_RANGE(x,min,max) ((x) >= (min) && (x) <= (max))
-#define R3D2_OFFSET (0)
-#define DEFAULT_DETECTION_FOV  (M_PI/2)
-#define DEFAULT_DETECTION_WAIT_MS 2000
 
 // Return true if an opponent is detected within an arc
 bool opponent_detected_in_arc(float angle, float fov, float distance)
 {
-  float d_a,min,max;
-  min = float_modulo__(angle - fov/2, 0, 2*M_PI);
-  max = float_modulo__(angle + fov/2, 0, 2*M_PI);
-  if(min > max)
-    max += 2*M_PI;
+  float amin = float_modulo__(angle - fov/2, 0, 2*M_PI);
+  float amax = float_modulo__(angle + fov/2, 0, 2*M_PI);
+  if(amin > amax) {
+    amax += 2*M_PI;
+  }
   for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
-    r3d2_object_t *object = &robot_state.r3d2.objects[i];
-    d_a = float_modulo__(object->a+robot_state.current_pos.a+R3D2_OFFSET, 0, 2*M_PI);
-    bool in_range = IN_RANGE(d_a,min,max)||IN_RANGE(d_a+2*M_PI,min,max);
-    // note: object->a is in ]-2*Pi;0]
-    if(object->detected && object->r < distance && in_range) {
+    const r3d2_object_t *object = &robot_state.r3d2.objects[i];
+    const float d_a = float_modulo__(object->a + robot_state.current_pos.a , 0, 2*M_PI);
+    const bool in_arc = IN_RANGE(d_a,amin,amax) || IN_RANGE(d_a+2*M_PI,amin,amax);
+    if(object->detected && object->r < distance && in_arc) {
       return true;
     }
   }
@@ -176,20 +167,21 @@ bool opponent_detected_in_arc(float angle, float fov, float distance)
 }
 
 // Check if an opponent is in a corridor
-bool opponent_detected_in_corridor(float angle, float width, float depth) {
+bool opponent_detected_in_corridor(float angle, float width, float depth)
+{
   static uint32_t detection_log_timer = 0;
   for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
-    r3d2_object_t *object = &robot_state.r3d2.objects[i];
-    if (object->detected){
-      float d_a = robot_state.current_pos.a + object->a+R3D2_OFFSET - angle;
-      float dx = object->r*cos(d_a);
-      float dy = object->r*sin(d_a);
-      if (uptime_us() - detection_log_timer > 300000){
-        ROME_LOGF(ROME_DST_PADDOCK, DEBUG,"corridor : d_a %f, r %f",d_a,object->r);
-        ROME_LOGF(ROME_DST_PADDOCK, DEBUG,"corridor : dx %f, dy %f",dx,dy);
+    const r3d2_object_t *object = &robot_state.r3d2.objects[i];
+    if(object->detected) {
+      const float d_a = robot_state.current_pos.a + object->a - angle;
+      const float dx = object->r * cos(d_a);
+      const float dy = object->r * sin(d_a);
+      if(uptime_us() - detection_log_timer > 300000) {
+        ROME_LOGF(ROME_DST_PADDOCK, DEBUG, "corridor : d_a %f, r %f", d_a, object->r);
+        ROME_LOGF(ROME_DST_PADDOCK, DEBUG, "corridor : dx %f, dy %f", dx, dy);
         detection_log_timer = uptime_us();
       }
-      if (dx >= 0 && dx < depth && fabs(dy) <= width) {
+      if(dx >= 0 && dx < depth && fabs(dy) <= width) {
         return true;
       }
     }
@@ -199,17 +191,16 @@ bool opponent_detected_in_corridor(float angle, float width, float depth) {
 
 float angle_from_carrot(int16_t cx, int16_t cy)
 {
-  int16_t dx = cx - robot_state.current_pos.x;
-  int16_t dy = cy - robot_state.current_pos.y;
-  float angle = atan2(dy,dx);
-  return angle;
+  const int16_t dx = cx - robot_state.current_pos.x;
+  const int16_t dy = cy - robot_state.current_pos.y;
+  return atan2(dy, dx);
 }
 
 static void set_xya_wait(double x, double y, double a) {
   ROME_SENDWAIT_ASSERV_SET_XYA(ROME_DST_ASSERV, x, y, 1000.0*a);
 }
 
-typedef enum{
+typedef enum {
   DETECTION_PATH_FREE = 0,
   DETECTION_PATH_BLOCKED,
   DETECTION_PATH_CLEARED,
@@ -251,7 +242,7 @@ detection_path_t opponent_detected_close(float angle, uint32_t time_end) {
 
 // Check if opponent is on the way (R3D2_AVOID_DISTANCE)
 // If opponent is close, move slightly backwards and wait at most
-// DEFAULT_DETECTION_WAIT_MS for it to move away.
+// DETECTION_WAIT_MS for it to move away.
 // Disable asserv if opponent gets too close (see opponent_detected_close()).
 detection_path_t opponent_detected_carrot(int16_t x, int16_t y) {
   const float angle = angle_from_carrot(x,y);
@@ -260,11 +251,11 @@ detection_path_t opponent_detected_carrot(int16_t x, int16_t y) {
     return DETECTION_PATH_FREE;
   }
 
-  uint32_t time_end = uptime_us() + DEFAULT_DETECTION_WAIT_MS * 1000UL;
+  uint32_t time_end = uptime_us() + DETECTION_WAIT_MS * 1000UL;
   ROME_LOG(ROME_DST_PADDOCK, INFO, "goto: opponent detected");
   ROME_SENDWAIT_ASSERV_GOTO_XY_REL(ROME_DST_ASSERV, -R3D2_AVOID_MOVEBACK*cos(angle), -R3D2_AVOID_MOVEBACK*sin(angle), 0);
 
-  for(;;){
+  for(;;) {
     idle();
 
     if(opponent_detected_close(angle, time_end) == DETECTION_PATH_BLOCKED) {
@@ -296,14 +287,14 @@ order_result_t wait_asserv_xya_and_detect(int16_t x, int16_t y, uint32_t time_en
     if(robot_state.asserv.xy && robot_state.asserv.a) {
       return ORDER_SUCCESS;
     }
-    detection_path_t dp = opponent_detected_carrot(x,y);
+    const detection_path_t dp = opponent_detected_carrot(x,y);
     if(dp == DETECTION_PATH_BLOCKED) {
       return ORDER_DETECTION;
     } else if(dp == DETECTION_PATH_CLEARED) {
       return ORDER_ABORTED;
     }
 
-    uint32_t time = uptime_us();
+    const uint32_t time = uptime_us();
     if(time > time_end) {
       ROME_LOGF(ROME_DST_PADDOCK, INFO,"wait asserv: timeout %lu > %lu", time, time_end);
       return ORDER_TIMEOUT;
@@ -314,7 +305,7 @@ order_result_t wait_asserv_xya_and_detect(int16_t x, int16_t y, uint32_t time_en
 /// Go to given position, avoid opponents
 static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t timeout_ms)
 {
-  uint32_t time_end = uptime_us() + timeout_ms * 1000UL;
+  const uint32_t time_end = uptime_us() + timeout_ms * 1000UL;
   for(;;) {
     idle();
     ROME_SENDWAIT_ASSERV_GOTO_XY(ROME_DST_ASSERV, x, y, 1000*a);
@@ -329,7 +320,7 @@ static order_result_t goto_xya_wait(int16_t x, int16_t y, float a, uint16_t time
 /// Go to given position, avoid opponents
 static order_result_t goto_xya_synced_wait(int16_t x, int16_t y, float a, uint16_t timeout_ms)
 {
-  uint32_t time_end = uptime_us() + timeout_ms * 1000UL;
+  const uint32_t time_end = uptime_us() + timeout_ms * 1000UL;
   for(;;) {
     idle();
     ROME_SENDWAIT_ASSERV_GOTO_XYA_SYNCED(ROME_DST_ASSERV, x, y, 1000*a);
@@ -342,75 +333,76 @@ static order_result_t goto_xya_synced_wait(int16_t x, int16_t y, float a, uint16
 }
 
 /// Execute trajectory, avoid opponents
-#define goto_traj_wait(xy,a,w) goto_traj_n_wait((xy), sizeof(xy)/sizeof(int16_t), (a), (w))
+#define goto_traj_wait(xy,a,w) goto_traj_n_wait((xy), ARRAY_LEN(xy), (a), (w))
 order_result_t goto_traj_n_wait(int16_t* xy, uint8_t n, float a, uint16_t timeout_ms)
 {
+  const uint32_t time_end = uptime_us() + timeout_ms * 1000UL;
   uint8_t path_i = 0;
-  uint32_t time_end = uptime_us() + timeout_ms * 1000UL;
   for(;;) {
     idle();
-    uint8_t ln = n - path_i;
-    ROME_SENDWAIT_ASSERV_RUN_TRAJ(ROME_DST_ASSERV,1000*a,xy+path_i*2,ln);
+    const uint8_t xy_len = n - path_i;
+    ROME_SENDWAIT_ASSERV_RUN_TRAJ(ROME_DST_ASSERV,1000*a, xy+path_i*2, xy_len);
     const int16_t x = xy[2*robot_state.asserv.path_i];
     const int16_t y = xy[2*robot_state.asserv.path_i+1];
     robot_state.asserv.path_i = path_i;
-    robot_state.asserv.path_n = ln/2;
+    robot_state.asserv.path_n = xy_len/2;
 
     order_result_t or = wait_asserv_xya_and_detect(x, y, time_end);
     if(or != ORDER_ABORTED) {
       return or;
     }
-    // resend order
+    // resend order, continue from where asserv stopped
     path_i = robot_state.asserv.path_i;
   }
 }
 
 ///Execute pathfinding type trajectory
-order_result_t goto_pathfinding_node(uint8_t goal, float angle){
-  for(;;){
+order_result_t goto_pathfinding_node(uint8_t goal, float angle) {
+  for(;;) {
     idle();
-    //update obstacles
-    //first is our other robot, the others are the detected robots
+    // update obstacles
+    // first is our other robot, the others are the detected robots
     pathfinding_obstacle_t obstacles[R3D2_OBJECTS_MAX+1] = {{0,0,0}};
 
     obstacles[0].x = robot_state.partner_pos.x;
     obstacles[0].y = robot_state.partner_pos.y;
     obstacles[0].r = 400;
 
-    //compute absolute position of detected robots
+    // compute absolute position of detected robots
     for(uint8_t i=0; i<R3D2_OBJECTS_MAX; i++) {
       r3d2_object_t *object = &robot_state.r3d2.objects[i];
-      if (object->detected) {
-        float da = float_modulo__(robot_state.current_pos.a + object->a+R3D2_OFFSET, 0, 2*M_PI);
+      if(object->detected) {
+        float da = float_modulo__(robot_state.current_pos.a + object->a, 0, 2*M_PI);
         obstacles[i+1].x = (float) robot_state.current_pos.x + object->r*cos(da);
         obstacles[i+1].y = (float) robot_state.current_pos.y + object->r*sin(da);
         obstacles[i+1].r = 400;
-        ROME_LOGF(ROME_DST_PADDOCK, DEBUG,"obstacle ra %f %f",object->r,da);
-        ROME_LOGF(ROME_DST_PADDOCK, DEBUG,"obstacle xy %d %d",obstacles[i].x,obstacles[i].y);
+        ROME_LOGF(ROME_DST_PADDOCK, DEBUG, "obstacle ra %f %f", object->r,da);
+        ROME_LOGF(ROME_DST_PADDOCK, DEBUG, "obstacle xy %d %d", obstacles[i].x, obstacles[i].y);
       }
     }
 
     pathfinder.obstacles = obstacles;
-    pathfinder.obstacles_size = sizeof(obstacles)/sizeof(*obstacles);
+    pathfinder.obstacles_size = ARRAY_LEN(obstacles);
 
-    //search for a path
-    uint8_t start = pathfinding_nearest_node(&pathfinder,
-                                  robot_state.current_pos.x,
-                                  robot_state.current_pos.y);
+    // search for a path
+    const uint8_t start = pathfinding_nearest_node(
+        &pathfinder, robot_state.current_pos.x, robot_state.current_pos.y);
 
-    ROME_LOGF(ROME_DST_PADDOCK, DEBUG, "searching path from %u to %u", start,goal);
-    //check if we are already arrived
-    if(start == goal)
+    ROME_LOGF(ROME_DST_PADDOCK, DEBUG, "searching path from %u to %u", start, goal);
+    // check if we are already arrived
+    if(start == goal) {
       return ORDER_SUCCESS;
+    }
 
     pathfinding_search(&pathfinder, start, goal);
     ROME_LOGF(ROME_DST_PADDOCK, DEBUG, "path found (%u)", pathfinder.path_size);
-    if(pathfinder.path_size == 0)
+    if(pathfinder.path_size == 0) {
       return ORDER_PATHFINDING_FAILED;
+    }
 
     rome_send_pathfinding_path(&pathfinder);
 
-    //send the trajectory to asserv, but do not go to nearest node
+    // send the trajectory to asserv, but do not go to nearest node
     int16_t traj[pathfinder.path_size * 2];
     for(int i=0; i < pathfinder.path_size; i++){
       traj[2*i] = pathfinder.nodes[pathfinder.path[i]].x;
@@ -418,7 +410,7 @@ order_result_t goto_pathfinding_node(uint8_t goal, float angle){
     }
 
     const uint32_t time_end = uptime_us() + GOTO_TIMEOUT_MS * 1000UL;
-    ROME_SENDWAIT_ASSERV_RUN_TRAJ(ROME_DST_ASSERV,1000*angle,traj,sizeof(traj)/sizeof(int16_t));
+    ROME_SENDWAIT_ASSERV_RUN_TRAJ(ROME_DST_ASSERV, 1000*angle, traj, ARRAY_LEN(traj));
     robot_state.asserv.xy = false;
     robot_state.asserv.a = false;
     for(;;) {
@@ -433,15 +425,15 @@ order_result_t goto_pathfinding_node(uint8_t goal, float angle){
         return ORDER_TIMEOUT;
       }
 
-      //check opponent position
+      // check opponent position
       const float angle = angle_from_carrot(traj[2*robot_state.asserv.path_i],
                                             traj[2*robot_state.asserv.path_i+1]);
-      if(opponent_detected_close(angle, time + DEFAULT_DETECTION_WAIT_MS * 1000UL) == DETECTION_PATH_BLOCKED) {
+      if(opponent_detected_close(angle, time + DETECTION_WAIT_MS * 1000UL) == DETECTION_PATH_BLOCKED) {
         // timeout on close opponent
         return ORDER_DETECTION;
       }
 
-      //if opponent is detected, compute a new trajectory
+      // if opponent is detected, compute a new trajectory
       if(opponent_detected_in_corridor(angle, R3D2_CORRIDOR_WIDTH, R3D2_AVOID_DISTANCE)) {
         ROME_LOG(ROME_DST_PADDOCK, DEBUG,"opponenent detected, computing a new trajectory");
         break;
@@ -488,8 +480,9 @@ order_result_t goto_xy_rel_align_course_wait(int16_t x, int16_t y, bool claws_fi
   float angle;
   //get angle of movement
   angle = atan2(y,x)-M_PI/2;
-  if(claws_first)
+  if(claws_first) {
     angle += M_PI;
+  }
 
   //compute relative angle consign
   angle -= robot_state.current_pos.a;
@@ -497,21 +490,21 @@ order_result_t goto_xy_rel_align_course_wait(int16_t x, int16_t y, bool claws_fi
   return goto_xya_rel_wait(x,y,angle,timeout_ms);
 }
 
-void go_around(int16_t cx,int16_t cy, float a){
-  int16_t rx = robot_state.current_pos.x ;
-  int16_t ry = robot_state.current_pos.y ;
-  float   ra = robot_state.current_pos.a ;
+void go_around(int16_t cx, int16_t cy, float a){
+  const int16_t rx = robot_state.current_pos.x;
+  const int16_t ry = robot_state.current_pos.y;
+  const float   ra = robot_state.current_pos.a;
   a += M_PI/6;
-  uint8_t nb_step = 6;
-  int16_t x = rx - cx;
-  int16_t y = ry - cy;
+  const uint8_t nb_steps = 6;
+  const int16_t x = rx - cx;
+  const int16_t y = ry - cy;
 
-  for(int i=0 ; i < nb_step ; i ++){
-    int16_t tmpx = cx+x*cos((i+1)*a/nb_step)-y*sin((i+1)*a/nb_step);
-    int16_t tmpy = cy+y*cos((i+1)*a/nb_step)+x*sin((i+1)*a/nb_step);
-    float tmpa = ra+i*((a-M_PI/6)/nb_step);
-
-    goto_xya_synced(tmpx,tmpy,tmpa);
+  for(int i = 0; i < nb_steps; i++) {
+    const float a_step = (i+1)*(a + M_PI/6) / nb_steps;
+    const int16_t tmpx = cx + x*cos(a_step) - y*sin(a_step);
+    const int16_t tmpy = cy + y*cos(a_step) + x*sin(a_step);
+    const float tmpa = ra + i*(a/nb_steps);
+    goto_xya_synced(tmpx, tmpy, tmpa);
   }
 }
 

@@ -1,8 +1,6 @@
 #ifndef BATTERY_MONITOR_CONFIG_H
 #define BATTERY_MONITOR_CONFIG_H
 
-#include "battery_monitor.h"
-
 #define BATTERY_TYPE  LIPO
 
 #define BATTERY_SIZE  LIPO_4S 

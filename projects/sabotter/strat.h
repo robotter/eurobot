@@ -24,4 +24,5 @@ void strat_run(void);
 void strat_test(void);
 
 void idle_delay_ms(uint32_t time_ms);
+
 #endif

@@ -1,4 +1,3 @@
-#include <avarix.h>
 #include <pwm/motor.h>
 #include "servos.h"
 
@@ -13,9 +12,9 @@ void servos_init(void) {
   pwm_servo_init(servos+3, (TC0_t *) &TCD0, 'D');
 }
 
-void servo_set(uint8_t id, uint16_t value){
-  uint16_t pwm = value < PWM_MOTOR_MAX ? value : PWM_MOTOR_MAX;
+void servo_set(uint8_t id, uint16_t value) {
   if(id < SERVO_COUNT) {
+    uint16_t pwm = value < PWM_MOTOR_MAX ? value : PWM_MOTOR_MAX;
     pwm_motor_set(servos+id, pwm);
   }
 }

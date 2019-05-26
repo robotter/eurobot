@@ -11,10 +11,6 @@
 // Timeout before repeating various strat orders
 #define STRAT_TIMEOUT_US  1000000
 
-// Margin for arm positions
-#define ARM_UPPER_MARGIN  2000
-#define ARM_LOWER_MARGIN  10
-
 // Battery alert value
 #define BATTERY_ALERT_LIMIT  13500
 
@@ -30,11 +26,11 @@
 #define R3D2_AVOID_DISTANCE  600
 #define R3D2_STOP_DISTANCE  400
 #endif
+
 // Starting cord: 0 is plugged, 1 in unplugged
 #define STARTING_CORD_PP  PORTPIN(C,1)
 // Color selector: 0 is yellow, 1 is red
 #define COLOR_SELECTOR_PP  PORTPIN(C,0)
-
 
 // Leds
 #define LED_R_PP  PORTPIN(F,0)

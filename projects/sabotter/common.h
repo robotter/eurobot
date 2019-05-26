@@ -47,45 +47,49 @@ typedef struct {
     int16_t x;
     int16_t y;
     float a;
-  }current_pos;
+  } current_pos;
   struct {
     int16_t x;
     int16_t y;
     float a;
-  }partner_pos;
+  } partner_pos;
   struct {
     int16_t x;
     int16_t y;
   } carrot;
+
   // R3D2
   struct {
     r3d2_object_t objects[2];
   } r3d2;
+
+#if (defined GALIPEUR)
   // MECA (galipeur)
-  uint8_t meca_state;
+  rome_enum_meca_state_t meca_state;
   // atoms manipulators
   uint8_t left_elevator;
   uint8_t right_elevator;
   bool left_atoms[3];
   bool right_atoms[3];
 
-  //galipette bumpers
-  struct{
+#elif (defined GALIPETTE)
+  // galipette bumpers
+  struct {
     bool left;
     bool right;
-  }bumpers;
+  } bumpers;
+#endif
 
-  //points count
+  // points count
   uint16_t points;
 
-  //boomotter
+  // boomotter
   uint32_t boom_age;
 
-  //match timer
+  // match timer
   uint8_t match_time;
 } robot_state_t;
 
 extern robot_state_t robot_state;
-
 
 #endif

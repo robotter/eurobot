@@ -101,8 +101,10 @@ static void rome_asserv_handler(const rome_frame_t *frame)
       robot_state.asserv.path_n = frame->asserv_tm_htraj_path_index.size;
     } break;
     case ROME_MID_ASSERV_TM_BUMPERS_STATE:{
+#if (defined GALIPETTE)
       robot_state.bumpers.left  = frame->asserv_tm_bumpers_state.b0;
       robot_state.bumpers.right = frame->asserv_tm_bumpers_state.b1;
+#endif
     } break;
 
     default:
@@ -113,6 +115,7 @@ static void rome_asserv_handler(const rome_frame_t *frame)
   rome_send(ROME_DST_BROADCAST, frame); //TODO don't broadcast everything
 }
 
+#ifdef UART_MECA
 static void rome_meca_handler(const rome_frame_t *frame)
 {
   switch(frame->mid) {
@@ -139,6 +142,7 @@ static void rome_meca_handler(const rome_frame_t *frame)
   // forward
   rome_send(ROME_DST_BROADCAST, frame); //TODO don't broadcast everything
 }
+#endif
 
 static void rome_xbee_handler(uint16_t addr, const rome_frame_t *frame)
 {
@@ -211,8 +215,6 @@ void update_rome_interfaces(void)
   while((frame = rome_reader_read(&rome_asserv_reader))) rome_asserv_handler(frame);
 #ifdef UART_MECA
   while((frame = rome_reader_read(&rome_meca_reader))) rome_meca_handler(frame);
-#else
-  (void)rome_meca_handler;
 #endif
   xbee_handle_input(&xbee_paddock);
 }
@@ -220,12 +222,9 @@ void update_rome_interfaces(void)
 
 static void update_battery(void)
 {
-  // function called every 50ms
-
-  // call battery mgmt and downlink every 500ms
-  static uint8_t it=0; it++;
-  if(it > 10) {
-    it=0;
+  static uint8_t it;
+  if(it++ >= 10) {
+    it = 0;
     // get battery voltage
     BATTMON_monitor(&battery);
     uint16_t voltage = battery.FilterMemory;
@@ -233,7 +232,6 @@ static void update_battery(void)
     ROME_SEND_TM_BATTERY(ROME_DST_BROADCAST, ROME_DEVICE, voltage);
     portpin_outtgl(&LED0_PP);
   }
-
 }
 
 static void send_messages(void)
@@ -241,7 +239,6 @@ static void send_messages(void)
   ROME_SEND_TM_SCORE(ROME_DST_BROADCAST, ROME_DEVICE, robot_state.points);
 }
 
-/// Scheduler function called at match end
 static void match_end(void)
 {
   // count time second by second
@@ -275,9 +272,6 @@ void rome_send_pathfinding_graph(const pathfinding_t *finder)
 
 int main(void)
 {
-  // Booting
-
-  // Initialize clocks
   clock_init();
 
   #ifdef GALIPETTE
@@ -351,11 +345,11 @@ int main(void)
     }
   }
 
-  //initialize pathfinding
+  // initialize pathfinding
   pathfinding_set_nodes(&pathfinder, pathfinding_graph);
   rome_send_pathfinding_graph(&pathfinder);
 
-  //initialize partner position
+  // initialize partner position
   robot_state.partner_pos.x = 200;
   robot_state.partner_pos.y = -1000;
   robot_state.partner_pos.a = 0;
