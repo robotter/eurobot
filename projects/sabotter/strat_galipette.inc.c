@@ -177,6 +177,7 @@ bool boomotter_connected(void){
 }
 
 
+#if 0 // 2018
 order_result_t switch_on_boomotter(void){
   ROME_LOG(ROME_DST_PADDOCK, INFO,"go switching on boomotter");
   order_result_t or = ORDER_FAILURE;
@@ -307,6 +308,7 @@ order_result_t take_cubes_in_front_of_contruction_area(void){
 
   return or;
 }
+#endif
 
 void strat_run(void)
 {
@@ -317,7 +319,9 @@ void strat_run(void)
   //wait for galipeur to go
   idle_delay_ms(1000);
 
+#if 0 // 2018
   switch_on_boomotter();
+#endif
 
   //wait for galipeur to go trough the table to go for opposite dispensers
   for(;;){
@@ -329,11 +333,13 @@ void strat_run(void)
       break;
   }
 
+#if 0 // 2018
   order_result_t or = ORDER_FAILURE;
   while (or != ORDER_SUCCESS){
     or = launch_bee();
     idle();
   }
+#endif
 
   //look_at_the_card();
 
@@ -365,6 +371,7 @@ void strat_run(void)
 
   ROME_LOG(ROME_DST_PADDOCK, INFO,"That's all folks !");
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
+#if 0 // 2018
   for(;;){
     bee_launcher_push();
     idle_delay_ms(500);
@@ -375,6 +382,7 @@ void strat_run(void)
       break;
     }
   }
+#endif
 }
 
 void strat_test(void)

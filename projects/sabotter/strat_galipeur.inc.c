@@ -30,10 +30,6 @@ void _wait_meca_ground_clear(void){
   }
 }
 
-bool cylinder_is_empty(void){
-  return (robot_state.cylinder_nb_empty == robot_state.cylinder_nb_slots);
-}
-
 void strat_init(void)
 {
   ROME_LOG(ROME_DST_PADDOCK, INFO,"Galipeur : Strat init");
@@ -83,29 +79,17 @@ void strat_prepare(void)
   goto_xya(KX(800), 400, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-AUTOSET_OFFSET);
 
-  // check the state of the cylinder
-  _wait_meca_ready();
-  ROME_SENDWAIT_MECA_CMD(ROME_DST_MECA,ROME_ENUM_MECA_COMMAND_CHECK_EMPTY);
-
   //evade the border, leaving space for galipette
   goto_xya(KX(900), 1600, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
 
   //go in front of starting area
   goto_xya(KX(1300), 1500, arfast(ROBOT_SIDE_BALLEATER,TABLE_SIDE_DOWN));
 
-  //wait for meca to end checking cylinder
-  _wait_meca_ready();
-  if (!cylinder_is_empty()){
-    _wait_meca_ready();
-    ROME_SENDWAIT_MECA_CMD(ROME_DST_MECA,ROME_ENUM_MECA_COMMAND_TRASH_BEGINMATCH);
-  }
-
   //wait for meca to end all orders before shutting down asserv
   _wait_meca_ready();
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 0);
-
 }
 
 
@@ -138,6 +122,7 @@ float compute_throw_angle(int16_t x, int16_t y){
   return robot - target;
 }
 
+#if 0 // 2018
 typedef enum{
   DISPENSER_NEAR = 0,
   DISPENSER_FAR,
@@ -324,6 +309,7 @@ order_result_t empty_cylinder(void){
 
   return ORDER_SUCCESS;
 }
+#endif
 
 void strat_run(void)
 {
@@ -331,6 +317,7 @@ void strat_run(void)
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
 
+#if 0 // 2018
   order_result_t or_take_water_near  = ORDER_FAILURE;
   order_result_t or_empty_water_near = ORDER_FAILURE;
   order_result_t or_take_water_far   = ORDER_FAILURE;
@@ -365,6 +352,7 @@ void strat_run(void)
       or_empty_water_far = empty_cylinder();
     }
   }
+#endif
 
   ROME_LOG(ROME_DST_PADDOCK, INFO,"That's all folks !");
   idle_delay_ms(3000);
@@ -382,18 +370,7 @@ void strat_test(void)
   }
 
   set_speed(RS_NORMAL);
-  #if 0
-  set_xya_wait(0,0,0);
-  goto_xya(0,0,0);
-  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
-  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
-
-  ROME_LOG(ROME_DST_PADDOCK, INFO,"go");
-  goto_xya(0,700,0);
-  ROME_LOG(ROME_DST_PADDOCK, INFO,"back");
-  goto_xya(0,0,0);
-
-  #else
+#if 0 // 2018
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
   ROME_LOG(ROME_DST_PADDOCK, INFO,"go");
@@ -408,7 +385,7 @@ void strat_test(void)
 
   ROME_LOG(ROME_DST_PADDOCK, INFO,"align to start a new test");
   goto_xya(KX(1300), 1500, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  #endif
+#endif
 
   ROME_LOG(ROME_DST_PADDOCK, INFO,"Strat test stuff end ...");
 
