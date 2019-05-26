@@ -10,8 +10,7 @@
 #include "r3d2.h"
 #include "leds.h"
 #include "pid.h"
-
-extern rome_intf_t rome_intf;
+#include "config.h"
 
 #define R3D2_MOTOR_PWM_TC TCE0
 #define R3D2_MOTOR_POS_CH 'A'
@@ -145,7 +144,7 @@ static void _new_measure(measure_t *m) {
 
   int32_t distance;
   if(_in_blind_spot(start_tick_angle)||_in_blind_spot(end_tick_angle)) {
-    ROME_LOGF(&rome_intf, INFO, "In blind spot !");
+    ROME_LOGF(UART_STRAT, INFO, "In blind spot !");
     // when object is within blind spot detected angle
     // will be roughtly okay but distance totaly wrong
     // detection will be sent but with distance set to -1
@@ -158,9 +157,9 @@ static void _new_measure(measure_t *m) {
   // add mount offset (rotation from r3d2 to robot)
   da.angle = fmod(da.angle + R3D2_MOUNT_ANGLE_OFFSET_RADIANS, 2*M_PI);
 
-  ROME_SEND_R3D2_TM_DETECTION(&rome_intf, m->count, true, 1000*da.angle,distance);
+  ROME_SEND_R3D2_TM_DETECTION(UART_STRAT, m->count, true, 1000*da.angle,distance);
 
-  ROME_SEND_R3D2_TM_ARCS(&rome_intf, m->count,
+  ROME_SEND_R3D2_TM_ARCS(UART_STRAT, m->count,
     1000*start_tick_angle,
     1000*end_tick_angle);
 }
@@ -219,24 +218,24 @@ ISR(R3D2_MOTOR_INT_VECT) {
   r3d2.motor_rpm_stable = error < r3d2.motor_consign_threshold_pc;
   if(pstable != r3d2.motor_rpm_stable) {
     if(r3d2.motor_rpm_stable) {
-      ROME_LOGF(&rome_intf, INFO, "Motor speed OK\n");
+      ROME_LOGF(UART_STRAT, INFO, "Motor speed OK\n");
       portpin_outset(&LED_COM_PP);
     }
     else {
-      ROME_LOGF(&rome_intf, INFO, "Motor speed KO\n");
+      ROME_LOGF(UART_STRAT, INFO, "Motor speed KO\n");
       portpin_outclr(&LED_COM_PP);
     }
   }
   pstable = r3d2.motor_rpm_stable;
 
   for(uint8_t i=r3d2.measure_sr.count; i<R3D2_MAX_OBJECTS; i++) {
-    ROME_SEND_R3D2_TM_DETECTION(&rome_intf, i, false, 0, 0);
+    ROME_SEND_R3D2_TM_DETECTION(UART_STRAT, i, false, 0, 0);
   }
   r3d2.measure_sr.count = 0;
 
   /*
   for(uint8_t i=r3d2.measure_lr.count; i<R3D2_MAX_OBJECTS; i++) {
-    ROME_SEND_R3D2_TM_DETECTION(&rome_intf, i, false, 0, 0);
+    ROME_SEND_R3D2_TM_DETECTION(UART_STRAT, i, false, 0, 0);
   }
   r3d2.measure_lr.count = 0;
   */
@@ -295,7 +294,7 @@ void r3d2_update() {
 
 // Set rotation parameters
 void r3d2_set_rotation(uint16_t speed, uint8_t threshold) {
-  ROME_LOGF(&rome_intf, INFO,
+  ROME_LOGF(UART_STRAT, INFO,
     "Motor rotation parameters set to %d rpm / %d%%",
     speed, threshold);
   r3d2.motor_consign_rpm = speed;
@@ -306,7 +305,7 @@ void r3d2_set_rotation(uint16_t speed, uint8_t threshold) {
 void r3d2_set_blind_spot(float begin, float end) {
   int _begin = 180*begin/M_PI;
   int _end = 180*end/M_PI;
-  ROME_LOGF(&rome_intf, INFO,
+  ROME_LOGF(UART_STRAT, INFO,
     "R3D2 blind spot set from %d to %d",
     _begin, _end);
   r3d2.blind_spot_arc.begin = begin;
