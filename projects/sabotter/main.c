@@ -343,10 +343,6 @@ int main(void)
     }
   }
 
-  // initialize pathfinding
-  pathfinding_set_nodes(&pathfinder, pathfinding_graph);
-  rome_send_pathfinding_graph(&pathfinder);
-
   // initialize partner position
   robot_state.partner_pos.x = 200;
   robot_state.partner_pos.y = -1000;
@@ -358,6 +354,11 @@ int main(void)
   LED_RGB_SET(LED_COLOR_RED);
   robot_state.points = 0;
   strat_init();
+
+  // initialize pathfinding
+  pathfinding_set_nodes(&pathfinder, pathfinding_graph);
+  rome_send_pathfinding_graph(&pathfinder);
+
   LED_RGB_SET(LED_COLOR_BLACK);
   robot_state.team = strat_select_team();
 
