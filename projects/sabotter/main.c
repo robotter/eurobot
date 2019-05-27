@@ -103,8 +103,8 @@ static void rome_asserv_handler(const rome_frame_t *frame)
     } break;
     case ROME_MID_ASSERV_TM_BUMPERS_STATE:{
 #if (defined GALIPETTE)
-      robot_state.bumpers.left  = frame->asserv_tm_bumpers_state.b0;
-      robot_state.bumpers.right = frame->asserv_tm_bumpers_state.b1;
+      robot_state.bumpers.left  = frame->asserv_tm_bumpers_state.left;
+      robot_state.bumpers.right = frame->asserv_tm_bumpers_state.right;
 #endif
     } break;
 

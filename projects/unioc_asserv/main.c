@@ -298,15 +298,15 @@ void rome_handler(rome_intf_t *intf, const rome_frame_t *frame)
     case ROME_MID_ASSERV_SET_CMATRIX: {
       INTLVL_DISABLE_ALL_BLOCK() {
 
-        hrobot_motors_invmatrix_correct[0] = frame->asserv_set_cmatrix.m0;
-        hrobot_motors_invmatrix_correct[1] = frame->asserv_set_cmatrix.m1;
-        hrobot_motors_invmatrix_correct[2] = frame->asserv_set_cmatrix.m2;
-        hrobot_motors_invmatrix_correct[3] = frame->asserv_set_cmatrix.m3;
-        hrobot_motors_invmatrix_correct[4] = frame->asserv_set_cmatrix.m4;
-        hrobot_motors_invmatrix_correct[5] = frame->asserv_set_cmatrix.m5;
-        hrobot_motors_invmatrix_correct[6] = frame->asserv_set_cmatrix.m6;
-        hrobot_motors_invmatrix_correct[7] = frame->asserv_set_cmatrix.m7;
-        hrobot_motors_invmatrix_correct[8] = frame->asserv_set_cmatrix.m8;
+        hrobot_motors_invmatrix_correct[0] = frame->asserv_set_cmatrix.m[0];
+        hrobot_motors_invmatrix_correct[1] = frame->asserv_set_cmatrix.m[1];
+        hrobot_motors_invmatrix_correct[2] = frame->asserv_set_cmatrix.m[2];
+        hrobot_motors_invmatrix_correct[3] = frame->asserv_set_cmatrix.m[3];
+        hrobot_motors_invmatrix_correct[4] = frame->asserv_set_cmatrix.m[4];
+        hrobot_motors_invmatrix_correct[5] = frame->asserv_set_cmatrix.m[5];
+        hrobot_motors_invmatrix_correct[6] = frame->asserv_set_cmatrix.m[6];
+        hrobot_motors_invmatrix_correct[7] = frame->asserv_set_cmatrix.m[7];
+        hrobot_motors_invmatrix_correct[8] = frame->asserv_set_cmatrix.m[8];
       }
     } break;
 
