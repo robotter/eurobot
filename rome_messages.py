@@ -28,9 +28,9 @@ register_messages(
       (Order, 'asserv_goto_xy', ['dist x', 'dist y', 'angle a']),
       # same as asserv_goto_xy, but relative to previous coordinates
       (Order, 'asserv_goto_xy_rel', ['dist x', 'dist y', 'angle a']),
-
-      # order robot to go directly to point (x,y) then turn to heading a
+      # order robot to go directly to point (x,y) while panning
       (Order, 'asserv_goto_xya_panning', ['dist x', 'dist y', 'angle pan_angle']),
+      # order robot to go directly to point (x,y) and turng to heading a, simultaneously
       (Order, 'asserv_goto_xya_synced', ['dist x', 'dist y', 'angle a']),
 
       # order to run along a trajectory (xy array size must be even)
