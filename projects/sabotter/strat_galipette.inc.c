@@ -1,36 +1,11 @@
 
 #include "servos.h"
 
-#define ROBOT_SIDE_CUBE_CLAW (ROBOT_SIDE_LEFT)
-
-typedef enum{
-  NONE = 0,
-  CUBE_CLAW_LEFT = 1,
-  CUBE_CLAW_ELEVATOR = 2,
-  CUBE_CLAW_RIGHT = 3,
-} cube_claw_servo_t;
-
-#define CUBE_CLAW_LEFT_START 1500
-#define CUBE_CLAW_LEFT_CLOSED 2100
-#define CUBE_CLAW_LEFT_OPENED 3000
-
-#define CUBE_CLAW_RIGHT_START 3000
-#define CUBE_CLAW_RIGHT_CLOSED 2400
-#define CUBE_CLAW_RIGHT_OPENED 1500
-
-#define CUBE_CLAW_ELEVATOR_DOWN 1300
-#define CUBE_CLAW_ELEVATOR_BUTTON 2600
-#define CUBE_CLAW_ELEVATOR_BUTTON_WITHCUBE 3800
-#define CUBE_CLAW_ELEVATOR_MID 3250
-#define CUBE_CLAW_ELEVATOR_UP 4000
-
 typedef enum {
-  SABOTTER_SERVO_BEE_LAUCHER = 3,
+  SABOTTER_PUMP_PWM = 1,
 } sabotter_servo_t;
 
-#define SABOTTER_SERVO_BEE_LAUCHER_DOWN 2450
-#define SABOTTER_SERVO_BEE_LAUCHER_RIGHT 1600
-#define SABOTTER_SERVO_BEE_LAUCHER_LEFT 3300
+#define SABOTTER_PUMP_ON 6000
 
 #define BUMPER_TO_CENTER_DIST 100 // distance from the edge of galipette to the center of the robot (in mm)
 
@@ -56,60 +31,17 @@ void set_speed(robot_speed_t s){
   }
 }
 
-void cube_claw_start(void){
-  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_START);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_START);
+void pump_off(void) {
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"Galipette : pump off...");
+  servo_set(SABOTTER_PUMP_PWM, 0);
 }
 
-void cube_claw_close(void){
-  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_CLOSED);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_CLOSED);
-}
-
-void cube_claw_open(void){
-  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_LEFT, CUBE_CLAW_LEFT_OPENED);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_RIGHT, CUBE_CLAW_RIGHT_OPENED);
-}
-
-void bee_launcher_down(void) {
-  servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_DOWN);
-}
-
-void bee_launcher_push(void) {
-  switch(robot_state.team) {
-    case TEAM_YELLOW:
-      servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_RIGHT);
-      break;
-    case TEAM_PURPLE:
-      servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_LEFT);
-      break;
-    
-    default:
-      break;
-  }
-}
-
-void bee_launcher_papush(void) {
-  switch(robot_state.team) {
-    case TEAM_YELLOW:
-      servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_RIGHT);
-      break;
-    case TEAM_PURPLE:
-      servo_set(SABOTTER_SERVO_BEE_LAUCHER, SABOTTER_SERVO_BEE_LAUCHER_LEFT);
-      break;
-    
-    default:
-      break;
-  }
+void pump_on(void) {
+  ROME_LOG(ROME_DST_PADDOCK, INFO,"Galipette : pump on !!!");
+  servo_set(SABOTTER_PUMP_PWM, SABOTTER_PUMP_ON);
 }
 
 void galipette_autoset(robot_side_t robot_side, autoset_side_t table_side, float x, float y) {
-  bee_launcher_push();
-  autoset(robot_side,table_side,x,y);
-}
-
-void galipette_autoset_papush(robot_side_t robot_side, autoset_side_t table_side, float x, float y) {
-  bee_launcher_papush();
   autoset(robot_side,table_side,x,y);
 }
 
@@ -119,8 +51,7 @@ void strat_init(void)
   // disable asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
 
-  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
-  cube_claw_open();
+  pump_off();
 
   // set R3D2 parameters
   ROME_SENDWAIT_R3D2_SET_ROTATION(ROME_DST_ASSERV,350,25);
@@ -131,10 +62,6 @@ void strat_init(void)
       break;
   }
 
-
-  cube_claw_open();
-  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_DOWN);
-  bee_launcher_down();
 }
 
 void strat_prepare(void)
@@ -145,9 +72,7 @@ void strat_prepare(void)
 
   ROME_LOG(ROME_DST_PADDOCK, DEBUG,"Strat prepare");
 
-  cube_claw_close();
   idle_delay_ms(200);
-  ROME_SENDWAIT_ASSERV_SET_SERVO(ROME_DST_ASSERV, CUBE_CLAW_ELEVATOR, CUBE_CLAW_ELEVATOR_UP);
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
   //boomotter is on the table !
@@ -155,15 +80,13 @@ void strat_prepare(void)
 
   set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
   galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_MAIN, KX(1500-BUMPER_TO_CENTER_DIST), 0);
-  goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
-  goto_xya(KX(1000), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  goto_xya(KX(1300), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  goto_xya(KX(1300), 0, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
   galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
-  goto_xya(KX(1000), 1800, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  goto_xya(KX(1170), 1580, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
 
-  bee_launcher_down();
-  goto_xya(KX(1350), 1800, arfast(ROBOT_SIDE_CUBE_CLAW,TABLE_SIDE_AUX));
 
-  //bee is on the table !
+  //experience is on the table !
   update_score(5);
 
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
@@ -314,24 +237,41 @@ void strat_run(void)
 {
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
-  cube_claw_close();
 
-  //wait for galipeur to go
-  idle_delay_ms(1000);
+  ROME_LOG(ROME_DST_PADDOCK, DEBUG,"Gooooooo !!!!");
 
+  order_result_t or = ORDER_FAILURE;
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ACCELERATED_BLUE,arfast(ROBOT_SIDE_LEFT,TABLE_SIDE_UP));
+  (void) or;
+
+  ROME_LOG(ROME_DST_PADDOCK, DEBUG,"Push blue atom");
+
+  goto_xya(KX(-150),1860,arfast(ROBOT_SIDE_LEFT,TABLE_SIDE_UP));
+  goto_xya(KX(-300),1860,arfast(ROBOT_SIDE_LEFT,TABLE_SIDE_UP));
+  goto_xya(KX(-150),1800,arfast(ROBOT_SIDE_LEFT,TABLE_SIDE_UP));
+
+  goto_xya(KX(-200),1800,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  goto_xya(KX(-200),1860,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  galipette_autoset(ROBOT_SIDE_BACK,AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST-30);
+  goto_xya(KX(-200),1800,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+
+  ROME_LOG(ROME_DST_PADDOCK, DEBUG,"Take goldenium");
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_GOLDENIUM,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  pump_on();
+  goto_xya(KX(-740),(1880),arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  idle_delay_ms(500);
+  goto_xya(KX(-740),1800,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+
+  ROME_LOG(ROME_DST_PADDOCK, DEBUG,"Put goldenium in the balance");
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BALANCE,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
+  goto_xya(KX(140),520,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
+  pump_off();
+  idle_delay_ms(2000);
+  goto_xya(KX(200),700,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
 #if 0 // 2018
   switch_on_boomotter();
 #endif
 
-  //wait for galipeur to go trough the table to go for opposite dispensers
-  for(;;){
-    idle();
-    if(KX(robot_state.partner_pos.x) < 100)
-      break;
-
-    if (robot_state.match_time > 50)
-      break;
-  }
 
 #if 0 // 2018
   order_result_t or = ORDER_FAILURE;
@@ -366,23 +306,20 @@ void strat_run(void)
   //  idle_delay_ms(1000);
   //}
 
+
+  //go back for prog
+  for(;;){
+    idle();
+
+    if (robot_state.match_time > 70)
+      break;
+  }
   idle_delay_ms(500);
-  goto_xya(KX(1300),500,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_MAIN));
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_GALIPETTE_START,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
+  goto_xya(KX(1300),1800,arfast(ROBOT_SIDE_BACK,TABLE_SIDE_UP));
 
   ROME_LOG(ROME_DST_PADDOCK, INFO,"That's all folks !");
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
-#if 0 // 2018
-  for(;;){
-    bee_launcher_push();
-    idle_delay_ms(500);
-    bee_launcher_papush();
-    idle_delay_ms(500);
-    if (robot_state.match_time > 95){
-      bee_launcher_down();
-      break;
-    }
-  }
-#endif
 }
 
 void strat_test(void)
