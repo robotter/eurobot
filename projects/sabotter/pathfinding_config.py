@@ -124,20 +124,21 @@ def add_triangle_grid(x1, y0, y1, r, obstacles):
 
 
 add_team_elements({
+    '{t}_galipette_start': (950, 1700),
     '{t}_ramp_entrance': (1275, 550),
     '{t}_small_dispenser': (1275, 250),
     '{t}_large_dispenser': (750, 700),
     '{t}_goldenium': (725, 1822),
-    '{t}_accelerated_blue': (212, 1822),
+    '{t}_accelerated_blue': (150, 1822),  # atom is at x=212
     '{t}_balance': (200, 700),
 }, [
     '{t}_ramp_entrance {t}_small_dispenser',
     # galipette path
-    '{o}_accelerated_blue {o}_goldenium {t}_balance',
+    '{t}_galipette_start {o}_accelerated_blue {o}_goldenium {t}_balance',
 ])
 
 # make sure the grid does not overlap the start area
-add_triangle_grid(1050, 600, 1800, 250, [
+add_triangle_grid(1050, 600, 1850, 200, [
     # balance separator
     ((0, 580), 100),
     # chaos areas
