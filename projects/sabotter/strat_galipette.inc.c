@@ -143,46 +143,61 @@ void strat_run(void)
   ROME_LOG(ROME_DST_PADDOCK, DEBUG, "Gooooooo !!!!");
 
   order_result_t or = ORDER_FAILURE;
-  (void) or;
 
   // Go to the blue atom to accelerate
-  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ACCELERATED_BLUE, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
   ROME_LOG(ROME_DST_PADDOCK, DEBUG, "Push blue atom");
-  // Stick to the table, push the atom, move back (along the accelerator)
-  goto_xya(KX(-150), 1860, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
-  goto_xya(KX(-300), 1860, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
-  goto_xya(KX(-150), 1800, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
-  //TODO check action success
-  update_score(SCORE_ATOM_IN_ACCELERATOR);
-  update_score(SCORE_GOLDENIUM_FREED);
+  {
+    // If blocked on the way, move toward the center of the table to let the
+    // opponent pass, then try go to the atom again.
+    for(;;) {
+      or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ACCELERATED_BLUE, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+      if(or == ORDER_SUCCESS) {
+        break;
+      }
+      ROME_LOG(ROME_DST_PADDOCK, INFO, "Path to blue atom blocked, let opponent pass");
+      goto_xya(robot_state.current_pos.x, 1500, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+    }
 
-  // Autoset on the border
-  goto_xya(KX(-200), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-  goto_xya(KX(-200), 1860, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-  galipette_autoset(ROBOT_SIDE_BACK, AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST-30);
-  goto_xya(KX(-200), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    // Stick to the table, push the atom, move back (along the accelerator)
+    goto_xya(KX(-150), 1860, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+    goto_xya(KX(-300), 1860, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+    goto_xya(KX(-150), 1800, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+    //TODO check action success
+    update_score(SCORE_ATOM_IN_ACCELERATOR);
+    update_score(SCORE_GOLDENIUM_FREED);
+
+    // Autoset on the border
+    goto_xya(KX(-200), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    goto_xya(KX(-200), 1860, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    galipette_autoset(ROBOT_SIDE_BACK, AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST-30);
+    goto_xya(KX(-200), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+  }
 
   ROME_LOG(ROME_DST_PADDOCK, DEBUG, "Take goldenium");
-  // Go to the goldenium
-  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_GOLDENIUM, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-  // Switch on the pump, stick to the goldenium, then move back
-  pump_on();
-  goto_xya(KX(-740), (1880), arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-  idle_delay_ms(500);
-  goto_xya(KX(-740), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-  //TODO check action success
-  update_score(SCORE_GOLDENIUM_EXTRACTED);
+  {
+    // Go to the goldenium
+    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_GOLDENIUM, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    // Switch on the pump, stick to the goldenium, then move back
+    pump_on();
+    goto_xya(KX(-740), (1880), arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    idle_delay_ms(500);
+    goto_xya(KX(-740), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    //TODO check action success
+    update_score(SCORE_GOLDENIUM_EXTRACTED);
+  }
 
   ROME_LOG(ROME_DST_PADDOCK, DEBUG, "Put goldenium in the balance");
-  // Go to the balance
-  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BALANCE, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-  // Stick to the balance, drop the goldenium, move back
-  goto_xya(KX(140), 520, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-  pump_off();
-  idle_delay_ms(2000);
-  goto_xya(KX(200), 700, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-  //TODO check action success
-  update_score(SCORE_GOLDENIUM_IN_BALANCE);
+  {
+    // Go to the balance
+    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BALANCE, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+    // Stick to the balance, drop the goldenium, move back
+    goto_xya(KX(140), 520, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+    pump_off();
+    idle_delay_ms(2000);
+    goto_xya(KX(200), 700, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+    //TODO check action success
+    update_score(SCORE_GOLDENIUM_IN_BALANCE);
+  }
 
 
 #if 0 // 2018
