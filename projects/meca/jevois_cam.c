@@ -22,18 +22,19 @@ void jevois_cam_init(jevois_cam_t *cam) {
   cam->received_ts = 0;
 }
 
-uint8_t jevois_cam_is_valid(jevois_cam_t* cam) {
+uint8_t jevois_cam_is_valid(jevois_cam_t *cam) {
   return cam->received_ts + JEVOIS_CAM_TIMEOUT_US > uptime_us();
 }
 
-uint16_t jevois_cam_get_entry_height(jevois_cam_t* cam) {
+uint16_t jevois_cam_get_entry_height(jevois_cam_t *cam) {
   return cam->entry_height;
 }
 
-rome_enum_jevois_color_t jevois_cam_get_entry_color(jevois_cam_t* cam) {
+rome_enum_jevois_color_t jevois_cam_get_entry_color(jevois_cam_t *cam) {
   return cam->entry_color;
 }
 
-rome_enum_jevois_color_t jevois_cam_get_cylinder_color(jevois_cam_t* cam) {
+rome_enum_jevois_color_t jevois_cam_get_cylinder_color(jevois_cam_t *cam) {
   return cam->cylinder_color;
 }
+
