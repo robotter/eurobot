@@ -67,8 +67,8 @@ typedef struct {
   // MECA (galipeur)
   rome_enum_meca_state_t meca_state;
   // atoms manipulators
-  uint8_t left_elevator;
-  uint8_t right_elevator;
+  int16_t left_pos;  // -1 if unknown
+  int16_t right_pos;  // -1 if unknown
   bool left_atoms[3];
   bool right_atoms[3];
 

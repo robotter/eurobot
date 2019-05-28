@@ -131,8 +131,8 @@ static void rome_meca_handler(const rome_frame_t *frame)
       robot_state.meca_state = frame->meca_tm_state.state;
       break;
     case ROME_MID_MECA_TM_ARMS_STATE:
-      robot_state.left_elevator = frame->meca_tm_arms_state.l_elev;
-      robot_state.right_elevator = frame->meca_tm_arms_state.r_elev;
+      robot_state.left_pos = frame->meca_tm_arms_state.l_pos;
+      robot_state.right_pos = frame->meca_tm_arms_state.r_pos;
       memcpy(robot_state.left_atoms, frame->meca_tm_arms_state.l_atoms, 3);
       memcpy(robot_state.right_atoms, frame->meca_tm_arms_state.r_atoms, 3);
       break;

@@ -25,42 +25,46 @@ typedef enum {
   ARM_INIT = 0,
   ARM_IDLE,
 
-  ARM_RESET_ELEVATOR_START = 10,
-  ARM_RESET_ELEVATOR_WAIT,
-
-  ARM_ELEVATOR_GO_UP,
-  ARM_ELEVATOR_WAIT_UP,
-  ARM_ELEVATOR_WAIT_UP_DEBOUNCE,
-  ARM_ELEVATOR_GO_DOWN,
-  ARM_ELEVATOR_WAIT_DOWN,
-  ARM_ELEVATOR_GO_ACCELERATOR,
-  ARM_ELEVATOR_WAIT_ACCELERATOR,
+  ARM_ELEVATOR_RESET = 10,
+  ARM_ELEVATOR_RESET_DEBOUNCE,
+  ARM_ELEVATOR_MOVE,
+  ARM_ELEVATOR_MOVE_WAIT,
 
   ARM_TAKE_ATOMS = 20,
 
   ARM_RELEASE_ATOMS = 30,
 
-  ARM_CHECK_SUCKERS = 40,
-  ARM_CHECK_SUCKERS_DISABLE_PUMP,
-  ARM_CHECK_LEFT_SUCKER,
+  ARM_CHECK_SUCKERS_DISABLE_PUMP = 40,
+  ARM_CHECK_SUCKERS_PRESSURE,
   ARM_CHECK_LEFT_SUCKER_DISABLE_PUMP,
-  ARM_CHECK_CENTER_SUCKER,
+  ARM_CHECK_LEFT_SUCKER_PRESSURE,
   ARM_CHECK_CENTER_SUCKER_DISABLE_PUMP,
-  ARM_CHECK_RIGHT_SUCKER,
+  ARM_CHECK_CENTER_SUCKER_PRESSURE,
   ARM_CHECK_RIGHT_SUCKER_DISABLE_PUMP,
+  ARM_CHECK_RIGHT_SUCKER_PRESSURE,
 
 } arm_state_t;
 
 typedef struct {
-  uint8_t tm_state;
-  arm_state_t state;
-  uint8_t elevator;
-  bool atoms[3];
   bool side;
-  uint16_t pressure;
+  rome_enum_meca_state_t tm_state;
+  arm_state_t state;
+  struct {
+    // note: pos and target must be castable to int16_t
+    uint16_t pos;  // Current position in steps, unrelevant if pos_known is true
+    uint16_t target;  // Target position in steps
+    bool pos_known;  // True if elevator has been reset
+  } elevator;
+
+  bool atoms[3];
   barometer_t baro;
-  uint32_t debounce_time;
+
+  /// When measuring a value, time at which end the measure
+  uint32_t measure_end;
+
+  uint16_t pressure;
   uint32_t baro_time;
+
 } arm_t;
 
 extern arm_t arm_l;
@@ -68,7 +72,7 @@ extern arm_t arm_r;
 
 void arm_take_atoms(arm_t *arm);
 void arm_release_atoms(arm_t *arm);
-void arm_elevator_move(arm_t *arm, rome_enum_meca_elevator_pos_t pos);
+void arm_elevator_move(arm_t *arm, uint16_t pos);
 void arm_elevator_up(arm_t *arm);
 void arm_elevator_shutdown(arm_t *arm);
 void arm_elevator_accelerator(arm_t *arm);
@@ -76,5 +80,13 @@ uint8_t arms_get_tm_state(void);
 void arms_init(void);
 void arm_update(arm_t *arm);
 void arms_shutdown(void);
+
+/// Convert an arm position from millimeters to steps
+#define ARM_MM_TO_STEPS(side, mm) \
+    (((mm) * (uint32_t)((side) ? LEFT_ARM_HEIGHT_STEPS : RIGHT_ARM_HEIGHT_STEPS)) / ARM_HEIGHT_MM)
+
+/// Convert an arm position from steps to millimeters
+#define ARM_STEPS_TO_MM(side, steps) \
+    (((steps) * (uint32_t)ARM_HEIGHT_MM) / ((side) ? LEFT_ARM_HEIGHT_STEPS : RIGHT_ARM_HEIGHT_STEPS))
 
 #endif//ARMS_H

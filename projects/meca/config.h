@@ -73,31 +73,40 @@
 #define SERVO13_PP  SERVO_DIG6_PP
 #define SERVO14_PP  SERVO_DIG7_PP
 
-//atom manipulator
-
-//elevators stepper motor control pins
-#define LEFT_MOTOR_STEP_PIN       PORTPIN(D,0)
+// Elevators stepper motor control pins
+#define LEFT_ARM_MOTOR_STEP_PIN   PORTPIN(D,0)
 #define LEFT_ARM_MOTOR_DIR_PIN    PORTPIN(B,0)
 #define LEFT_ARM_MOTOR_EN_PIN     PORTPIN(D,1)
 
-#define RIGHT_MOTOR_STEP_PIN      PORTPIN(D,2)
+#define RIGHT_ARM_MOTOR_STEP_PIN  PORTPIN(D,2)
 #define RIGHT_ARM_MOTOR_DIR_PIN   PORTPIN(B,2)
 #define RIGHT_ARM_MOTOR_EN_PIN    PORTPIN(C,4)
 
-//elevator upper side has limit switches
-#define LEFT_ELEVATOR_STOP_PIN PORTPIN(B,1)
+// Elevator upper side has limit switches
+#define LEFT_ARM_STOP_PIN PORTPIN(B,1)
+#define RIGHT_ARM_STOP_PIN PORTPIN(B,3)
 
-#define RIGHT_ELEVATOR_STOP_PIN PORTPIN(B,3)
+// Elevator height, in motor steps
+#define LEFT_ARM_HEIGHT_STEPS  9000
+#define RIGHT_ARM_HEIGHT_STEPS  5000 //TODO
+// Elevator height, in millimeters
+#define ARM_HEIGHT_MM  165
+
+// ADC configuration for barometers
+#define ARM_BAROMETER_ADC  ADCA
+#define LEFT_ARM_BAROMETER_ADC_PIN  5
+#define RIGHT_ARM_BAROMETER_ADC_PIN  4
 
 
-//pumps and valves are controlled by the magichanism's mosboard
-//interface is I2C E
+// Pumps and valves are controlled by the magichanism's
+// Mosboard interface is I2C E
 #define ARM_I2C_ADDR 0x30
 #define ARM_PUMP(x)          ((x) ? 0b00000001 : 0b00000010)
 #define ARM_LEFT_VALVE(x)    ((x) ? 0b00100000 : 0b00000100)
 #define ARM_CENTER_VALVE(x)  ((x) ? 0b01000000 : 0b00001000)
 #define ARM_RIGHT_VALVE(x)   ((x) ? 0b10000000 : 0b00010000)
 
+// Barometer configuration
 #define BARO_VOID_PRESSURE 250
 #define BARO_CHECK_TIME_US 500000
 

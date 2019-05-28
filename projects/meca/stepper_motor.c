@@ -37,7 +37,7 @@ void callback_left_motor(void) {
       TIMER_CLEAR_CALLBACK(E1, 'A');
     }
     else {
-      portpin_outtgl(&LEFT_MOTOR_STEP_PIN);
+      portpin_outtgl(&LEFT_ARM_MOTOR_STEP_PIN);
       if (steppers[1].consign > 0)
         steppers[1].consign --;
       else
@@ -53,7 +53,7 @@ void callback_right_motor(void) {
       TIMER_CLEAR_CALLBACK(E1, 'B');
     }
     else {
-      portpin_outtgl(&RIGHT_MOTOR_STEP_PIN);
+      portpin_outtgl(&RIGHT_ARM_MOTOR_STEP_PIN);
       if (steppers[0].consign > 0)
         steppers[0].consign --;
       else
@@ -64,11 +64,11 @@ void callback_right_motor(void) {
 
 void stepper_motor_init(void) {
   // init pins
-  portpin_dirset(&LEFT_MOTOR_STEP_PIN);
-  portpin_outclr(&LEFT_MOTOR_STEP_PIN);
+  portpin_dirset(&LEFT_ARM_MOTOR_STEP_PIN);
+  portpin_outclr(&LEFT_ARM_MOTOR_STEP_PIN);
 
-  portpin_dirset(&RIGHT_MOTOR_STEP_PIN);
-  portpin_outclr(&RIGHT_MOTOR_STEP_PIN);
+  portpin_dirset(&RIGHT_ARM_MOTOR_STEP_PIN);
+  portpin_outclr(&RIGHT_ARM_MOTOR_STEP_PIN);
 
   portpin_dirset(&LEFT_ARM_MOTOR_DIR_PIN);
   portpin_outclr(&LEFT_ARM_MOTOR_DIR_PIN);

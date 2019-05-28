@@ -164,7 +164,7 @@ register_messages(
       # set robot color
       (Order, 'meca_set_robot_color', ['bool yellow']),
       # meca commands
-      (Order, 'meca_move_elevator', ['bool side', 'meca_elevator_pos pos']),
+      (Order, 'meca_move_elevator', ['bool side', 'uint16 pos_mm']),
       (Order, 'meca_shutdown_elevator', ['bool side']),
       (Order, 'meca_take_atoms', ['bool side']),
       (Order, 'meca_release_atoms', ['bool side']),
@@ -180,13 +180,12 @@ register_messages(
           'ready',  # meca ready for new commands
           )),
       ('meca_tm_state', ['meca_state state']),
-      rome_types.rome_enum('meca_elevator_pos', (
-        'moving',
-        'down',
-        'up',
-        'accelerator',
-      )),
-      ('meca_tm_arms_state', ['meca_elevator_pos l_elev', 'meca_elevator_pos r_elev', 'bool[3] l_atoms', 'bool[3] r_atoms']),
+      ('meca_tm_arms_state', [
+          'int16 l_pos',  # millimeters, -1 if unknown
+          'int16 r_pos',  # millimeters, -1 if unknown
+          'bool[3] l_atoms',
+          'bool[3] r_atoms',
+      ]),
     ]),
 
     # PATHFINDING

@@ -55,14 +55,14 @@ void rome_strat_handler(const rome_frame_t *frame)
       rome_reply_ack(UART_STRAT, frame);
     } break;
 
-    case ROME_MID_MECA_TAKE_ATOMS:{
+    case ROME_MID_MECA_TAKE_ATOMS: {
       ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s take atoms", SIDE_NAME(frame->meca_take_atoms.side));
       arm_take_atoms(SIDE_ARM(frame->meca_take_atoms.side));
       rome_reply_ack(UART_STRAT, frame);
       break;
     }
 
-    case ROME_MID_MECA_RELEASE_ATOMS:{
+    case ROME_MID_MECA_RELEASE_ATOMS: {
       ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s release atoms", SIDE_NAME(frame->meca_release_atoms.side));
       arm_release_atoms(SIDE_ARM(frame->meca_release_atoms.side));
       rome_reply_ack(UART_STRAT, frame);
@@ -70,20 +70,20 @@ void rome_strat_handler(const rome_frame_t *frame)
     }
 
     case ROME_MID_MECA_MOVE_ELEVATOR: {
-      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s move elevator to %d", SIDE_NAME(frame->meca_move_elevator.side), frame->meca_move_elevator.pos);
-      arm_elevator_move(SIDE_ARM(frame->meca_move_elevator.side), frame->meca_move_elevator.pos);
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s move elevator to %u", SIDE_NAME(frame->meca_move_elevator.side), frame->meca_move_elevator.pos_mm);
+      arm_elevator_move(SIDE_ARM(frame->meca_move_elevator.side), ARM_MM_TO_STEPS(frame->meca_move_elevator.side, frame->meca_move_elevator.pos_mm));
       rome_reply_ack(UART_STRAT, frame);
     } break;
 
-    case ROME_MID_MECA_SHUTDOWN_ELEVATOR:{
-      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s elevator shutdown", SIDE_NAME(frame->meca_shutdown_elevator.side));
+    case ROME_MID_MECA_SHUTDOWN_ELEVATOR: {
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s shutdown elevator", SIDE_NAME(frame->meca_shutdown_elevator.side));
       arm_elevator_shutdown(SIDE_ARM(frame->meca_shutdown_elevator.side));
       rome_reply_ack(UART_STRAT, frame);
       break;
     }
+
     case ROME_MID_MECA_SET_POWER: {
-      uint8_t active = frame->meca_set_power.active;
-      if(active) {
+      if(frame->meca_set_power.active) {
         portpin_outset(&LED_RUN_PP);
       } else {
         portpin_outclr(&LED_RUN_PP);
@@ -201,10 +201,10 @@ void update_match_timer(void)
 
 void send_telemetry(void)
 {
-  ROME_SEND_MECA_TM_STATE(UART_STRAT,arms_get_tm_state());
+  ROME_SEND_MECA_TM_STATE(UART_STRAT, arms_get_tm_state());
   ROME_SEND_MECA_TM_ARMS_STATE(UART_STRAT,
-    arm_l.elevator,
-    arm_r.elevator,
+    arm_l.elevator.pos_known ? (int16_t)ARM_STEPS_TO_MM(arm_l.side, arm_l.elevator.pos) : -1,
+    arm_r.elevator.pos_known ? (int16_t)ARM_STEPS_TO_MM(arm_l.side, arm_r.elevator.pos) : -1,
     arm_l.atoms,
     arm_r.atoms);
   ROME_SEND_TM_MATCH_TIMER(UART_STRAT, ROME_DEVICE, match_timer_ms/1000);
