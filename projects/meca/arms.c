@@ -126,8 +126,13 @@ void arm_release_atoms(arm_t *arm) {
 
 void arm_elevator_move(arm_t *arm, uint16_t pos) {
   arm->tm_state = ROME_ENUM_MECA_STATE_GROUND_CLEAR;
-  arm->elevator.target = MAX(pos, arm->side ? LEFT_ARM_HEIGHT_STEPS : RIGHT_ARM_HEIGHT_STEPS);
-  arm->state = ARM_ELEVATOR_MOVE;
+  if(pos == 0) {
+    arm->elevator.target = 0;
+    arm->state = ARM_ELEVATOR_RESET;
+  } else {
+    arm->elevator.target = MAX(pos, arm->side ? LEFT_ARM_HEIGHT_STEPS : RIGHT_ARM_HEIGHT_STEPS);
+    arm->state = ARM_ELEVATOR_MOVE;
+  }
 }
 
 void arm_elevator_shutdown(arm_t *arm) {
@@ -159,41 +164,6 @@ void arm_update(arm_t *arm) {
   else
     portpin_outclr(&LED_AN_PP(arm->side));
 
-  #if 0
-  static arm_state_t r_os = 1;
-  static arm_state_t l_os = 1;
-  static uint32_t l_lsct = 0;
-  static uint32_t r_lsct = 0;
-  if (arm->side) {
-    if (l_os != arm->state) {
-      // if state changed, the meca is doing something and isn't blocked
-      // idle and init stages are the only exeptions
-      if (arm->state != ARM_IDLE && arm->state != ARM_INIT)
-        l_lsct = uptime_us();
-    }
-    l_os = arm->state;
-
-    if(uptime_us() - l_lsct > MECA_TIMEOUT_US) {
-      ROME_LOGF(UART_STRAT, DEBUG, "left arm state timeout");
-      arm_set_idle(arm);
-    }
-  }
-  else{
-    if (r_os != arm->state) {
-      // if state changed, the meca is doing something and isn't blocked
-      // idle and init stages are the only exeptions
-      if (arm->state != ARM_IDLE && arm->state != ARM_INIT)
-        r_lsct = uptime_us();
-    }
-    r_os = arm->state;
-
-    if(uptime_us() - r_lsct > MECA_TIMEOUT_US) {
-      ROME_LOGF(UART_STRAT, DEBUG, "left arm state timeout");
-      arm_set_idle(arm);
-    }
-  }
-  #endif
-
   switch (arm->state) {
     // Switch off pump and suckers, then move to the top
     case ARM_INIT:
@@ -211,12 +181,8 @@ void arm_update(arm_t *arm) {
     // Move up to reset the position
     case ARM_ELEVATOR_RESET:
       // move up by small steps until the limit switch is hit
-      if (!stepper_motor_arrived(arm->side)) {
-        // not arrived yet
-      } else if (!is_arm_up(arm)) {
-        // continue moving until the switch is hit
-        stepper_motor_move(arm->side, 100);
-      } else {
+      stepper_motor_move(arm->side, 100);
+      if (is_arm_up(arm)) {
         // top position hit: got to the next state
         arm->state = ARM_ELEVATOR_RESET_DEBOUNCE;
         arm->measure_end = uptime_us() + 1000;
@@ -252,7 +218,8 @@ void arm_update(arm_t *arm) {
         arm_set_idle(arm);
       } else {
         // move, then wait for elevator to be arrived
-        stepper_motor_move(arm->side, (int16_t)(arm->elevator.target - arm->elevator.pos));
+        // note: value is negative to move down, positive to move up
+        stepper_motor_move(arm->side, (int16_t)(arm->elevator.pos - arm->elevator.target));
         arm->state = ARM_ELEVATOR_MOVE_WAIT;
       }
       break;
@@ -373,7 +340,7 @@ void arm_update(arm_t *arm) {
         suckers_enable(arm, arm->atoms[0], arm->atoms[1], 1);
         // note: this measure is only used for debug
         arm_baro_measure_init(arm);
-        arm->state = ARM_CHECK_CENTER_SUCKER_DISABLE_PUMP;
+        arm->state = ARM_CHECK_RIGHT_SUCKER_DISABLE_PUMP;
       }
       break;
 
@@ -405,6 +372,7 @@ void arm_update(arm_t *arm) {
         } else {
           suckers_disable(arm);
         }
+        arm_set_idle(arm);
       }
       break;
 

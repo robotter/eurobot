@@ -82,8 +82,8 @@ void stepper_motor_init(void) {
   portpin_dirset(&RIGHT_ARM_MOTOR_EN_PIN);
   portpin_outclr(&RIGHT_ARM_MOTOR_EN_PIN);
 
-  steppers[0].arrived = false;
-  steppers[1].arrived = false;
+  steppers[0].arrived = true;
+  steppers[1].arrived = true;
 }
 
 void stepper_motor_move(bool side, int16_t value) {
