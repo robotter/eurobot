@@ -255,7 +255,7 @@ int main(void)
   idle_set_callback(rome_update, update_rome_interfaces);
   idle_set_callback(rome_telemetry, send_telemetry);
   idle_set_callback(arm_l_update, arm_l_update);
-  //idle_set_callback(arm_r_update, arm_r_update);
+  idle_set_callback(arm_r_update, arm_r_update);
 
   arms_init();
 
