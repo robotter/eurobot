@@ -31,18 +31,23 @@ typedef enum {
   ARM_ELEVATOR_GO_UP,
   ARM_ELEVATOR_WAIT_UP,
   ARM_ELEVATOR_WAIT_UP_DEBOUNCE,
-
   ARM_ELEVATOR_GO_DOWN,
   ARM_ELEVATOR_WAIT_DOWN,
+  ARM_ELEVATOR_GO_ACCELERATOR,
+  ARM_ELEVATOR_WAIT_ACCELERATOR,
 
   ARM_TAKE_ATOMS = 20,
 
   ARM_RELEASE_ATOMS = 30,
 
   ARM_CHECK_SUCKERS = 40,
+  ARM_CHECK_SUCKERS_DISABLE_PUMP,
   ARM_CHECK_LEFT_SUCKER,
+  ARM_CHECK_LEFT_SUCKER_DISABLE_PUMP,
   ARM_CHECK_CENTER_SUCKER,
+  ARM_CHECK_CENTER_SUCKER_DISABLE_PUMP,
   ARM_CHECK_RIGHT_SUCKER,
+  ARM_CHECK_RIGHT_SUCKER_DISABLE_PUMP,
 
 } arm_state_t;
 
@@ -55,6 +60,7 @@ typedef struct {
   uint16_t pressure;
   barometer_t baro;
   uint32_t debounce_time;
+  uint32_t baro_time;
 } arm_t;
 
 extern arm_t arm_l;
@@ -62,8 +68,10 @@ extern arm_t arm_r;
 
 void arm_take_atoms(arm_t *arm);
 void arm_release_atoms(arm_t *arm);
+void arm_elevator_move(arm_t *arm, rome_enum_meca_elevator_pos_t pos);
 void arm_elevator_up(arm_t *arm);
-void arm_elevator_down(arm_t *arm);
+void arm_elevator_shutdown(arm_t *arm);
+void arm_elevator_accelerator(arm_t *arm);
 uint8_t arms_get_tm_state(void);
 void arms_init(void);
 void arm_update(arm_t *arm);

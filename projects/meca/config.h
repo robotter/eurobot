@@ -77,15 +77,15 @@
 
 //elevators stepper motor control pins
 #define LEFT_MOTOR_STEP_PIN       PORTPIN(D,0)
-#define LEFT_ARM_MOTOR_DIR_PIN    PORTPIN(D,1)
-#define LEFT_ARM_MOTOR_EN_PIN     PORTPIN(D,3)
+#define LEFT_ARM_MOTOR_DIR_PIN    PORTPIN(B,0)
+#define LEFT_ARM_MOTOR_EN_PIN     PORTPIN(D,1)
 
 #define RIGHT_MOTOR_STEP_PIN      PORTPIN(D,2)
 #define RIGHT_ARM_MOTOR_DIR_PIN   PORTPIN(B,2)
 #define RIGHT_ARM_MOTOR_EN_PIN    PORTPIN(C,4)
 
 //elevator upper side has limit switches
-#define LEFT_ELEVATOR_STOP_PIN PORTPIN(B,0)
+#define LEFT_ELEVATOR_STOP_PIN PORTPIN(B,1)
 
 #define RIGHT_ELEVATOR_STOP_PIN PORTPIN(B,3)
 
@@ -94,10 +94,11 @@
 //interface is I2C E
 #define ARM_I2C_ADDR 0x30
 #define ARM_PUMP(x)          ((x) ? 0b00000001 : 0b00000010)
-#define ARM_LEFT_VALVE(x)    ((x) ? 0b00000100 : 0b00100000)
-#define ARM_CENTER_VALVE(x)  ((x) ? 0b00001000 : 0b01000000)
-#define ARM_RIGHT_VALVE(x)   ((x) ? 0b00010000 : 0b10000000)
+#define ARM_LEFT_VALVE(x)    ((x) ? 0b00100000 : 0b00000100)
+#define ARM_CENTER_VALVE(x)  ((x) ? 0b01000000 : 0b00001000)
+#define ARM_RIGHT_VALVE(x)   ((x) ? 0b10000000 : 0b00010000)
 
 #define BARO_VOID_PRESSURE 250
+#define BARO_CHECK_TIME_US 500000
 
 #endif

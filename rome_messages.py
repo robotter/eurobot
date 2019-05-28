@@ -164,14 +164,11 @@ register_messages(
       # set robot color
       (Order, 'meca_set_robot_color', ['bool yellow']),
       # meca commands
-      rome_types.rome_enum('meca_command', (
-          'none',
-          'take_atoms',
-          'release_atoms',
-          'elevator_up',
-          'elevator_down',
-          )),
-      (Order, 'meca_cmd', ['meca_command cmd', 'bool side']),
+      (Order, 'meca_move_elevator', ['bool side', 'meca_elevator_pos pos']),
+      (Order, 'meca_shutdown_elevator', ['bool side']),
+      (Order, 'meca_take_atoms', ['bool side']),
+      (Order, 'meca_release_atoms', ['bool side']),
+
       # generic analog servo commands
       (Order, 'meca_set_servo', ['uint8 id', 'uint16 value']),
 
@@ -183,12 +180,13 @@ register_messages(
           'ready',  # meca ready for new commands
           )),
       ('meca_tm_state', ['meca_state state']),
-      rome_types.rome_enum('meca_elevator', (
+      rome_types.rome_enum('meca_elevator_pos', (
         'moving',
         'down',
         'up',
+        'accelerator',
       )),
-      ('meca_tm_arms_state', ['meca_elevator l_elev', 'meca_elevator r_elev', 'bool[3] l_atoms', 'bool[3] r_atoms']),
+      ('meca_tm_arms_state', ['meca_elevator_pos l_elev', 'meca_elevator_pos r_elev', 'bool[3] l_atoms', 'bool[3] r_atoms']),
     ]),
 
     # PATHFINDING

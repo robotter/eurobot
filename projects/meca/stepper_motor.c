@@ -39,18 +39,16 @@ void callback_left_motor(void) {
     else {
       portpin_outtgl(&LEFT_MOTOR_STEP_PIN);
       if (steppers[1].consign > 0)
-        steppers[1].consign ++;
-      else
         steppers[1].consign --;
+      else
+        steppers[1].consign ++;
     }
   }
 }
 
 void callback_right_motor(void) {
-  portpin_outtgl(&LED_AN_PP(3));
   INTLVL_DISABLE_BLOCK(INTLVL_MED) {
     if (steppers[0].consign == 0) {
-      portpin_outtgl(&LED_AN_PP(2));
       steppers[0].arrived = true;
       TIMER_CLEAR_CALLBACK(E1, 'B');
     }

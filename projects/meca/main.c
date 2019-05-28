@@ -44,6 +44,9 @@ rome_reader_t rome_jevois;
 
 jevois_cam_t cam;
 
+#define SIDE_NAME(side) ((side) ? "left" : "right")
+#define SIDE_ARM(side)  ((side) ? &arm_l : &arm_r )
+
 void rome_strat_handler(const rome_frame_t *frame)
 {
   switch(frame->mid) {
@@ -52,28 +55,32 @@ void rome_strat_handler(const rome_frame_t *frame)
       rome_reply_ack(UART_STRAT, frame);
     } break;
 
-    case ROME_MID_MECA_CMD: {
-      ROME_LOGF(UART_STRAT, DEBUG, "MECA: cmd %d",frame->meca_cmd.cmd);
-      switch(frame->meca_cmd.cmd) {
-        case ROME_ENUM_MECA_COMMAND_TAKE_ATOMS:
-          arm_take_atoms(frame->meca_cmd.side ? &arm_l : &arm_r);
-          break;
-        case ROME_ENUM_MECA_COMMAND_RELEASE_ATOMS:
-          arm_release_atoms(frame->meca_cmd.side ? &arm_l : &arm_r);
-          break;
-        case ROME_ENUM_MECA_COMMAND_ELEVATOR_UP:
-          arm_elevator_up(frame->meca_cmd.side ? &arm_l : &arm_r);
-          break;
-        case ROME_ENUM_MECA_COMMAND_ELEVATOR_DOWN:
-          arm_elevator_down(frame->meca_cmd.side ? &arm_l : &arm_r);
-          break;
-        case ROME_ENUM_MECA_COMMAND_NONE:
-        default:
-          break;
-      }
+    case ROME_MID_MECA_TAKE_ATOMS:{
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s take atoms", SIDE_NAME(frame->meca_take_atoms.side));
+      arm_take_atoms(SIDE_ARM(frame->meca_take_atoms.side));
+      rome_reply_ack(UART_STRAT, frame);
+      break;
+    }
+
+    case ROME_MID_MECA_RELEASE_ATOMS:{
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s release atoms", SIDE_NAME(frame->meca_release_atoms.side));
+      arm_release_atoms(SIDE_ARM(frame->meca_release_atoms.side));
+      rome_reply_ack(UART_STRAT, frame);
+      break;
+    }
+
+    case ROME_MID_MECA_MOVE_ELEVATOR: {
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s move elevator to %d", SIDE_NAME(frame->meca_move_elevator.side), frame->meca_move_elevator.pos);
+      arm_elevator_move(SIDE_ARM(frame->meca_move_elevator.side), frame->meca_move_elevator.pos);
       rome_reply_ack(UART_STRAT, frame);
     } break;
 
+    case ROME_MID_MECA_SHUTDOWN_ELEVATOR:{
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s elevator shutdown", SIDE_NAME(frame->meca_shutdown_elevator.side));
+      arm_elevator_shutdown(SIDE_ARM(frame->meca_shutdown_elevator.side));
+      rome_reply_ack(UART_STRAT, frame);
+      break;
+    }
     case ROME_MID_MECA_SET_POWER: {
       uint8_t active = frame->meca_set_power.active;
       if(active) {
@@ -187,7 +194,7 @@ void update_match_timer(void)
   match_timer_ms += UPDATE_MATCH_TIMER_TICK_US/1000;
 
   if(match_timer_ms > 1000 * (uint32_t)MATCH_DURATION_SECS) {
-    portpin_outset(&LED_AN_PP(0));
+    portpin_outset(&LED_AN_PP(3));
     arms_shutdown();
   }
 }
@@ -248,7 +255,7 @@ int main(void)
   idle_set_callback(rome_update, update_rome_interfaces);
   idle_set_callback(rome_telemetry, send_telemetry);
   idle_set_callback(arm_l_update, arm_l_update);
-  idle_set_callback(arm_r_update, arm_r_update);
+  //idle_set_callback(arm_r_update, arm_r_update);
 
   arms_init();
 
