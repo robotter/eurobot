@@ -22,6 +22,7 @@
 
 /// Enable TIMERxn
 #define TIMERE0_ENABLED
+#define TIMERD0_ENABLED  // tyrolienne
 
 /// Timer used for uptime as xn
 #define UPTIME_TIMER  E0

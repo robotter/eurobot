@@ -5,7 +5,7 @@
 #include "ws2812.h"
 
 
-#define WS2812_DATA_PP  PORTPIN(A,0)
+#define WS2812_DATA_PP  PORTPIN(B,2)
 
 
 #define T1H  900  // Width of a 1 bit in ns
@@ -33,14 +33,14 @@ void send_bit(bool) __attribute__ ((optimize(0)));
 
 void send_bit(bool bit) {
   if(bit) {  // bit 1
-    PORTA.OUTSET = _BV(0);
+    PORTB.OUTSET = _BV(2);
     DELAY_CYCLES(NS_TO_CYCLES(T1H) - 2);
-    PORTA.OUTCLR = _BV(0);
+    PORTB.OUTCLR = _BV(2);
     DELAY_CYCLES(NS_TO_CYCLES(T1L) - 10); // 1-bit gap less the overhead of the loop
   } else {  // bit 0
-    PORTA.OUTSET = _BV(0);
+    PORTB.OUTSET = _BV(2);
     DELAY_CYCLES(NS_TO_CYCLES(T0H) - 5); // 0-bit width less overhead
-    PORTA.OUTCLR = _BV(0);
+    PORTB.OUTCLR = _BV(2);
     DELAY_CYCLES(NS_TO_CYCLES(T0L) - 50); // 0-bit gap less overhead of the loop
   }
 }

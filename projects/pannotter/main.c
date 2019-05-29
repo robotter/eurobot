@@ -14,6 +14,7 @@
 #include "battery.h"
 #include "leds.h"
 #include "ws2812.h"
+#include "tyrolienne.h"
 #include "draw.h"
 #include "resources.inc.c"
 #include "config.h"
@@ -118,6 +119,7 @@ static void update_display(void)
   portpin_outtgl(&LED_RUN_PP);
   texture_clear(screen);
 
+#if 0 // battery
   if(!battery_on_stand) {
     draw_match();
 #if 0
@@ -127,6 +129,9 @@ static void update_display(void)
   } else {
     draw_match();
   }
+#else
+  draw_match();
+#endif
 
   // if robots have not updated the timer, match has ended
   uint16_t uptime = uptime_us() / 1000000;
@@ -134,10 +139,12 @@ static void update_display(void)
     match_state.timer_last_update = 0;
   }
 
+#if 0 // battery
   // if battery is low, display a red rectangle
   if(battery_discharged) {
     draw_rect(screen, &(draw_rect_t){0, 0, 6, 6}, RGB(0x30, 0, 0));
   }
+#endif
 
   portpin_outtgl(&LED_RUN_PP);
   display_screen(screen);
@@ -174,6 +181,11 @@ static void rome_xbee_handler(uint16_t addr, const rome_frame_t *frame)
     case ROME_MID_TM_MATCH_TIMER: {
       match_state.timer = frame->tm_match_timer.seconds;
       match_state.timer_last_update = uptime_us() / 1000000;
+    } break;
+
+    case ROME_MID_PANNOTTER_START_EXPERIENCE: {
+      ROME_LOGF(UART_XBEE, INFO, "pannotter: start experience");
+      tyrolienne_start();
     } break;
 
 #if 0  // should not be needed anymore
@@ -263,9 +275,14 @@ int main(void)
   uptime_init();
 
   ws2812_init();
+  tyrolienne_init();
 
+#if 0 // batteyr
   update_battery(); // make sure to update battery at startup
   TIMER_SET_CALLBACK_US(E0, 'B', 50e3, INTLVL_HI, update_battery);
+#else
+  (void)update_battery;
+#endif
 
   idle_set_callback(rome_update, update_rome_interfaces);
   idle_set_callback(display_update, update_display);

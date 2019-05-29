@@ -6,9 +6,9 @@
 #define UART_BSCALE  0
 
 // Communication
-#define UARTC0_ENABLED
-#define UARTC0_RX_BUF_SIZE  250
-#define UARTC0_TX_BUF_SIZE  64
+#define UARTC1_ENABLED
+#define UARTC1_RX_BUF_SIZE  250
+#define UARTC1_TX_BUF_SIZE  64
 
 
 #define UART_INTLVL  INTLVL_HI

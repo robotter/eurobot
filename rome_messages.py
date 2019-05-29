@@ -210,6 +210,11 @@ register_messages(
       (Order, 'boomotter_set_message', ['string msg']),
     ]),
 
+    # PANNOTTER
+    (0xBD, [
+      (Order, 'pannotter_start_experience', []),
+    ]),
+
     # SABOTTER
     (0xD0, [
       (Order, 'strat_set_servo', ['uint8 id', 'uint16 value']),
