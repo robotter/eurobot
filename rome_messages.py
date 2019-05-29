@@ -1,15 +1,16 @@
 from rome.frame import register_messages, Order, rome_types
 
 rome_types.rome_enum('device', {
-  'galipeur_strat': 10,
+  'galipeur_strat': 10,     #xbee addr 0x20
   'galipeur_asserv': 11,
   'galipeur_meca': 12,
   'galipeur_r3d2': 13,
-  'galipette_strat': 20,
+  'galipette_strat': 20,    #xbee addr 0x20
   'galipette_asserv': 21,
   'galipette_meca': 22,
   'galipette_r3d2': 23,
-  'boomotter': 30,
+  'boomotter': 30,          #xbee addr 0x10
+  'pannotter': 40,          #xbee addr 0xAA
 })
 
 register_messages(
