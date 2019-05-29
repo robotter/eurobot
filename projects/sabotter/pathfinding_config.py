@@ -127,7 +127,8 @@ add_team_elements({
     '{t}_galipette_start': (950, 1700),
     '{t}_ramp_entrance': (1275, 550),
     '{t}_small_dispenser': (1275, 250),
-    '{t}_large_dispenser': (750, 700),
+    '{t}_large_dispenser_near': (600, 650),
+    '{t}_large_dispenser_far': (900, 650),
     '{t}_accelerated_blue': (150, 1822),  # atom is at x=212
     '{t}_goldenium': (740, 1822),
     '{t}_balance': (200, 700),
