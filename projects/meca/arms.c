@@ -256,7 +256,6 @@ void arm_update(arm_t *arm) {
       if (uptime_us() < arm->measure_end) {
         // measure not ready yet
         arm_baro_measure_filter(arm);
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pressure %u", arm->pressure);
       } else {
         // measure ready, check the suckers
         ROME_LOGF(UART_STRAT, DEBUG, "MECA: pump off");
@@ -271,7 +270,6 @@ void arm_update(arm_t *arm) {
       if (uptime_us() < arm->measure_end) {
         // measure not ready yet
         arm_baro_measure_filter(arm);
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pressure %u", arm->pressure);
       } else if (arm->pressure < BARO_VOID_PRESSURE) {
         // all atoms have been grabbed
         arm->atoms[0] = true;
@@ -296,7 +294,6 @@ void arm_update(arm_t *arm) {
       if (uptime_us() < arm->measure_end) {
         // measure not ready yet
         arm_baro_measure_filter(arm);
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pressure %u", arm->pressure);
       } else {
         // measure ready, check the suckers
         ROME_LOGF(UART_STRAT, DEBUG, "MECA: pump off");
@@ -310,7 +307,6 @@ void arm_update(arm_t *arm) {
       if (uptime_us() < arm->measure_end) {
         // measure not ready yet
         arm_baro_measure_filter(arm);
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pressure %u", arm->pressure);
       } else {
         // atom is grabbed if pressure is low
         arm->atoms[0] = arm->pressure < BARO_VOID_PRESSURE;
@@ -326,7 +322,6 @@ void arm_update(arm_t *arm) {
       if (uptime_us() < arm->measure_end) {
         // measure not ready yet
         arm_baro_measure_filter(arm);
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pressure %u", arm->pressure);
       } else {
         // measure ready, check the suckers
         ROME_LOGF(UART_STRAT, DEBUG, "MECA: pump off");
@@ -340,7 +335,6 @@ void arm_update(arm_t *arm) {
       if (uptime_us() < arm->measure_end) {
         // measure not ready yet
         arm_baro_measure_filter(arm);
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pressure %u", arm->pressure);
       } else {
         // atom is grabbed if pressure is low
         arm->atoms[1] = arm->pressure < BARO_VOID_PRESSURE;
@@ -356,7 +350,6 @@ void arm_update(arm_t *arm) {
       if (uptime_us() < arm->measure_end) {
         // measure not ready yet
         arm_baro_measure_filter(arm);
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pressure %u", arm->pressure);
       } else {
         // measure ready, check the suckers
         ROME_LOGF(UART_STRAT, DEBUG, "MECA: pump off");
@@ -370,7 +363,6 @@ void arm_update(arm_t *arm) {
       if (uptime_us() < arm->measure_end) {
         // measure not ready yet
         arm_baro_measure_filter(arm);
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pressure %u", arm->pressure);
       } else {
         // atom is grabbed if pressure is low
         arm->atoms[2] = arm->pressure < BARO_VOID_PRESSURE;
