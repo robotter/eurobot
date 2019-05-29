@@ -113,7 +113,7 @@ static void rome_asserv_handler(const rome_frame_t *frame)
   }
 
   // forward
-  rome_send(ROME_DST_BROADCAST, frame); //TODO don't broadcast everything
+  rome_send(ROME_DST_PADDOCK, frame);
 }
 
 #ifdef UART_MECA
@@ -141,7 +141,7 @@ static void rome_meca_handler(const rome_frame_t *frame)
   }
 
   // forward
-  rome_send(ROME_DST_BROADCAST, frame); //TODO don't broadcast everything
+  rome_send(ROME_DST_PADDOCK, frame);
 }
 #endif
 
