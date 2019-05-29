@@ -83,7 +83,7 @@ void strat_prepare(void)
   goto_xya(KX(1300), 0, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
   galipette_autoset(ROBOT_SIDE_BACK, AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST);
   // move to the starting zone
-  goto_xya(KX(1120), 1580, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+  goto_xya(KX(1220), 1550, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
 
   // experience is on the table
   update_score(SCORE_EXPERIENCE_INSTALLED);

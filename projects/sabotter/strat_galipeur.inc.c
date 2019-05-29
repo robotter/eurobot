@@ -72,13 +72,14 @@ void strat_prepare(void)
   // x in starting area
   set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
   autoset(ROBOT_SIDE_BACK, AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
-  goto_xya(KX(1250), 0, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
+  goto_xya(KX(1180), 0, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
   // y on small dispenser
-  goto_xya(KX(1250), 0, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+  goto_xya(KX(1180), 0, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
   autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, AUTOSET_OFFSET);
+  goto_xya(KX(1280), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
 
   // go to green starting areau
-  goto_xya(KX(1300), 1250, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
+  goto_xya(KX(1370), 1250, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
 
   // move both arms down
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BOTTOM);
@@ -123,6 +124,20 @@ void strat_run(void)
 
   order_result_t or = ORDER_FAILURE;
   (void)or;
+
+#if 0 // homologation code
+  for(;;) {
+    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_TEAM_SIDE(LARGE_DISPENSER_NEAR, PURPLE, YELLOW), 0);
+    //or = goto_xya(KX(-500), 1200, 0);
+    if(or == ORDER_SUCCESS) {
+      break;
+    }
+  }
+  idle_delay_ms(3000);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
+  ROME_SENDWAIT_MECA_SET_POWER(ROME_DST_MECA, 0);
+  return;
+#endif
 
   // Go to the large dispenser, nearest group of 3 atoms
   ROME_LOG(ROME_DST_PADDOCK, INFO, "Go to large dispenser (near side)");
