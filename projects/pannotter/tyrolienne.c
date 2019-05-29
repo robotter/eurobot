@@ -35,12 +35,10 @@ void tyrolienne_start(void) {
     tyrolienne_is_arrived = false;
   }
 
-  //TODO
   portpin_outclr(&TYROLIENNE_MOTOR_DIR_PIN);
-  //portpin_outset(&TYROLIENNE_MOTOR_DIR_PIN);
 
   portpin_outset(&TYROLIENNE_MOTOR_EN_PIN);
-  TIMER_SET_CALLBACK_US(D0, 'A', 100, INTLVL_MED, tyrolienne_timer_callback);
+  TIMER_SET_CALLBACK_US(D0, 'A', 2000, INTLVL_MED, tyrolienne_timer_callback);
 }
 
 bool stepper_motor_arrived(void) {

@@ -277,7 +277,7 @@ int main(void)
   ws2812_init();
   tyrolienne_init();
 
-#if 0 // batteyr
+#if 0 // battery
   update_battery(); // make sure to update battery at startup
   TIMER_SET_CALLBACK_US(E0, 'B', 50e3, INTLVL_HI, update_battery);
 #else
@@ -285,7 +285,8 @@ int main(void)
 #endif
 
   idle_set_callback(rome_update, update_rome_interfaces);
-  idle_set_callback(display_update, update_display);
+  //idle_set_callback(display_update, update_display);
+  (void)update_display;
 
   _delay_ms(500);
 
