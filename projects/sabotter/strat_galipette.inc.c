@@ -155,7 +155,7 @@ void strat_run(void)
         break;
       }
       ROME_LOG(ROME_DST_PADDOCK, INFO, "Path to blue atom blocked, let opponent pass");
-      goto_xya(robot_state.current_pos.x, 1500, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+      goto_xya(robot_state.current_pos.x, 1200, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
     }
 
     // Stick to the table, push the atom, move back (along the accelerator)
