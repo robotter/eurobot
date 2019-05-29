@@ -373,7 +373,7 @@ void arm_update(arm_t *arm) {
         suckers_enable(arm, arm->atoms[0], arm->atoms[1], 1);
         // note: this measure is only used for debug
         arm_baro_measure_init(arm);
-        arm->state = ARM_CHECK_CENTER_SUCKER_DISABLE_PUMP;
+        arm->state = ARM_CHECK_RIGHT_SUCKER_DISABLE_PUMP;
       }
       break;
 
@@ -405,6 +405,7 @@ void arm_update(arm_t *arm) {
         } else {
           suckers_disable(arm);
         }
+        arm_set_idle(arm);
       }
       break;
 
