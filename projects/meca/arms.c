@@ -125,12 +125,13 @@ void arm_release_atoms(arm_t *arm) {
 }
 
 void arm_elevator_move(arm_t *arm, uint16_t pos) {
+  ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s move arm to %u", SIDE_NAME(arm->side), pos);
   arm->tm_state = ROME_ENUM_MECA_STATE_GROUND_CLEAR;
   if(pos == 0) {
     arm->elevator.target = 0;
     arm->state = ARM_ELEVATOR_RESET;
   } else {
-    arm->elevator.target = MAX(pos, arm->side ? LEFT_ARM_HEIGHT_STEPS : RIGHT_ARM_HEIGHT_STEPS);
+    arm->elevator.target = MIN(pos, arm->side ? LEFT_ARM_HEIGHT_STEPS : RIGHT_ARM_HEIGHT_STEPS);
     arm->state = ARM_ELEVATOR_MOVE;
   }
 }
@@ -180,12 +181,16 @@ void arm_update(arm_t *arm) {
 
     // Move up to reset the position
     case ARM_ELEVATOR_RESET:
-      // move up by small steps until the limit switch is hit
-      stepper_motor_move(arm->side, 100);
-      if (is_arm_up(arm)) {
+      if (!stepper_motor_arrived(arm->side)) {
+        // wait
+      } else if (is_arm_up(arm)) {
+        ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s, reset debounce", SIDE_NAME(arm->side));
         // top position hit: got to the next state
         arm->state = ARM_ELEVATOR_RESET_DEBOUNCE;
         arm->measure_end = uptime_us() + 1000;
+      } else {
+        // move up by small steps until the limit switch is hit
+        stepper_motor_move(arm->side, 100);
       }
       break;
 
@@ -211,15 +216,18 @@ void arm_update(arm_t *arm) {
     // Move elevator to target position
     case ARM_ELEVATOR_MOVE:
       if (!arm->elevator.pos_known) {
+        ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s reset needed before moving", SIDE_NAME(arm->side));
         // reset first if needed (safety check)
         arm->state = ARM_ELEVATOR_RESET;
-      } else if (arm->elevator.target != arm->elevator.pos) {
+      } else if (arm->elevator.target == arm->elevator.pos) {
         // already in position
         arm_set_idle(arm);
       } else {
         // move, then wait for elevator to be arrived
         // note: value is negative to move down, positive to move up
-        stepper_motor_move(arm->side, (int16_t)(arm->elevator.pos - arm->elevator.target));
+        const int16_t steps = (int16_t)(arm->elevator.pos - arm->elevator.target);
+        ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s step motor: %d steps", SIDE_NAME(arm->side), steps);
+        stepper_motor_move(arm->side, steps);
         arm->state = ARM_ELEVATOR_MOVE_WAIT;
       }
       break;

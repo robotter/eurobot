@@ -44,9 +44,6 @@ rome_reader_t rome_jevois;
 
 jevois_cam_t cam;
 
-#define SIDE_NAME(side) ((side) ? "left" : "right")
-#define SIDE_ARM(side)  ((side) ? &arm_l : &arm_r )
-
 void rome_strat_handler(const rome_frame_t *frame)
 {
   switch(frame->mid) {

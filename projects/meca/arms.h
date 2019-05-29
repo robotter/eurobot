@@ -89,4 +89,7 @@ void arms_shutdown(void);
 #define ARM_STEPS_TO_MM(side, steps) \
     (((steps) * (uint32_t)ARM_HEIGHT_MM) / ((side) ? LEFT_ARM_HEIGHT_STEPS : RIGHT_ARM_HEIGHT_STEPS))
 
+#define SIDE_NAME(side) ((side) ? "left" : "right")
+#define SIDE_ARM(side)  ((side) ? &arm_l : &arm_r )
+
 #endif//ARMS_H

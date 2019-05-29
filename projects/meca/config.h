@@ -88,7 +88,7 @@
 
 // Elevator height, in motor steps
 #define LEFT_ARM_HEIGHT_STEPS  9000
-#define RIGHT_ARM_HEIGHT_STEPS  5000 //TODO
+#define RIGHT_ARM_HEIGHT_STEPS  9000
 // Elevator height, in millimeters
 #define ARM_HEIGHT_MM  165
 
