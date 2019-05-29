@@ -49,7 +49,13 @@ typedef void (*blend_gray_t)(pixel_t *p, uint8_t gray);
 #define SCREEN_TEXTURE_DECL(name)  TEXTURE_DECL(name,SCREEN_W,SCREEN_H)
 
 /// Pointer to a texture's pixel
-#define TEXTURE_PIXEL(t,x,y)  (&(t)->pixels[(y) * (t)->width + (x)])
+#if PIXEL_DIRECTION == PIXEL_DIR_HORIZONTAL || PIXEL_DIRECTION == PIXEL_DIR_REVERSED
+# define TEXTURE_PIXEL(t,x,y)  (&(t)->pixels[(y) * (t)->width + (x)])
+#elif PIXEL_DIRECTION == PIXEL_DIR_VERTICAL
+# define TEXTURE_PIXEL(t,x,y)  (&(t)->pixels[(x) * (t)->height + (y)])
+#else
+# error invalid PIXEL_DIRECTION value
+#endif
 
 
 #define RECT(x0,y0,x1,y1)  ((draw_rect_t){(x0),(y0),(x1),(y1)})
@@ -171,19 +177,43 @@ void blend_gray_mul(pixel_t *p, uint8_t gray);
 void blend_color_mul(pixel_t *p, pixel_t c);
 
 
+#if PIXEL_DIRECTION == PIXEL_DIR_HORIZONTAL || PIXEL_DIRECTION == PIXEL_DIR_REVERSED
+
+#define FOREACH_RECT_PIXEL_IT_(rect) \
+  for(uint8_t y = (rect).y0; y < (rect).y1; y++) \
+  for(uint8_t x = (rect).x0; x < (rect).x1; x++) \
+  //
+#define FOREACH_PIXEL_IT_(tex) \
+  for(uint8_t y = 0; y < (tex)->height; y++) \
+  for(uint8_t x = 0; x < (tex)->width; x++) \
+  //
+
+#elif PIXEL_DIRECTION == PIXEL_DIR_VERTICAL
+
+#define FOREACH_RECT_PIXEL_IT_(rect) \
+  for(uint8_t x = (rect).x0; x < (rect).x1; x++) \
+  for(uint8_t y = (rect).y0; y < (rect).y1; y++) \
+  //
+#define FOREACH_PIXEL_IT_(tex) \
+  for(uint8_t x = 0; x < (tex)->width; x++) \
+  for(uint8_t y = 0; y < (tex)->height; y++) \
+  //
+
+#else
+# error invalid PIXEL_DIRECTION value
+#endif
+
 /** @brief Helper to apply code on a rectangle
  *
  * Iterate on each pixel, define `x`, `y` and `p` (for the pixel), and execute
  * the block that follows the macro.
  */
 #define FOREACH_RECT_PIXEL(tex,rect) \
-  for(uint8_t y = (rect).y0; y < (rect).y1; y++) \
-  for(uint8_t x = (rect).x0; x < (rect).x1; x++) \
+  FOREACH_RECT_PIXEL_IT_(rect) \
   for(pixel_t *p = TEXTURE_PIXEL((tex), (x), (y)); p; p=0) \
 
 #define FOREACH_PIXEL(tex) \
-  for(uint8_t y = 0; y < (tex)->height; y++) \
-  for(uint8_t x = 0; x < (tex)->width; x++) \
+  FOREACH_PIXEL_IT_(tex) \
   for(pixel_t *p = TEXTURE_PIXEL((tex), (x), (y)); p; p=0) \
 
 /// Scrolling text data

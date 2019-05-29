@@ -11,19 +11,19 @@ extern void texture_clear(texture_t *tex);
 
 void display_screen(const texture_t *tex) {
   ws2812_send_pixel(0, 0, 0);
-  const pixel_t *p = tex->pixels;
+  const pixel_t *p = tex->pixels + SCREEN_W * SCREEN_H;
 
 #define send_pixels_l2r(n) \
   for(uint8_t i=0; i<(n); i++) { \
     ws2812_send_pixel(p->r, p->g, p->b); \
-    p++; \
+    p--; \
   }
 #define send_pixels_r2l(n) \
   for(uint8_t i=0; i<(n); i++) { \
-    const pixel_t *p2 = p + (n) - i - 1; \
+    const pixel_t *p2 = p - ((n) - i - 1); \
     ws2812_send_pixel(p2->r, p2->g, p2->b); \
   } \
-  p += (n);
+  p -= (n);
 
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     send_pixels_l2r(SCREEN_W);

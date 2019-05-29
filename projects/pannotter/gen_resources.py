@@ -43,7 +43,7 @@ class Font:
         sep = [i for i, row in enumerate(rows) if len(row) == 1 and not row[0].replace("-", "")]
 
         max_height = 0
-        chars_data = []
+        chars_data = []  # list of char rows
         chars_width = []
         prev_i = 0
         for i in [0] + sep + [len(sep)]:
@@ -63,8 +63,7 @@ class Font:
 
         # set instance fields
         self.height = max_height
-        self.data = b""
-        self.glyphs = {}  # {char: (width, offset)}
+        self.glyphs = {}  # {char: (width, data_rows)}
         char_to_value = {" ": 0, "#": 0xff}
 
         chars = chars.replace("\n", "")
@@ -72,19 +71,32 @@ class Font:
         for char, data, width in zip(chars, chars_data, chars_width):
             assert char not in self.glyphs, "duplicate character"
             data = data.ljust(width * self.height, " ")
-            self.glyphs[char] = (width, len(self.data))
-            self.data += bytes(char_to_value[c] for c in data)
+            data_rows = [bytes(char_to_value[c] for c in data[i:i+width]) for i in range(0, len(data), width)]
+            self.glyphs[char] = (width, data_rows)
 
-    def gen_c(self):
+    def gen_c(self, direction):
+        def pixel_bytes(rows):
+            if direction in 'hr':
+                return bytes(b for row in rows for b in row)
+            elif direction == 'v':
+                return bytes(b for col in zip(*rows) for b in col)
+            else:
+                raise ValueError("invalid direction")
+
+        data_bytes = []
         glyphs = []
+        offset = 0
         for c in self.all_chars:
             glyph = self.glyphs.get(c)
             if glyph:
-                glyphs.append("  /* %c */ {%d, %d}," % (c, glyph[0], glyph[1]))
+                width, data_rows = glyph
+                glyphs.append("  /* %c */ {%d, %d}," % (c, width, offset))
+                data_bytes.extend(pixel_bytes(data_rows))
+                offset += width * self.height
             else:
                 glyphs.append("  /* %c */ {0, 0}," % c)
 
-        data = ["0x%02x," % b for b in self.data]
+        data = ["0x%02x," % b for b in data_bytes]
         # split data in groups of 12 bytes
         data = [" ".join(data[i:i+12]) for i in range(0, len(data), 12)]
 
@@ -114,13 +126,19 @@ class Image:
         rows = [r.ljust(self.width, ' ') for r in rows]
 
         # joint all pixels, check for invalid ones
-        pixels = ''.join(rows)
-        for c in set(pixels):
+        for c in set(p for row in pixels for p in row):
             assert c == ' ' or c in palette, "unknown color character: %r" % c
-        self.pixels = [palette.get(c, (0, 0, 0)) for c in pixels]
+        self.pixels = [[palette.get(c, (0, 0, 0)) for c in row] for row in pixels]
 
     def gen_c(self):
-        data = ["{0x%02x,0x%02x,0x%02x}," % b for b in self.pixels]
+        if direction in 'hr':
+            pixel_iter = (p for row in self.pixels for p in row)
+        elif direction == 'v':
+            pixel_iter = (p for col in zip(*self.pixels) for p in col)
+        else:
+            raise ValueError("invalid direction")
+
+        data = ["{0x%02x,0x%02x,0x%02x}," % b for b in pixel_iter]
         # split data in groups of 4 pixels
         data = [" ".join(data[i:i+12]) for i in range(0, len(data), 12)]
 
@@ -147,6 +165,8 @@ font_score_bitmap = """\
 
 
 def main():
+    pixel_direction = 'r'  # h, v, r
+
     fonts = [
         Font("score", font_score_chars, font_score_bitmap),
     ]
@@ -154,11 +174,11 @@ def main():
 
     for font in fonts:
         print("")
-        print(font.gen_c())
+        print(font.gen_c(pixel_direction))
 
     for image in images:
         print("")
-        print(image.gen_c())
+        print(image.gen_c(pixel_direction))
 
 
 if __name__ == "__main__":
