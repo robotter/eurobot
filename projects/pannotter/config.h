@@ -1,0 +1,12 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define UART_XBEE  uartC0
+
+#define MATCH_DURATION_SECS (99)
+#define ROBOTS_ALIVE_TIMEOUT  (10)
+
+#define BATTERY_ALERT_LIMIT  12000
+#define BATTERY_STAND_THRESHOLD  18000
+
+#endif
