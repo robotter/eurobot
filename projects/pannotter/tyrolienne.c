@@ -5,12 +5,12 @@
 #include "config.h"
 
 static bool tyrolienne_is_arrived;
-static bool tyrolienne_started;
+static bool tyrolienne_is_started;
 
 void tyrolienne_timer_callback(void) {
   if (portpin_in(&TYROLIENNE_STOP_PIN)) {
     tyrolienne_is_arrived = true;
-    TIMER_CLEAR_CALLBACK(D0, 'A');
+    tyrolienne_stop();
   }
   portpin_outtgl(&TYROLIENNE_MOTOR_STEP_PIN);
 }
@@ -30,7 +30,7 @@ void tyrolienne_init(void) {
 }
 
 void tyrolienne_start(void) {
-  if(tyrolienne_started) {
+  if(tyrolienne_is_started) {
     return;
   }
   tyrolienne_is_arrived = false;
@@ -40,14 +40,22 @@ void tyrolienne_start(void) {
   portpin_outset(&TYROLIENNE_MOTOR_EN_PIN);
   TIMER_SET_CALLBACK_US(D0, 'A', 2000, INTLVL_HI, tyrolienne_timer_callback);
 
-  tyrolienne_started = true;
+  tyrolienne_is_started = true;
 }
 
-bool stepper_motor_arrived(void) {
+bool tyrolienne_started(void) {
+  return tyrolienne_is_started;
+}
+
+bool tyrolienne_arrived(void) {
   return tyrolienne_is_arrived;
 }
 
-void stepper_motor_shutdown(bool side) {
+void tyrolienne_stop(void) {
+  TIMER_CLEAR_CALLBACK(D0, 'A');
+}
+
+void tyrolienne_shutdown(void) {
   portpin_outclr(&TYROLIENNE_MOTOR_EN_PIN);
   TIMER_CLEAR_CALLBACK(D0, 'A');
 }

@@ -7,8 +7,10 @@
 void tyrolienne_init(void);
 
 void tyrolienne_start(void);
+bool tyrolienne_started(void);
 bool tyrolienne_arrived(void);
 
+void tyrolienne_stop(void);
 void tyrolienne_shutdown(void);
 
 #endif

@@ -24,6 +24,10 @@ xbee_intf_t xbee_paddock;
 
 #define ROME_DEVICE  ROME_ENUM_DEVICE_PANNOTTER
 
+#define SCORE_EXPERIENCE_INSTALLED  5
+#define SCORE_EXPERIENCE_ACTIVATED  15
+#define SCORE_EXPERIENCE_SUCCESS  20
+
 
 // Define the global screen
 // Allocate then define a pointer, initialize widh/height in main
@@ -40,6 +44,7 @@ typedef struct {
   struct {
     uint16_t galipeur;
     uint16_t galipette;
+    uint16_t pannotter;
   } scores;
   uint16_t timer;  // timer in sconds
   uint16_t timer_last_update;  // uptime in seconds
@@ -53,7 +58,7 @@ static void draw_score(void)
 {
   static uint16_t previous_total_score = 0;
   static uint16_t displayed_score = 0;
-  uint16_t total_score = match_state.scores.galipeur + match_state.scores.galipette;
+  uint16_t total_score = match_state.scores.galipeur + match_state.scores.galipette +  + match_state.scores.pannotter;
   /*
   if(total_score == previous_total_score) {
     return;
@@ -80,7 +85,7 @@ static void draw_score(void)
   uint8_t len = strlen(buf);
   uint8_t pos = (SCREEN_W - 3*len - (len-1))/2;
 
-  blend_text(screen, &font_score, pos, 0, buf, blend_gray_set);
+  blend_text(screen, &font_score, pos, 1, buf, blend_gray_set);
   FOREACH_RECT_PIXEL(screen, screen_rect) {
     if(p->r) {
       *p = RGB(0x4f,0x4f,0x4f);
@@ -171,13 +176,23 @@ static void rome_xbee_handler(uint16_t addr, const rome_frame_t *frame)
     case ROME_MID_TM_MATCH_TIMER: {
       match_state.timer = frame->tm_match_timer.seconds;
       match_state.timer_last_update = uptime_us() / 1000000;
-      if(match_state.timer > 1) {
+      if(match_state.timer > 90) {
+        ROME_LOGF(UART_XBEE, INFO, "pannotter: stop motor");
+        tyrolienne_stop();
+      } else if(match_state.timer > 1) {
+        ROME_LOGF(UART_XBEE, INFO, "pannotter: start experience");
+        if(!tyrolienne_started()) {
+          match_state.scores.pannotter += SCORE_EXPERIENCE_ACTIVATED;
+        }
         tyrolienne_start();
       }
     } break;
 
     case ROME_MID_PANNOTTER_START_EXPERIENCE: {
       ROME_LOGF(UART_XBEE, INFO, "pannotter: start experience");
+      if(!tyrolienne_started()) {
+        match_state.scores.pannotter += SCORE_EXPERIENCE_ACTIVATED;
+      }
       tyrolienne_start();
     } break;
 
@@ -284,6 +299,8 @@ int main(void)
 
   _delay_ms(500);
 
+  match_state.scores.pannotter = SCORE_EXPERIENCE_INSTALLED;
+
   // initialize the screen
   screen->width = SCREEN_W;
   screen->height = SCREEN_H;
@@ -296,6 +313,15 @@ int main(void)
   display_screen(screen);
 
   portpin_outset(&LED_RUN_PP);
+
+  // wait for "arrived" state to increase score
+  for(;;) {
+    idle();
+    if(tyrolienne_arrived()) {
+      match_state.scores.pannotter += SCORE_EXPERIENCE_SUCCESS;
+      break;
+    }
+  }
 
   for(;;) {
     idle();
