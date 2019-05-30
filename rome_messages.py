@@ -145,15 +145,14 @@ register_messages(
     (0x90, [
       rome_types.rome_enum('jevois_color', (
         'none',
-        'orange',
-        'green',
+        'blue',
+        'gold',
         )),
-      ('jevois_tm_cylinder_cam', [
-        'jevois_color entry_color',
-        'jevois_color cylinder_color',
-        'uint16 entry_height',
-        'uint32 entry_area',
-        'uint32 cylinder_area',
+      ('jevois_tm_objects', [
+        'jevois_color object_color',
+        'dist x',
+        'dist y',
+        'dist z',
       ]),
     ]),
 
