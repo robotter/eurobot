@@ -111,66 +111,64 @@ void strat_prepare(void)
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 0);
 }
 
-void strat_run(void)
-{
-  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
-  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
-
-  ROME_LOG(ROME_DST_PADDOCK, DEBUG, "Gooooooo !!!!");
-
+order_result_t push_blue_atom(void) {
   order_result_t or = ORDER_FAILURE;
-
   // Go to the blue atom to accelerate
   ROME_LOG(ROME_DST_PADDOCK, DEBUG, "Push blue atom");
-  {
-    // If blocked on the way, move toward the center of the table to let the
-    // opponent pass, then try go to the atom again.
-    for(;;) {
-      or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ACCELERATED_BLUE, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-      if(or == ORDER_SUCCESS) {
-        break;
-      }
-      ROME_LOG(ROME_DST_PADDOCK, INFO, "Path to blue atom blocked, let opponent pass");
-      goto_xya(robot_state.current_pos.x, 1000, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+  // If blocked on the way, move toward the center of the table to let the
+  // opponent pass, then try go to the atom again.
+  for(;;) {
+    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ACCELERATED_BLUE, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    if(or == ORDER_SUCCESS) {
+      break;
     }
-
-    goto_xya(KX(-100), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-    galipette_autoset(ROBOT_SIDE_BACK, AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST-30);
-    goto_xya(KX(-100), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-
-    // Stick to the table, push the atom, move back (along the accelerator)
-    accelerator_neutral();
-    idle_delay_ms(200);
-    goto_xya(KX(-100), 1820, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
-    goto_xya(KX(-240), 1820, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
-    accelerator_prepare();
-    idle_delay_ms(200);
-    goto_xya(KX(-150), 1700, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
-
-
-    //TODO check action success
-    update_score(SCORE_ATOM_IN_ACCELERATOR);
-    update_score(SCORE_GOLDENIUM_FREED);
-
-    // Autoset on the border
-    goto_xya(KX(-100), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-    galipette_autoset(ROBOT_SIDE_BACK, AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST-30);
-    goto_xya(KX(-100), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    ROME_LOG(ROME_DST_PADDOCK, INFO, "Path to blue atom blocked, let opponent pass");
+    goto_xya(robot_state.current_pos.x, 1000, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
   }
+
+  goto_xya(KX(-100), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+  galipette_autoset(ROBOT_SIDE_BACK, AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST-30);
+  goto_xya(KX(-100), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+
+  // Stick to the table, push the atom, move back (along the accelerator)
+  accelerator_neutral();
+  idle_delay_ms(200);
+  goto_xya(KX(-100), 1820, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+  goto_xya(KX(-240), 1820, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+  accelerator_prepare();
+  idle_delay_ms(200);
+  goto_xya(KX(-150), 1700, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+
+  // Autoset on the border
+  goto_xya(KX(-100), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+  galipette_autoset(ROBOT_SIDE_BACK, AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST-30);
+  goto_xya(KX(-100), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+
+  // TODO check with JeVois if we succedeed, retry if not
+  update_score(SCORE_ATOM_IN_ACCELERATOR);
+  update_score(SCORE_GOLDENIUM_FREED);
+
+  return or;
+}
+
+order_result_t take_goldenium(void) {
+  order_result_t or = ORDER_FAILURE;
 
   ROME_LOG(ROME_DST_PADDOCK, DEBUG, "Take goldenium");
-  {
-    // Go to the goldenium
-    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_GOLDENIUM, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-    // Switch on the pump, stick to the goldenium, then move back
-    pump_on();
-    goto_xya(KX(-720), (1880), arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-    idle_delay_ms(500);
-    goto_xya(KX(-720), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-    //TODO check action success
-    update_score(SCORE_GOLDENIUM_EXTRACTED);
-  }
+  // Go to the goldenium
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_GOLDENIUM, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+  // Switch on the pump, stick to the goldenium, then move back
+  pump_on();
+  goto_xya(KX(-720), (1880), arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+  idle_delay_ms(500);
+  goto_xya(KX(-720), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+  // TODO check with JeVois if we succedeed, retry if not
+  update_score(SCORE_GOLDENIUM_EXTRACTED);
+  return or;
+}
 
+order_result_t score_goldenium(void) {
+  order_result_t or = ORDER_FAILURE;
   ROME_LOG(ROME_DST_PADDOCK, DEBUG, "Put goldenium in the balance");
   {
     // Go to the balance
@@ -180,9 +178,28 @@ void strat_run(void)
     pump_off();
     idle_delay_ms(2000);
     goto_xya(KX(200), 700, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-    //TODO check action success
+    // TODO check with JeVois if we succedeed, if not we are fucked
     update_score(SCORE_GOLDENIUM_IN_BALANCE);
   }
+  return or;
+}
+
+void strat_run(void)
+{
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
+
+  ROME_LOG(ROME_DST_PADDOCK, DEBUG, "Gooooooo !!!!");
+
+  order_result_t or = ORDER_FAILURE;
+
+  or = push_blue_atom();
+
+  or = take_goldenium();
+
+  or = score_goldenium();
+
+  (void) or;
 
   ROME_LOG(ROME_DST_PADDOCK, INFO, "That's all folks !");
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);

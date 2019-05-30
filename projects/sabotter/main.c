@@ -148,6 +148,32 @@ static void rome_meca_handler(const rome_frame_t *frame)
 }
 #endif
 
+#ifdef UART_JEVOIS
+static void rome_jevois_handler(const rome_frame_t *frame)
+{
+  switch(frame->mid) {
+    case ROME_MID_ACK: {
+      uint8_t ack = frame->ack.ack;
+      if(rome_ack_in_range(ack)) {
+        rome_free_ack(ack);
+        return; // don't forward
+      }
+    } break;
+    case ROME_MID_JEVOIS_TM_OBJECTS:
+      robot_state.jevois.color = frame->jevois_color;
+      robot_state.jevois.x = frame->x;
+      robot_state.jevois.y = frame->y;
+      robot_state.jevois.z = frame->z;
+      break;
+    default:
+      break;
+  }
+
+  // forward
+  rome_send(ROME_DST_PADDOCK, frame);
+}
+#endif
+
 static void rome_xbee_handler(uint16_t addr, const rome_frame_t *frame)
 {
   portpin_outtgl(&LED1_PP);

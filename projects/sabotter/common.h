@@ -32,6 +32,14 @@ typedef enum {
   TEAM_PURPLE,
 } team_t;
 
+// JeVois detection object
+typedef struct {
+  rome_enum_jevois_color_t color;
+  int16_t x;
+  int16_t y;
+  int16_t z;
+} jevois_object_t;
+
 // Robot state
 typedef struct {
   team_t team;
@@ -79,6 +87,9 @@ typedef struct {
     bool left;
     bool right;
   } bumpers;
+
+  // Jevois connected to start in galipette
+  jevois_object_t jevois;
 #endif
 
   // points count
