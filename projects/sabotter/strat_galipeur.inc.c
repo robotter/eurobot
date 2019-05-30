@@ -141,7 +141,7 @@ void strat_run(void)
     // stick to the table
     wait_meca_ready();
     goto_xya(KX(900) + arm_x_offset, 600, angle);
-    goto_xya(KX(900) + arm_x_offset, 560, angle);
+    goto_xya(KX(900) + arm_x_offset, 540, angle);
     // take the atoms
     ROME_LOG(ROME_DST_PADDOCK, INFO, "Take atoms");
     ROME_SENDWAIT_MECA_TAKE_ATOMS(ROME_DST_MECA, arm_side);
@@ -161,7 +161,7 @@ void strat_run(void)
     // stick to the table
     wait_meca_ready();
     goto_xya(KX(600) + arm_x_offset, 600, angle);
-    goto_xya(KX(600) + arm_x_offset, 550, angle);
+    goto_xya(KX(600) + arm_x_offset, 520, angle);
     // take the atoms
     ROME_LOG(ROME_DST_PADDOCK, INFO, "Take atoms");
     ROME_SENDWAIT_MECA_TAKE_ATOMS(ROME_DST_MECA, arm_side);
@@ -181,30 +181,38 @@ void strat_run(void)
   // X on terrain border
   goto_xya(KX(1300), 700, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
   autoset(ROBOT_SIDE_BACK, AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
-  goto_xya(KX(1000), 800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
+  goto_xya(KX(1200), 800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
 
   // drop the atoms in start area
   // try to go to start area, go back near dispensers if it failed, the oponent can be on it's goldenium
   do {
-    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_RED_AREA, arfast(ROBOT_SIDE_LEFT,TABLE_SIDE_MAIN));
+    or = goto_xya(KX(1250), 1350, arfast(TEAM_SIDE_VALUE(ROBOT_SIDE_RIGHT,ROBOT_SIDE_BACK), TABLE_SIDE_AUX));
     if (or != ORDER_SUCCESS)
-      goto_pathfinding_node(PATHFINDING_GRAPH_NODE_LARGE_DISPENSER_NEAR, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
+      goto_xya(KX(1000), 800, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
   }
   while(or != ORDER_SUCCESS);
 
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BOTTOM);
-  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
-
   wait_meca_ready();
-  goto_xya(KX(1200), 1500, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_MAIN));
   ROME_SENDWAIT_MECA_RELEASE_ATOMS(ROME_DST_MECA, true);
 
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
   wait_meca_ready();
-  goto_xya(KX(1100), 1500, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_MAIN));
-  goto_xya(KX(1100), 1500, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_MAIN));
+  goto_xya(KX(1250), 1100, arfast(TEAM_SIDE_VALUE(ROBOT_SIDE_RIGHT,ROBOT_SIDE_BACK), TABLE_SIDE_AUX));
+  goto_xya(KX(1250), 1300, arfast(ROBOT_SIDE_BACK, TEAM_SIDE_VALUE(TABLE_SIDE_AUX,TABLE_SIDE_DOWN)));
   ROME_SENDWAIT_MECA_RELEASE_ATOMS(ROME_DST_MECA, false);
+  wait_meca_ready();
+
+  // we may have scored 3 red atoms at the right spot and 3 others
+  // TODO : use meca informations to be better than that
+  update_score(SCORE_ATOM_IN_START_AREA * 6);
+  update_score(SCORE_ATOM_IN_START_AREA_COLOR_BONUS * 3);
+
+  goto_xya(KX(1250), 1000, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
 
   ROME_LOG(ROME_DST_PADDOCK, INFO, "That's all folks !");
+  ROME_SENDWAIT_MECA_SHUTDOWN_ELEVATOR(ROME_DST_MECA, true);
+  ROME_SENDWAIT_MECA_SHUTDOWN_ELEVATOR(ROME_DST_MECA, false);
   idle_delay_ms(3000);
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
   ROME_SENDWAIT_MECA_SET_POWER(ROME_DST_MECA, 0);
