@@ -74,7 +74,7 @@ void strat_init(void)
   accelerator_neutral();
 
   // set R3D2 parameters
-  ROME_SENDWAIT_R3D2_SET_ROTATION(ROME_DST_ASSERV,350,25);
+  ROME_SENDWAIT_R3D2_SET_ROTATION(ROME_DST_ASSERV,0,25);
 
   for(;;) {
     idle();
@@ -82,6 +82,7 @@ void strat_init(void)
       break;
   }
 
+  ROME_SENDWAIT_R3D2_SET_ROTATION(ROME_DST_ASSERV,200,25);
 }
 
 void strat_prepare(void)

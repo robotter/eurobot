@@ -85,6 +85,9 @@ static void rome_asserv_handler(const rome_frame_t *frame)
         r3d2_object_t *object = robot_state.r3d2.objects+i;
         object->detected = frame->r3d2_tm_detection.detected;
         object->a = frame->r3d2_tm_detection.a/1000.;
+#if     (defined GALIPETTE)
+        object->a -= M_PI/4;
+#endif
         object->r = frame->r3d2_tm_detection.r;
       }
     } break;
