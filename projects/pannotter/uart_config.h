@@ -11,5 +11,5 @@
 #define UARTC1_TX_BUF_SIZE  64
 
 
-#define UART_INTLVL  INTLVL_HI
+#define UART_INTLVL  INTLVL_MED
 

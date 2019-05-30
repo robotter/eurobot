@@ -54,9 +54,11 @@ static void draw_score(void)
   static uint16_t previous_total_score = 0;
   static uint16_t displayed_score = 0;
   uint16_t total_score = match_state.scores.galipeur + match_state.scores.galipette;
-  if(total_score > 999) {
-    total_score = 999;
+  /*
+  if(total_score == previous_total_score) {
+    return;
   }
+  */
 
   if(total_score > previous_total_score) {
     // points gain
@@ -116,28 +118,16 @@ static void draw_match(void)
 
 static void update_display(void)
 {
-  portpin_outtgl(&LED_RUN_PP);
-  texture_clear(screen);
-
-#if 0 // battery
-  if(!battery_on_stand) {
-    draw_match();
-#if 0
-  } else if(match_state.timer_last_update == 0) {
-    draw_stand();
-#endif
-  } else {
-    draw_match();
-  }
-#else
-  draw_match();
-#endif
-
   // if robots have not updated the timer, match has ended
   uint16_t uptime = uptime_us() / 1000000;
   if(match_state.timer_last_update != 0 && uptime >= match_state.timer_last_update + ROBOTS_ALIVE_TIMEOUT) {
     match_state.timer_last_update = 0;
   }
+
+  portpin_outtgl(&LED_RUN_PP);
+  texture_clear(screen);
+
+  draw_match();
 
 #if 0 // battery
   // if battery is low, display a red rectangle
@@ -181,6 +171,9 @@ static void rome_xbee_handler(uint16_t addr, const rome_frame_t *frame)
     case ROME_MID_TM_MATCH_TIMER: {
       match_state.timer = frame->tm_match_timer.seconds;
       match_state.timer_last_update = uptime_us() / 1000000;
+      if(match_state.timer > 1) {
+        tyrolienne_start();
+      }
     } break;
 
     case ROME_MID_PANNOTTER_START_EXPERIENCE: {
@@ -285,8 +278,9 @@ int main(void)
 #endif
 
   idle_set_callback(rome_update, update_rome_interfaces);
-  //idle_set_callback(display_update, update_display);
-  (void)update_display;
+  idle_set_callback(display_update, update_display);
+
+  //XXX tyrolienne_start();
 
   _delay_ms(500);
 
@@ -294,6 +288,11 @@ int main(void)
   screen->width = SCREEN_W;
   screen->height = SCREEN_H;
   texture_clear(screen);
+
+  *TEXTURE_PIXEL(screen, 0, 0) = RGB(0x10, 0x00, 0x00);
+  *TEXTURE_PIXEL(screen, 1, 1) = RGB(0x00, 0x10, 0x00);
+  *TEXTURE_PIXEL(screen, 2, 2) = RGB(0x00, 0x00, 0x10);
+
   display_screen(screen);
 
   portpin_outset(&LED_RUN_PP);

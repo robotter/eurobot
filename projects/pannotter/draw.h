@@ -5,8 +5,8 @@
 #include <string.h>
 #include <avr/pgmspace.h>
 
-#define SCREEN_W  12  // Screen width
-#define SCREEN_H  10   // Screen height
+#define SCREEN_W  11  // Screen width
+#define SCREEN_H  12   // Screen height
 
 /// A single screen pixel
 typedef struct {

@@ -10,8 +10,7 @@ extern void texture_clear(texture_t *tex);
 
 
 void display_screen(const texture_t *tex) {
-  ws2812_send_pixel(0, 0, 0);
-  const pixel_t *p = tex->pixels + SCREEN_W * SCREEN_H;
+  const pixel_t *p = tex->pixels + SCREEN_W * SCREEN_H - 1;
 
 #define send_pixels_l2r(n) \
   for(uint8_t i=0; i<(n); i++) { \
@@ -25,18 +24,18 @@ void display_screen(const texture_t *tex) {
   } \
   p -= (n);
 
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-    send_pixels_l2r(SCREEN_W);
-    send_pixels_r2l(SCREEN_W);
-    send_pixels_l2r(SCREEN_W);
-    send_pixels_r2l(SCREEN_W);
-    send_pixels_l2r(SCREEN_W);
-    send_pixels_r2l(SCREEN_W);
-    send_pixels_l2r(SCREEN_W);
-    send_pixels_r2l(SCREEN_W);
-    send_pixels_l2r(SCREEN_W);
-    send_pixels_r2l(SCREEN_W);
-  }
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_r2l(SCREEN_W);
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_l2r(SCREEN_W);
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_r2l(SCREEN_W);
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_l2r(SCREEN_W);
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_r2l(SCREEN_W);
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_l2r(SCREEN_W);
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_r2l(SCREEN_W);
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_l2r(SCREEN_W);
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_r2l(SCREEN_W);
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_l2r(SCREEN_W);
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_r2l(SCREEN_W);
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) send_pixels_l2r(SCREEN_W);
 
 #undef send_pixels_l2r
 #undef send_pixels_r2l
