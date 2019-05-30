@@ -140,8 +140,8 @@ void strat_run(void)
     // Stick to the table, push the atom, move back (along the accelerator)
     accelerator_neutral();
     idle_delay_ms(200);
-    goto_xya(KX(-100), 1830, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
-    goto_xya(KX(-240), 1830, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+    goto_xya(KX(-100), 1820, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+    goto_xya(KX(-240), 1820, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
     accelerator_prepare();
     idle_delay_ms(200);
     goto_xya(KX(-150), 1700, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));

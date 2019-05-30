@@ -130,7 +130,7 @@ add_team_elements({
     '{t}_large_dispenser_near': (600, 650),
     '{t}_large_dispenser_far': (900, 650),
     '{t}_accelerated_blue': (150, 1750),  # atom is at x=212
-    '{t}_goldenium': (740, 1822),
+    '{t}_goldenium': (740, 1700),
     '{t}_balance': (200, 700),
 }, [
     '{t}_ramp_entrance {t}_small_dispenser',
@@ -139,7 +139,7 @@ add_team_elements({
 ])
 
 # make sure the grid does not overlap the start area
-add_triangle_grid(1050, 600, 1850, 200, [
+add_triangle_grid(950, 700, 1700, 200, [
     # balance separator
     ((0, 580), 100),
     # chaos areas
