@@ -53,6 +53,13 @@ typedef struct {
 
 static match_state_t match_state;
 
+static void start_experiment(void){
+  ROME_LOGF(UART_XBEE, INFO, "pannotter: start experience");
+  if(!tyrolienne_started()) {
+    match_state.scores.pannotter += SCORE_EXPERIENCE_ACTIVATED;
+  }
+  tyrolienne_start();
+}
 
 static void draw_score(void)
 {
@@ -171,29 +178,23 @@ static void rome_xbee_handler(uint16_t addr, const rome_frame_t *frame)
         default:
           break;
       }
+      if (frame->tm_score.points > 0)
+        start_experiment();
       break;
 
     case ROME_MID_TM_MATCH_TIMER: {
       match_state.timer = frame->tm_match_timer.seconds;
       match_state.timer_last_update = uptime_us() / 1000000;
-      if(match_state.timer > 90) {
+      if(0) {//match_state.timer > 90) {
         ROME_LOGF(UART_XBEE, INFO, "pannotter: stop motor");
         tyrolienne_stop();
       } else if(match_state.timer > 1) {
-        ROME_LOGF(UART_XBEE, INFO, "pannotter: start experience");
-        if(!tyrolienne_started()) {
-          match_state.scores.pannotter += SCORE_EXPERIENCE_ACTIVATED;
-        }
-        tyrolienne_start();
+        start_experiment();
       }
     } break;
 
     case ROME_MID_PANNOTTER_START_EXPERIENCE: {
-      ROME_LOGF(UART_XBEE, INFO, "pannotter: start experience");
-      if(!tyrolienne_started()) {
-        match_state.scores.pannotter += SCORE_EXPERIENCE_ACTIVATED;
-      }
-      tyrolienne_start();
+      start_experiment();
     } break;
 
 #if 0  // should not be needed anymore

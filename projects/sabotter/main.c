@@ -253,6 +253,7 @@ static void match_end(void)
     for(;;) {
       //send timer for boomotter stuff
       ROME_SEND_TM_MATCH_TIMER(ROME_DST_BROADCAST, ROME_DEVICE, robot_state.match_time);
+      ROME_SEND_TM_MATCH_TIMER(ROME_DST_PANNOTTER, ROME_DEVICE, robot_state.match_time);
       idle_delay_ms(500);
     }
   }

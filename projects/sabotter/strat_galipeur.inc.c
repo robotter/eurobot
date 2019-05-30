@@ -81,9 +81,9 @@ void strat_prepare(void)
   // go to green starting areau
   goto_xya(KX(1370), 1250, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
 
-  // move both arms down
-  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BOTTOM);
-  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
+  // shutdown elevators to preserve battery
+  ROME_SENDWAIT_MECA_SHUTDOWN_ELEVATOR(ROME_DST_MECA, true);
+  ROME_SENDWAIT_MECA_SHUTDOWN_ELEVATOR(ROME_DST_MECA, false);
 
   // wait for meca to end all orders before shutting down asserv
   wait_meca_ready();
