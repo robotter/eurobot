@@ -150,27 +150,31 @@ void strat_run(void)
     // If blocked on the way, move toward the center of the table to let the
     // opponent pass, then try go to the atom again.
     for(;;) {
-      or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ACCELERATED_BLUE, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+      or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_ACCELERATED_BLUE, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
       if(or == ORDER_SUCCESS) {
         break;
       }
       ROME_LOG(ROME_DST_PADDOCK, INFO, "Path to blue atom blocked, let opponent pass");
-      goto_xya(robot_state.current_pos.x, 1200, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+      goto_xya(robot_state.current_pos.x, 1000, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
     }
 
+    goto_xya(KX(-100), 1840, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    galipette_autoset(ROBOT_SIDE_BACK, AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST-30);
+    goto_xya(KX(-100), 1840, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+
     // Stick to the table, push the atom, move back (along the accelerator)
-    goto_xya(KX(-150), 1860, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
-    goto_xya(KX(-300), 1860, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
-    goto_xya(KX(-150), 1800, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+    goto_xya(KX(-100), 1840, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+    goto_xya(KX(-240), 1840, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
+    goto_xya(KX(-150), 1700, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_UP));
     //TODO check action success
     update_score(SCORE_ATOM_IN_ACCELERATOR);
     update_score(SCORE_GOLDENIUM_FREED);
 
     // Autoset on the border
-    goto_xya(KX(-200), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-    goto_xya(KX(-200), 1860, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    goto_xya(KX(-100), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    goto_xya(KX(-100), 1860, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
     galipette_autoset(ROBOT_SIDE_BACK, AUTOSET_UP, 0, 2000-BUMPER_TO_CENTER_DIST-30);
-    goto_xya(KX(-200), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    goto_xya(KX(-100), 1700, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
   }
 
   ROME_LOG(ROME_DST_PADDOCK, DEBUG, "Take goldenium");
@@ -179,9 +183,9 @@ void strat_run(void)
     or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_GOLDENIUM, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
     // Switch on the pump, stick to the goldenium, then move back
     pump_on();
-    goto_xya(KX(-740), (1880), arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    goto_xya(KX(-760), (1880), arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
     idle_delay_ms(500);
-    goto_xya(KX(-740), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    goto_xya(KX(-760), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
     //TODO check action success
     update_score(SCORE_GOLDENIUM_EXTRACTED);
   }
@@ -198,39 +202,6 @@ void strat_run(void)
     //TODO check action success
     update_score(SCORE_GOLDENIUM_IN_BALANCE);
   }
-
-
-#if 0 // 2018
-  switch_on_boomotter();
-
-  // reswitch on boomotter if it was switched off
-  for(;;){
-    for(;;){
-      idle();
-      if(KX(robot_state.partner_pos.x) < 0)
-        break;
-
-      if(KX(robot_state.partner_pos.y) > 1300)
-        break;
-    }
-    if(!boomotter_connected()){
-      switch_on_boomotter(false);
-      idle_delay_ms(BOOMOTTER_MAX_AGE);
-    }
-    idle_delay_ms(1000);
-  }
-#endif
-
-  //XXX:tests go back for prog
-  for(;;){
-    idle();
-
-    if (robot_state.match_time > 70)
-      break;
-  }
-  idle_delay_ms(500);
-  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_GALIPETTE_START, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
-  goto_xya(KX(1300), 1800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
 
   ROME_LOG(ROME_DST_PADDOCK, INFO, "That's all folks !");
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
