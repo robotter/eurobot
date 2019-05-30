@@ -79,7 +79,7 @@ void strat_prepare(void)
   goto_xya(KX(1280), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
 
   // go to green starting areau
-  goto_xya(KX(1370), 1250, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
+  goto_xya(KX(1365), 1250, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
 
   // shutdown elevators to preserve battery
   ROME_SENDWAIT_MECA_SHUTDOWN_ELEVATOR(ROME_DST_MECA, true);
@@ -129,38 +129,19 @@ void strat_run(void)
   (void)or;
 
   goto_xya(KX(1250), 1000, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
+  const int16_t arm_x_offset = TEAM_SIDE_VALUE(0, 30);
 
   // Go to the large dispenser, nearest group of 3 atoms
   ROME_LOG(ROME_DST_PADDOCK, INFO, "Go to large dispenser (near side)");
   {
     const float angle = arfast(ROBOT_SIDE_MAIN, TABLE_SIDE_DOWN);
     const bool arm_side = TEAM_SIDE_VALUE(false, true);
-    const int16_t arm_x_offset = TEAM_SIDE_VALUE(20, -20);  //TODO
 
     or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_LARGE_DISPENSER_NEAR, angle);
     // stick to the table
     wait_meca_ready();
-    goto_xya(KX(600) + arm_x_offset, 500, angle);
-    // take the atoms
-    ROME_LOG(ROME_DST_PADDOCK, INFO, "Take atoms");
-    ROME_SENDWAIT_MECA_TAKE_ATOMS(ROME_DST_MECA, arm_side);
-    wait_meca_ground_clear();
-    // move the arm then go back
-    ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, arm_side, ARM_POS_TOP);
-    goto_xya(KX(600) + arm_x_offset, 650, angle);
-  }
-
-  // Go to the large dispenser, next group of 3 atoms
-  ROME_LOG(ROME_DST_PADDOCK, INFO, "Get the second group of atoms");
-  {
-    const float angle = arfast(ROBOT_SIDE_AUX, TABLE_SIDE_DOWN);
-    const bool arm_side = TEAM_SIDE_VALUE(true, false);
-    const int16_t arm_x_offset = TEAM_SIDE_VALUE(20, -20);  //TODO
-
-    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_LARGE_DISPENSER_FAR, angle);
-    // stick to the table
-    wait_meca_ready();
-    goto_xya(KX(900) + arm_x_offset, 500, angle);
+    goto_xya(KX(900) + arm_x_offset, 600, angle);
+    goto_xya(KX(900) + arm_x_offset, 560, angle);
     // take the atoms
     ROME_LOG(ROME_DST_PADDOCK, INFO, "Take atoms");
     ROME_SENDWAIT_MECA_TAKE_ATOMS(ROME_DST_MECA, arm_side);
@@ -170,18 +151,57 @@ void strat_run(void)
     goto_xya(KX(900) + arm_x_offset, 650, angle);
   }
 
-  //drop the atoms in strat area
-  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_GALIPETTE_START, arfast(ROBOT_SIDE_LEFT,TABLE_SIDE_MAIN));
+  // Go to the large dispenser, next group of 3 atoms
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Get the second group of atoms");
+  {
+    const float angle = arfast(ROBOT_SIDE_AUX, TABLE_SIDE_DOWN);
+    const bool arm_side = TEAM_SIDE_VALUE(true, false);
+
+    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_LARGE_DISPENSER_FAR, angle);
+    // stick to the table
+    wait_meca_ready();
+    goto_xya(KX(600) + arm_x_offset, 600, angle);
+    goto_xya(KX(600) + arm_x_offset, 550, angle);
+    // take the atoms
+    ROME_LOG(ROME_DST_PADDOCK, INFO, "Take atoms");
+    ROME_SENDWAIT_MECA_TAKE_ATOMS(ROME_DST_MECA, arm_side);
+    wait_meca_ground_clear();
+    // move the arm then go back
+    ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, arm_side, ARM_POS_TOP);
+    goto_xya(KX(600) + arm_x_offset, 700, angle);
+  }
+
+  // after taking atoms, do an autoset
+  // Y on atom dispenser
+  goto_xya(KX(800), 700, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+  goto_xya(KX(800), 600, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+  autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, 450+AUTOSET_OFFSET);
+  goto_xya(KX(800), 650, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+
+  // X on terrain border
+  goto_xya(KX(1300), 700, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
+  autoset(ROBOT_SIDE_BACK, AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
+  goto_xya(KX(1000), 800, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
+
+  // drop the atoms in start area
+  // try to go to start area, go back near dispensers if it failed, the oponent can be on it's goldenium
+  do {
+    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_RED_AREA, arfast(ROBOT_SIDE_LEFT,TABLE_SIDE_MAIN));
+    if (or != ORDER_SUCCESS)
+      goto_pathfinding_node(PATHFINDING_GRAPH_NODE_LARGE_DISPENSER_NEAR, arfast(ROBOT_SIDE_BACK,TABLE_SIDE_DOWN));
+  }
+  while(or != ORDER_SUCCESS);
 
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BOTTOM);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
 
   wait_meca_ready();
-  goto_xya(KX(1300), 1500, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_MAIN));
+  goto_xya(KX(1200), 1500, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_MAIN));
   ROME_SENDWAIT_MECA_RELEASE_ATOMS(ROME_DST_MECA, true);
 
   wait_meca_ready();
   goto_xya(KX(1100), 1500, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_MAIN));
+  goto_xya(KX(1100), 1500, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_MAIN));
   ROME_SENDWAIT_MECA_RELEASE_ATOMS(ROME_DST_MECA, false);
 
   ROME_LOG(ROME_DST_PADDOCK, INFO, "That's all folks !");

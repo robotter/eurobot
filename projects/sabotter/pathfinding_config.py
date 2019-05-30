@@ -127,15 +127,18 @@ add_team_elements({
     '{t}_galipette_start': (950, 1700),
     '{t}_ramp_entrance': (1275, 550),
     '{t}_small_dispenser': (1275, 250),
-    '{t}_large_dispenser_near': (600, 650),
-    '{t}_large_dispenser_far': (900, 650),
+    '{t}_large_dispenser_near': (900, 650),
+    '{t}_large_dispenser_far': (600, 650),
     '{t}_accelerated_blue': (150, 1750),  # atom is at x=212
     '{t}_goldenium': (740, 1700),
     '{t}_balance': (200, 700),
+    '{t}_red_area': (950, 1550),
 }, [
     '{t}_ramp_entrance {t}_small_dispenser',
     # galipette path
     '{t}_galipette_start {o}_accelerated_blue {o}_goldenium {t}_balance',
+    # galipeur path
+    '{t}_red_area {t}_large_dispenser_near {t}_large_dispenser_far',
 ])
 
 # make sure the grid does not overlap the start area
