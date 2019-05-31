@@ -152,6 +152,7 @@ void hrobot_set_motors(int32_t vx, int32_t vy, int32_t omega)
   float dp[3];
   float v[3];
   int16_t motors[3];
+  (void)motors;
 
   v[0] = vx/(float)RCS_MM_TO_CSUNIT;
   v[1] = vy/(float)RCS_MM_TO_CSUNIT;

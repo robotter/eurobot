@@ -78,8 +78,10 @@ void avoidance_update(avoidance_t* av)
   // update telemetries
   uint16_t *raws = av->gp2_raws;
   TM_DL_GP2_RAWS(raws[0], raws[1], raws[2]);
+  (void)raws;
   uint8_t *det = av->gp2_detections;
   TM_DL_GP2_DET(det[0], det[1], det[2]);
+  (void)det;
 }
 
 /** @brief Force avoidance to blocked 

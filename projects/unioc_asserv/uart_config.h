@@ -31,5 +31,9 @@
  */
 #define UART_INTLVL  INTLVL_HI
 
+
+#define UART_STRAT  uartD0
+#define UART_R3D2  uartE0
+
 //@}
 //@}
