@@ -28,7 +28,6 @@
 #include <rome/rome.h>
 #include "config.h"
 #include "arms.h"
-#include "jevois_cam.h"
 #include <i2c/i2c.h>
 
 #define ROME_DEVICE  ROME_ENUM_DEVICE_GALIPEUR_MECA
@@ -40,9 +39,6 @@ uint32_t match_timer_ms = 0;
 
 // ROME interfaces
 rome_reader_t rome_strat;
-rome_reader_t rome_jevois;
-
-jevois_cam_t cam;
 
 void rome_strat_handler(const rome_frame_t *frame)
 {
@@ -93,24 +89,11 @@ void rome_strat_handler(const rome_frame_t *frame)
   }
 }
 
-void rome_jevois_handler(const rome_frame_t *frame)
-{
-  jevois_cam_process_rome(&cam, frame);
-
-  // send to strat (and then paddock) one message every 100ms
-  static uint32_t lmt = 0;
-  if (uptime_us() - lmt > 100000) {
-    rome_send_uart(UART_STRAT, frame);
-    lmt = uptime_us();
-  }
-}
-
 // Handle input from all ROME interfaces
 void update_rome_interfaces(void)
 {
   portpin_outtgl(&LED_COM_PP);
   rome_reader_handle_input(&rome_strat, rome_strat_handler);
-  rome_reader_handle_input(&rome_jevois, rome_jevois_handler);
 }
 
 #if 0 //no ax12 needed on galipeur this year
@@ -240,9 +223,6 @@ int main(void)
   uart_init();
   uart_fopen(UART_STRAT);
 
-  // Initialize jevois camera
-  jevois_cam_init(&cam);
-
   INTLVL_ENABLE_ALL();
   __asm__("sei");
 
@@ -258,7 +238,6 @@ int main(void)
 
   // Initialize ROME
   rome_reader_init(&rome_strat, UART_STRAT);
-  rome_reader_init(&rome_jevois, UART_JEVOIS);
 
   for(;;) {
     idle();
