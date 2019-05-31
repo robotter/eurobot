@@ -191,6 +191,7 @@ void strat_run(void)
 
   ROME_LOG(ROME_DST_PADDOCK, DEBUG, "Gooooooo !!!!");
 
+  update_score(SCORE_EXPERIENCE_INSTALLED);
   order_result_t or = ORDER_FAILURE;
 
   or = push_blue_atom();

@@ -300,7 +300,8 @@ int main(void)
 
   _delay_ms(500);
 
-  match_state.scores.pannotter = SCORE_EXPERIENCE_INSTALLED;
+  //XXX pannoter initial score disabled, galipette will count it
+  //match_state.scores.pannotter = SCORE_EXPERIENCE_INSTALLED;
 
   // initialize the screen
   screen->width = SCREEN_W;
