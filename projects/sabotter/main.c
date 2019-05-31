@@ -167,6 +167,7 @@ static void rome_jevois_handler(const rome_frame_t *frame)
       robot_state.jevois.x = frame->jevois_tm_objects.x;
       robot_state.jevois.y = frame->jevois_tm_objects.y;
       robot_state.jevois.z = frame->jevois_tm_objects.z;
+      robot_state.jevois.time = uptime_us();
       break;
     default:
       break;
