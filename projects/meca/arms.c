@@ -276,7 +276,7 @@ void arm_update(arm_t *arm) {
         arm->atoms[1] = true;
         arm->atoms[2] = true;
         // reactivate the pump
-        pump_enable(arm);
+        suckers_enable(arm, 1, 1, 1);
         arm_set_idle(arm);
       } else {
         // check suckers one by one, from left to right
