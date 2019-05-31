@@ -29,6 +29,7 @@
 #define UART_MECA
 #elif (defined GALIPETTE)
 #define UARTE0_ENABLED
+#define UART_JEVOIS
 #endif
 #define UARTE1_ENABLED
 #define UARTF0_ENABLED

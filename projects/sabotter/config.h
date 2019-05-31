@@ -7,6 +7,9 @@
 #if (defined GALIPEUR)
 #define ROME_MECA_UART    uartD0
 #endif
+#if (defined GALIPETTE)
+#define ROME_JEVOIS_UART    uartE0
+#endif
 
 // Timeout before repeating various strat orders
 #define STRAT_TIMEOUT_US  1000000

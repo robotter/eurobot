@@ -10,6 +10,7 @@
 extern xbee_intf_t xbee_paddock;
 #define ROME_DST_ASSERV  ROME_ASSERV_UART
 #define ROME_DST_MECA  ROME_MECA_UART
+#define ROME_DST_JVOIS  ROME_JEVOIS_UART
 #define ROME_DST_XBEE(addr)  ROME_XBEE_DST(&xbee_paddock, (addr))
 #define ROME_DST_BROADCAST  ROME_DST_XBEE(XBEE_BROADCAST)
 #define ROME_DST_PADDOCK  ROME_DST_XBEE(0x7061)

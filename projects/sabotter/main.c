@@ -46,6 +46,9 @@ rome_reader_t rome_asserv_reader;
 #ifdef UART_MECA
 rome_reader_t rome_meca_reader;
 #endif
+#ifdef UART_JEVOIS
+rome_reader_t rome_jevois_reader;
+#endif
 xbee_intf_t xbee_paddock;
 
 #if (defined GALIPEUR)
@@ -160,10 +163,10 @@ static void rome_jevois_handler(const rome_frame_t *frame)
       }
     } break;
     case ROME_MID_JEVOIS_TM_OBJECTS:
-      robot_state.jevois.color = frame->jevois_color;
-      robot_state.jevois.x = frame->x;
-      robot_state.jevois.y = frame->y;
-      robot_state.jevois.z = frame->z;
+      robot_state.jevois.color = frame->jevois_tm_objects.object_color;
+      robot_state.jevois.x = frame->jevois_tm_objects.x;
+      robot_state.jevois.y = frame->jevois_tm_objects.y;
+      robot_state.jevois.z = frame->jevois_tm_objects.z;
       break;
     default:
       break;
@@ -245,6 +248,9 @@ void update_rome_interfaces(void)
 #ifdef UART_MECA
   rome_reader_handle_input(&rome_meca_reader, rome_meca_handler);
 #endif
+#ifdef UART_JEVOIS
+  rome_reader_handle_input(&rome_jevois_reader, rome_jevois_handler);
+#endif
   xbee_handle_input(&xbee_paddock);
 }
 
@@ -319,8 +325,12 @@ int main(void)
 
   // Initialize UART
   uart_init();
-#ifdef GALIPEUR
+#if defined(GALIPEUR)
   uart_fopen(uartC0);
+#endif
+
+#if defined(GALIPETTE)
+  uart_fopen(uartE0);
 #endif
 
   INTLVL_ENABLE_ALL();
@@ -333,6 +343,9 @@ int main(void)
   rome_reader_init(&rome_asserv_reader, ROME_ASSERV_UART);
 #ifdef UART_MECA
   rome_reader_init(&rome_meca_reader, ROME_MECA_UART);
+#endif
+#ifdef UART_JEVOIS
+  rome_reader_init(&rome_jevois_reader, ROME_JEVOIS_UART);
 #endif
 
 #if defined(GALIPEUR)
