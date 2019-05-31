@@ -113,8 +113,10 @@ void strat_prepare(void)
 }
 
 #define JEVOIS_X_OFFSET 0
+#define JEVOIS_VISION_TIMEOUT_US 10000000
 
 int16_t get_atom_x_offset(rome_enum_jevois_color_t atom_type) {
+  uint32_t start_time = uptime_us();
   ROME_LOG(ROME_DST_PADDOCK, INFO, "test JeVois");
   uint32_t ljvt = 0;
   uint8_t good = 0;
@@ -137,7 +139,31 @@ int16_t get_atom_x_offset(rome_enum_jevois_color_t atom_type) {
     }
 
     idle();
-    //TODO do something if atom isn't there :(
+
+    static uint8_t turns = 0;
+    if (uptime_us() - start_time > JEVOIS_VISION_TIMEOUT_US){
+      switch (turns){
+        case 0:
+          goto_xya_rel(0,0, M_PI/16);
+          turns ++;
+        break;
+
+        case 1:
+          goto_xya_rel(0,0, -M_PI/8);
+          turns ++;
+        break;
+
+        case 2:
+          goto_xya_rel(0,0, M_PI/16);
+          turns = 0;
+        break;
+
+        default:
+          break;
+
+      }
+      start_time = uptime_us();
+    }
   }
 }
 
@@ -228,6 +254,9 @@ void strat_run(void)
 
   update_score(SCORE_EXPERIENCE_INSTALLED);
   order_result_t or = ORDER_FAILURE;
+
+  // avoid first atom in front of area
+  goto_xya(KX(1000),1800,arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
 
   or = push_blue_atom();
 
