@@ -3,7 +3,7 @@ import math
 set_max_path_size(20)
 set_node_cost(50)
 
-team_names = ('yellow', 'purple')  # (left side, right side)
+team_names = ('yellow', 'blue')  # (left side, right side)
 
 nodes = {}
 vertices = []

@@ -30,7 +30,7 @@ typedef struct {
 typedef enum {
   TEAM_NONE,
   TEAM_YELLOW,
-  TEAM_PURPLE,
+  TEAM_BLUE,
 } team_t;
 
 // JeVois detection object
