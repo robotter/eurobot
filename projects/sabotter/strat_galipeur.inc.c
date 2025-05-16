@@ -68,18 +68,18 @@ void strat_prepare(void)
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_STEERING(ROME_DST_ASSERV, 1.5, 0.03);
   ROME_SENDWAIT_ASSERV_SET_HTRAJ_XY_CRUISE(ROME_DST_ASSERV, 15, 0.03);
 
-  // autoset robot
-  // x in starting area
+  // autoset robot in color side bot corner
+  // x in wall (elements must be removed)
   set_xya_wait(KX(0), 0, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
   autoset(ROBOT_SIDE_BACK, AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
   goto_xya(KX(1230), 0, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
-  // y on small dispenser
+  // y in wall in oponent construction area
   goto_xya(KX(1230), 0, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
   autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, AUTOSET_OFFSET);
   goto_xya(KX(1280), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
 
-  // go to green starting areau
-  goto_xya(KX(1365), 1250, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
+  // go to central starting area
+  goto_xya(KX(250), 1300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
 
   // shutdown elevators to preserve battery
   ROME_SENDWAIT_MECA_SHUTDOWN_ELEVATOR(ROME_DST_MECA, true);
@@ -116,6 +116,84 @@ void set_speed(robot_speed_t s){
   }
 }
 
+void strat_run(void)
+{
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Go !!!");
+  ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
+
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BOTTOM);
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
+
+  order_result_t or = ORDER_FAILURE;
+  (void)or;
+
+  goto_xya(KX(250), 550, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
+
+  //going back to backstage should be given the highest priority near the end of match
+  while (robot_state.match_time < 70){
+
+  //const int16_t arm_x_offset = TEAM_SIDE_VALUE(0, 30);
+
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Push bot construction material in construction area");
+  {
+    // for now there is only an arm on the left side
+    const float angle = arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN);
+    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BOT_STOCK, angle);
+
+    //TODO deploy arms wings when they are ready
+    //push construction material
+    goto_xya(KX(700), 200, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+    //clear new construction
+    goto_xya(KX(700), 400, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+    //TODO retract arms wings when they are ready
+  }
+
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Move near the stage and do an autoset on it");
+  {
+    const float angle = arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP);
+    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_RESERVED_STOCK, angle);
+    goto_xya(KX(250), 1450, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+    //autoset Y on the stage
+    autoset(ROBOT_SIDE_BACK, AUTOSET_UP, 0, 1550-AUTOSET_OFFSET);
+    goto_xya(KX(250), 1250, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+
+  }
+
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Push central construction material in start area");
+  {
+    // for now there is only an arm on the left side
+    const float angle = arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN);
+    or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_CENTRAL_STOCK_TOP, angle);
+    //TODO deploy arms wings when they are ready
+    //push construction material
+    goto_xya(KX(250), 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+    goto_xya(KX(250), 200, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+    //clear new construction
+    goto_xya(KX(700), 400, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+    //TODO retract arms wings when they are ready
+  }
+
+  //wait a bit before going near backstage
+      idle();
+  }
+
+  //go near backstage
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Job done, go to backstage");
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_TOP);
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_TOP);
+  const float angle = arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP);
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BACKSTAGE, angle);
+
+  //wait for the superstar and the groupies to clear the area
+  while (robot_state.match_time < 90){
+    idle();
+    }
+  goto_xya(KX(1200), 1750, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+
+}
+
+/* strat 2019
 void strat_run(void)
 {
   ROME_LOG(ROME_DST_PADDOCK, INFO, "Go !!!");
@@ -217,6 +295,7 @@ void strat_run(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
   ROME_SENDWAIT_MECA_SET_POWER(ROME_DST_MECA, 0);
 }
+*/
 
 void strat_test(void)
 {
