@@ -124,30 +124,28 @@ def add_triangle_grid(x1, y0, y1, r, obstacles):
 
 
 add_team_elements({
-    '{t}_galipette_start': (950, 1700),
-    '{t}_ramp_entrance': (1275, 550),
-    '{t}_small_dispenser': (1275, 250),
-    '{t}_large_dispenser_near': (900, 650),
-    '{t}_large_dispenser_far': (600, 650),
-    '{t}_accelerated_blue': (212, 1750),
-    '{t}_goldenium': (730, 1700),
-    '{t}_balance': (200, 700),
-    '{t}_red_area': (950, 1550),
+    '{t}_backstage': (1200, 1200),
+    '{t}_main_start': (300, 600),
+    '{t}_alt_start': (-900, 900),
+    '{t}_reserved_stock': (700, 1200),
+    '{t}_central_stock_top': (400,1200 ),
+    '{t}_central_stock_bot': (400,700 ),
+    '{t}_side_stock_top': (1200, 1200),
+    '{t}_side_stock_bot': (1200, 400),
+    '{t}_bot_stock': (700, 400),
+    '{t}_construction_area': (700, 400),
 }, [
-    '{t}_ramp_entrance {t}_small_dispenser',
-    # galipette path
-    '{t}_galipette_start {o}_accelerated_blue {o}_goldenium {t}_balance',
-    # galipeur path
-    '{t}_red_area {t}_large_dispenser_near {t}_large_dispenser_far',
+    '{t}_construction_area {t}_reserved_stock {t}_backstage',
+    '{t}_alt_start {t}_main_start',
 ])
 
-# make sure the grid does not overlap the start area
-add_triangle_grid(950, 700, 1700, 200, [
-    # balance separator
-    ((0, 580), 100),
-    # chaos areas
+# make sure the grid does not overlap the stage
+add_triangle_grid(1200, 400, 1200, 200, [
+    # central stocks
     ((500, 950), 150+50),
+    ((300, 950), 150+50),
     ((-500, 950), 150+50),
+    ((-300, 950), 150+50),
 ])
 
 add_graph('pathfinding_graph', nodes, vertices)
