@@ -60,6 +60,9 @@ void strat_prepare(void)
   //initalise kx factor
   robot_kx = TEAM_SIDE_VALUE(-1, 1);
 
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_TOP);
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_TOP);
+
   ROME_LOG(ROME_DST_PADDOCK, DEBUG,"Strat prepare");
   // initialize asserv
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
@@ -79,7 +82,7 @@ void strat_prepare(void)
   goto_xya(KX(1280), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
 
   // go to central starting area
-  goto_xya(KX(250), 1300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
+  goto_xya(KX(250), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
 
   // shutdown elevators to preserve battery
   ROME_SENDWAIT_MECA_SHUTDOWN_ELEVATOR(ROME_DST_MECA, true);
@@ -130,9 +133,6 @@ void strat_run(void)
 
   goto_xya(KX(250), 550, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
 
-  //going back to backstage should be given the highest priority near the end of match
-  while (robot_state.match_time < 70){
-
   //const int16_t arm_x_offset = TEAM_SIDE_VALUE(0, 30);
 
   ROME_LOG(ROME_DST_PADDOCK, INFO, "Push bot construction material in construction area");
@@ -175,6 +175,7 @@ void strat_run(void)
   }
 
   //wait a bit before going near backstage
+  while (robot_state.match_time < 70){
       idle();
   }
 
