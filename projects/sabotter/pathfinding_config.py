@@ -124,6 +124,7 @@ def add_triangle_grid(x1, y0, y1, r, obstacles):
 
 
 add_team_elements({
+    'stage':(0,1200),
     '{t}_backstage': (1200, 1200),
     '{t}_main_start': (300, 600),
     '{t}_alt_start': (-900, 900),
