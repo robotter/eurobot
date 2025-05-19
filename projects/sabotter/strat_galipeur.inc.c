@@ -1,4 +1,5 @@
 #define AUTOSET_OFFSET 112
+#define ARM_OFFSET 0 //TEAM_SIDE_VALUE(0,30)
 
 #define ARM_POS_TOP  0
 #define ARM_POS_BOTTOM  165
@@ -133,10 +134,12 @@ order_result_t push_bot_cm(void){
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
   wait_meca_ready();
   //TODO deploy arms wings when they are ready
+  goto_xya(KX(700) + ARM_OFFSET, 400, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   //push construction material
-  goto_xya(KX(700), 150, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  goto_xya(KX(700) + ARM_OFFSET, 150, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  update_score(4);
   //clear new construction
-  goto_xya(KX(700), 400, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  goto_xya(KX(700) + ARM_OFFSET, 400, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
 
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_TOP);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_TOP);
@@ -179,14 +182,15 @@ order_result_t push_main_central_cm(bool first){
   //TODO deploy arms wings when they are ready
   //push construction material
   wait_meca_ready();
-  goto_xya(KX(400), 900, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
-  goto_xya(KX(250), 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  goto_xya(KX(400) + ARM_OFFSET, 900, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  goto_xya(KX(250) + ARM_OFFSET, 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   if(first)
-    goto_xya(KX(250), 150, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+    goto_xya(KX(250) + ARM_OFFSET, 150, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   else
-    goto_xya(KX(250), 300, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+    goto_xya(KX(250) + ARM_OFFSET, 300, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  update_score(4);
   //clear new construction
-  goto_xya(KX(250), 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  goto_xya(KX(250) + ARM_OFFSET, 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   //TODO retract arms wings when they are ready
 
   //go out of the start area to be ready for next order
@@ -212,15 +216,16 @@ order_result_t push_aux_central_cm(bool first){
   //TODO deploy arms wings when they are ready
   //push construction material
   wait_meca_ready();
-  goto_xya(KX(-400), 900, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  goto_xya(KX(-400) + ARM_OFFSET, 900, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   goto_xya_synced(0, 725, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_MAIN));
-  goto_xya_synced(KX(250), 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  goto_xya_synced(KX(250) + ARM_OFFSET, 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   if(first)
-    goto_xya(KX(250), 150, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+    goto_xya(KX(250) + ARM_OFFSET, 150, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   else
-    goto_xya(KX(250), 300, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+    goto_xya(KX(250) + ARM_OFFSET, 300, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  update_score(4);
   //clear new construction
-  goto_xya(KX(250), 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  goto_xya(KX(250) + ARM_OFFSET, 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   //TODO retract arms wings when they are ready
 
   //go out of the start area to be ready for next order
@@ -243,7 +248,6 @@ void strat_run(void)
 
   goto_xya(KX(250), 550, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
 
-  //const int16_t arm_x_offset = TEAM_SIDE_VALUE(0, 30);
 
   while (!( or_push_bot_cm          != ORDER_SUCCESS &&
             or_push_main_central_cm != ORDER_SUCCESS &&
@@ -290,7 +294,15 @@ void strat_run(void)
     goto_xya(KX(1250),1200,arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_LEFT));
     goto_xya(KX(1150),1200,arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_RIGHT));
   }
-  goto_xya(KX(1200), 1750, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+  goto_xya(KX(1200), 1750, angle);
+  update_score(10);
+
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "That's all folks !");
+  ROME_SENDWAIT_MECA_SHUTDOWN_ELEVATOR(ROME_DST_MECA, true);
+  ROME_SENDWAIT_MECA_SHUTDOWN_ELEVATOR(ROME_DST_MECA, false);
+  idle_delay_ms(3000);
+  ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 0);
+  ROME_SENDWAIT_MECA_SET_POWER(ROME_DST_MECA, 0);
 
 }
 

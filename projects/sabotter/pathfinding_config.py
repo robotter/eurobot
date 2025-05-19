@@ -133,10 +133,10 @@ add_team_elements({
     '{t}_central_stock_bot': (400,700 ),
     '{t}_side_stock_top': (1200, 1200),
     '{t}_side_stock_bot': (1200, 400),
-    '{t}_bot_stock': (700, 400),
+    '{t}_bot_stock': (700, 500),
     '{t}_construction_area': (700, 400),
 }, [
-    '{t}_construction_area {t}_reserved_stock {t}_backstage',
+    '{t}_bot_stock {t}_reserved_stock {t}_backstage',
     '{t}_alt_start {t}_main_start',
 ])
 
