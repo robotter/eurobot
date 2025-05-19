@@ -77,7 +77,7 @@ void strat_prepare(void)
   autoset(ROBOT_SIDE_BACK, AUTOSET_MAIN, KX(1500-AUTOSET_OFFSET), 0);
   goto_xya(KX(1230), 0, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
   // y in wall in oponent construction area
-  goto_xya(KX(1230), 0, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+  goto_xya(KX(1230), 150, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
   autoset(ROBOT_SIDE_BACK, AUTOSET_DOWN, 0, AUTOSET_OFFSET);
   goto_xya(KX(1280), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
 
@@ -134,7 +134,7 @@ order_result_t push_bot_cm(void){
   wait_meca_ready();
   //TODO deploy arms wings when they are ready
   //push construction material
-  goto_xya(KX(700), 200, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  goto_xya(KX(700), 150, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   //clear new construction
   goto_xya(KX(700), 400, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
 
@@ -164,10 +164,10 @@ order_result_t goto_stage_and_autoset(void){
   return ORDER_SUCCESS;
 }
 
-order_result_t push_central_cm(void){
+order_result_t push_main_central_cm(bool first){
   order_result_t or = ORDER_FAILURE;
 
-  ROME_LOG(ROME_DST_PADDOCK, INFO, "Push central construction material in start area");
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Push main central construction material in start area");
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BOTTOM);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
 
@@ -179,13 +179,51 @@ order_result_t push_central_cm(void){
   //TODO deploy arms wings when they are ready
   //push construction material
   wait_meca_ready();
+  goto_xya(KX(400), 900, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   goto_xya(KX(250), 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
-  goto_xya(KX(250), 200, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  if(first)
+    goto_xya(KX(250), 150, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  else
+    goto_xya(KX(250), 300, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   //clear new construction
-  goto_xya(KX(250), 400, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  goto_xya(KX(250), 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
   //TODO retract arms wings when they are ready
 
-  //go out of the corner to be ready for next order
+  //go out of the start area to be ready for next order
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_TOP);
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_TOP);
+  wait_meca_ground_clear();
+  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MAIN_START, angle);
+  return ORDER_SUCCESS;
+}
+
+order_result_t push_aux_central_cm(bool first){
+  order_result_t or = ORDER_FAILURE;
+
+  ROME_LOG(ROME_DST_PADDOCK, INFO, "Push aux central construction material in start area");
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BOTTOM);
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
+
+  // for now there is only an arm on the left side
+  float angle = arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN);
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_AUX_CENTRAL_STOCK_TOP, angle);
+  if (or != ORDER_SUCCESS)
+    return or;
+  //TODO deploy arms wings when they are ready
+  //push construction material
+  wait_meca_ready();
+  goto_xya(KX(-400), 900, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  goto_xya_synced(0, 725, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_MAIN));
+  goto_xya_synced(KX(250), 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  if(first)
+    goto_xya(KX(250), 150, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  else
+    goto_xya(KX(250), 300, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  //clear new construction
+  goto_xya(KX(250), 550, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+  //TODO retract arms wings when they are ready
+
+  //go out of the start area to be ready for next order
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_TOP);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_TOP);
   wait_meca_ground_clear();
@@ -200,27 +238,41 @@ void strat_run(void)
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
 
   order_result_t or_push_bot_cm     = ORDER_FAILURE;
-  order_result_t or_push_central_cm = ORDER_FAILURE;
+  order_result_t or_push_main_central_cm = ORDER_FAILURE;
+  order_result_t or_push_aux_central_cm = ORDER_FAILURE;
 
   goto_xya(KX(250), 550, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
 
-  while (!( or_push_bot_cm     != ORDER_SUCCESS &&
-            or_push_central_cm != ORDER_SUCCESS &&
-            robot_state.match_time < 80         )  ){
+  //const int16_t arm_x_offset = TEAM_SIDE_VALUE(0, 30);
+
+  while (!( or_push_bot_cm          != ORDER_SUCCESS &&
+            or_push_main_central_cm != ORDER_SUCCESS &&
+            or_push_aux_central_cm  != ORDER_SUCCESS )  ){
     idle();
 
+    //near end of match, just stop everything and prepare to go to arrival area
+    if (robot_state.match_time < 80)
+      break;
+
+    //first task, try to push bot construction material. this shouldn't fail as is it near the start area.
     if (or_push_bot_cm != ORDER_SUCCESS)
       or_push_bot_cm = push_bot_cm();
 
+    //make and autoset on the stage
     goto_stage_and_autoset();
 
-    if (or_push_central_cm != ORDER_SUCCESS)
-      or_push_central_cm = push_central_cm();
+    //try to push the central construction material of our color in start area
+    if (or_push_main_central_cm != ORDER_SUCCESS)
+      or_push_main_central_cm = push_aux_central_cm(or_push_aux_central_cm != ORDER_SUCCESS);
+
+    //do again an autoset on the stage, it will also be an evading maneuver if oponenet prevented the first try on center
+    goto_stage_and_autoset();
+
+    //try to push the central construction material of other color in start area
+    if (or_push_aux_central_cm != ORDER_SUCCESS)
+      or_push_aux_central_cm = push_aux_central_cm(or_push_main_central_cm != ORDER_SUCCESS);
 
   }
-
-  //const int16_t arm_x_offset = TEAM_SIDE_VALUE(0, 30);
-
 
   //go near backstage
   order_result_t or = ORDER_FAILURE;
@@ -235,8 +287,10 @@ void strat_run(void)
   //wait for the superstar and the groupies to clear the area
   while (robot_state.match_time < 90){
     idle();
-    }
-  goto_xya(KX(1200), 1750, arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_DOWN));
+    goto_xya(KX(1250),1200,arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_LEFT));
+    goto_xya(KX(1150),1200,arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_RIGHT));
+  }
+  goto_xya(KX(1200), 1750, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
 
 }
 
