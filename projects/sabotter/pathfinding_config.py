@@ -125,28 +125,33 @@ def add_triangle_grid(x1, y0, y1, r, obstacles):
 
 add_team_elements({
     'stage':(0,1200),
-    '{t}_backstage': (1200, 1200),
+    'center_bot':(0,700),
+    'center_top':(0,1000),
+    '{t}_backstage': (1200, 1300),
     '{t}_main_start': (300, 600),
     '{t}_alt_start': (-900, 900),
-    '{t}_reserved_stock': (700, 1200),
-    '{t}_central_stock_top': (400,1200 ),
+    '{t}_reserved_stock': (700, 1300),
+    '{t}_central_stock_top': (400,1250 ),
     '{t}_central_stock_bot': (400,700 ),
     '{t}_side_stock_top': (1200, 1200),
     '{t}_side_stock_bot': (1200, 400),
     '{t}_bot_stock': (700, 500),
-    '{t}_construction_area': (700, 400),
+    '{t}_construction_area': (700, 450),
+    '{t}_side_path_bot': (800,800),
+    '{t}_side_path_top': (800,1100),
 }, [
-    '{t}_bot_stock {t}_reserved_stock {t}_backstage',
+    '{t}_main_start {t}_side_path_bot {t}_side_path_top {t}_reserved_stock {t}_backstage',
     '{t}_alt_start {t}_main_start',
+    'center_bot stage',
 ])
 
 # make sure the grid does not overlap the stage
-add_triangle_grid(1200, 400, 1200, 200, [
+add_triangle_grid(1200, 450, 1300, 200, [
     # central stocks
-    ((500, 950), 150+50),
-    ((300, 950), 150+50),
-    ((-500, 950), 150+50),
-    ((-300, 950), 150+50),
+    ((520, 950), 200),
+    ((280, 950), 200),
+    ((-520, 950),200),
+    ((-280, 950),200),
 ])
 
 add_graph('pathfinding_graph', nodes, vertices)
