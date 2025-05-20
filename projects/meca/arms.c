@@ -105,7 +105,9 @@ static bool is_arm_up(const arm_t *arm) {
 }
 
 uint8_t arms_get_tm_state(void) {
-  return MIN(arm_l.tm_state, arm_r.tm_state);
+  //LEFT ARM doesn't work, so do not send its status.
+  //return MIN(arm_l.tm_state, arm_r.tm_state);
+  return arm_r.tm_state;
 }
 
 void arm_take_atoms(arm_t *arm) {
