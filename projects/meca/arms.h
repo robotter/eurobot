@@ -62,6 +62,7 @@ typedef struct {
 extern arm_t arm_l;
 extern arm_t arm_r;
 
+void arm_grab_wings(arm_t *arm);
 void arm_deploy_wings(arm_t *arm);
 void arm_fold_wings(arm_t *arm);
 void arm_take_cans(arm_t *arm);
@@ -74,8 +75,6 @@ uint8_t arms_get_tm_state(void);
 void arms_init(void);
 void arm_update(arm_t *arm);
 void arms_shutdown(void);
-void arms_deploy_arm(arm_t *arm);
-void arms_close_arm(arm_t *arm);
 
 /// Convert an arm position from millimeters to steps
 #define ARM_MM_TO_STEPS(side, mm) \

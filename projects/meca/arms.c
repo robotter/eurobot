@@ -101,18 +101,19 @@ void arms_init(void) {
   stepper_motor_init();
 
   servo_hat_init();
-  servo_hat_configure_channel(15, 102, 512);
-  servo_hat_configure_channel(14, 102, 512);
-  servo_hat_configure_channel(13, 102, 512);
-  servo_hat_configure_channel(12, 102, 512);
-  servo_hat_configure_channel(11, 102, 512);
+  //TODO replace channels by defines
+  servo_hat_configure_channel(6, 102, 512);
+  servo_hat_configure_channel(7, 102, 512);
+  servo_hat_configure_channel(8, 102, 512);
+  servo_hat_configure_channel(9, 102, 512);
   servo_hat_configure_channel(10, 102, 512);
-  servo_hat_set_pwm(15, 10);
-  servo_hat_set_pwm(14, 10);
-  servo_hat_set_pwm(13, 10);
-  servo_hat_set_pwm(12, 10);
-  servo_hat_set_pwm(11, 10);
-  servo_hat_set_pwm(10, 10);
+  servo_hat_configure_channel(11, 102, 512);
+  servo_hat_set_pwm(6, RIGHT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO);
+  servo_hat_set_pwm(7, RIGHT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO);
+  servo_hat_set_pwm(8, RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
+  servo_hat_set_pwm(9, RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
+  servo_hat_set_pwm(10,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
+  servo_hat_set_pwm(11,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
 }
 
 static bool is_arm_up(const arm_t *arm) {
@@ -250,20 +251,27 @@ void arm_update(arm_t *arm) {
 
     // move on all the grabbers to take cans
     case ARM_TAKE_CANS:
-      //TODO : move the servos
       ROME_LOGF(UART_STRAT, DEBUG, "MECA: take cans");
+      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_0_ID,RIGHT_ARM_MAGNET_TAKE_PWM_RATIO);
+      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_1_ID,RIGHT_ARM_MAGNET_TAKE_PWM_RATIO);
+      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_2_ID,RIGHT_ARM_MAGNET_TAKE_PWM_RATIO);
+      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_3_ID,RIGHT_ARM_MAGNET_TAKE_PWM_RATIO);
       arm->state = ARM_CAN_GRABBER_WAIT;
-      //wait 500ms for sevo to reach position
-      tend = uptime_us() + 500000;
+      //wait 50ms for sevo to reach position
+      tend = uptime_us() + 50000;
       break;
 
     // move on all the grabbers to release cans
     case ARM_RELEASE_CANS:
       //TODO : move the servos
       ROME_LOGF(UART_STRAT, DEBUG, "MECA: release cans");
+      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_0_ID,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
+      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_1_ID,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
+      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_2_ID,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
+      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_3_ID,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
       arm->state = ARM_CAN_GRABBER_WAIT;
-      //wait 500ms for sevo to reach position
-      tend = uptime_us() + 500000;
+      //wait 50ms for sevo to reach position
+      tend = uptime_us() + 50000;
       break;
 
     case ARM_CAN_GRABBER_WAIT:
@@ -276,22 +284,32 @@ void arm_update(arm_t *arm) {
   }
 }
 
-void arms_deploy_wings(arm_t *arm)
+void arm_grab_wings(arm_t *arm)
 {
-    uint8_t left_servo_hat_chan = arm->side ? LEFT_ARM_LEFT_DEPLOY_SERVO_ID : RIGHT_ARM_LEFT_DEPLOY_SERVO_ID;
+    uint8_t left_servo_hat_chan = arm->side ? LEFT_ARM_LEFT_SERVO_ID : RIGHT_ARM_LEFT_SERVO_ID;
+    uint16_t left_servo_hat_value = arm->side ? LEFT_ARM_LEFT_SERVO_GRAB_PWM_RATIO : RIGHT_ARM_LEFT_SERVO_GRAB_PWM_RATIO;
+    uint8_t right_servo_hat_chan = arm->side ? LEFT_ARM_RIGHT_SERVO_ID : RIGHT_ARM_RIGHT_SERVO_ID;
+    uint16_t right_servo_hat_value = arm->side ? LEFT_ARM_RIGHT_SERVO_GRAB_PWM_RATIO : RIGHT_ARM_RIGHT_SERVO_GRAB_PWM_RATIO;
+    servo_hat_set_pwm(left_servo_hat_chan, left_servo_hat_value);
+    servo_hat_set_pwm(right_servo_hat_chan, right_servo_hat_value);
+}
+
+void arm_deploy_wings(arm_t *arm)
+{
+    uint8_t left_servo_hat_chan = arm->side ? LEFT_ARM_LEFT_SERVO_ID : RIGHT_ARM_LEFT_SERVO_ID;
     uint16_t left_servo_hat_value = arm->side ? LEFT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO : RIGHT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO;
-    uint8_t right_servo_hat_chan = arm->side ? LEFT_ARM_RIGHT_DEPLOY_SERVO_ID : RIGHT_ARM_RIGHT_DEPLOY_SERVO_ID;
+    uint8_t right_servo_hat_chan = arm->side ? LEFT_ARM_RIGHT_SERVO_ID : RIGHT_ARM_RIGHT_SERVO_ID;
     uint16_t right_servo_hat_value = arm->side ? LEFT_ARM_RIGHT_SERVO_DEPLOY_PWM_RATIO : RIGHT_ARM_RIGHT_SERVO_DEPLOY_PWM_RATIO;
     servo_hat_set_pwm(left_servo_hat_chan, left_servo_hat_value);
     servo_hat_set_pwm(right_servo_hat_chan, right_servo_hat_value);
 }
 
-void arms_fold_wings(arm_t *arm)
+void arm_fold_wings(arm_t *arm)
 {
-    uint8_t left_servo_hat_chan = arm->side ? LEFT_ARM_LEFT_DEPLOY_SERVO_ID : RIGHT_ARM_LEFT_DEPLOY_SERVO_ID;
-    uint16_t left_servo_hat_value = arm->side ? LEFT_ARM_LEFT_SERVO_CLOSE_PWM_RATIO : RIGHT_ARM_LEFT_SERVO_CLOSE_PWM_RATIO;
-    uint8_t right_servo_hat_chan = arm->side ? LEFT_ARM_RIGHT_DEPLOY_SERVO_ID : RIGHT_ARM_RIGHT_DEPLOY_SERVO_ID;
-    uint16_t right_servo_hat_value = arm->side ? LEFT_ARM_RIGHT_SERVO_CLOSE_PWM_RATIO : RIGHT_ARM_RIGHT_SERVO_CLOSE_PWM_RATIO;
+    uint8_t left_servo_hat_chan = arm->side ? LEFT_ARM_LEFT_SERVO_ID : RIGHT_ARM_LEFT_SERVO_ID;
+    uint16_t left_servo_hat_value = arm->side ? LEFT_ARM_LEFT_SERVO_FOLD_PWM_RATIO : RIGHT_ARM_LEFT_SERVO_FOLD_PWM_RATIO;
+    uint8_t right_servo_hat_chan = arm->side ? LEFT_ARM_RIGHT_SERVO_ID : RIGHT_ARM_RIGHT_SERVO_ID;
+    uint16_t right_servo_hat_value = arm->side ? LEFT_ARM_RIGHT_SERVO_FOLD_PWM_RATIO : RIGHT_ARM_RIGHT_SERVO_FOLD_PWM_RATIO;
     servo_hat_set_pwm(left_servo_hat_chan, left_servo_hat_value);
     servo_hat_set_pwm(right_servo_hat_chan, right_servo_hat_value);
 }

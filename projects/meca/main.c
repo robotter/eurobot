@@ -51,6 +51,13 @@ void rome_strat_handler(const rome_frame_t *frame)
       rome_reply_ack(UART_STRAT, frame);
     } break;
 
+    case ROME_MID_MECA_GRAB_WINGS: {
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s grab wings", SIDE_NAME(frame->meca_grab_wings.side));
+      arm_grab_wings(SIDE_ARM(frame->meca_grab_wings.side));
+      rome_reply_ack(UART_STRAT, frame);
+      break;
+    }
+
     case ROME_MID_MECA_DEPLOY_WINGS: {
       ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s deploy wings", SIDE_NAME(frame->meca_deploy_wings.side));
       arm_deploy_wings(SIDE_ARM(frame->meca_deploy_wings.side));

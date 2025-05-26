@@ -170,6 +170,7 @@ register_messages(
       (Order, 'meca_release_cans', ['bool side']),
       (Order, 'meca_deploy_wings', ['bool side']),
       (Order, 'meca_fold_wings'  , ['bool side']),
+      (Order, 'meca_grab_wings'  , ['bool side']),
 
       # generic analog servo commands
       (Order, 'meca_set_servo', ['uint8 id', 'uint16 value']),
