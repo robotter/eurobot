@@ -28,6 +28,7 @@
 #include <rome/rome.h>
 #include "config.h"
 #include "arms.h"
+#include "servo_hat.h"
 #include <i2c/i2c.h>
 
 #define ROME_DEVICE  ROME_ENUM_DEVICE_GALIPEUR_MECA
@@ -45,6 +46,8 @@ void rome_strat_handler(const rome_frame_t *frame)
   switch(frame->mid) {
     case ROME_MID_START_TIMER: {
       match_started = true;
+      arm_deploy_wings(&arm_l);
+      arm_deploy_wings(&arm_r);
       rome_reply_ack(UART_STRAT, frame);
     } break;
 

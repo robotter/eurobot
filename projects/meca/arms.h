@@ -57,7 +57,6 @@ typedef struct {
 
   uint16_t pressure;
   uint32_t baro_time;
-
 } arm_t;
 
 extern arm_t arm_l;
@@ -75,6 +74,8 @@ uint8_t arms_get_tm_state(void);
 void arms_init(void);
 void arm_update(arm_t *arm);
 void arms_shutdown(void);
+void arms_deploy_arm(arm_t *arm);
+void arms_close_arm(arm_t *arm);
 
 /// Convert an arm position from millimeters to steps
 #define ARM_MM_TO_STEPS(side, mm) \

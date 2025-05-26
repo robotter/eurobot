@@ -20,6 +20,11 @@
 /// Enable I2Cx in master mode
 #define I2CC_MASTER
 
+// Enable I2CE in master to control the servo hat
+#define I2CE_MASTER
+#define I2CE_INTLVL INTLVL_HI
+#define I2CE_BAUDRATE	400000
+
 /// Bus baudrate in Hz (master only)
 #define I2C_BAUDRATE  100000
 
