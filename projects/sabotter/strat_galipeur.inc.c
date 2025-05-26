@@ -3,7 +3,7 @@
 
 #define ARM_POS_TOP  0
 #define ARM_POS_BOTTOM 200
-#define ARM_POS_BANNER 150
+#define ARM_POS_BANNER 75
 #define ARM_POS_LIFT_CANS 100
 
 void wait_meca_ready(void){
