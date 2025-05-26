@@ -30,18 +30,11 @@ typedef enum {
   ARM_ELEVATOR_MOVE,
   ARM_ELEVATOR_MOVE_WAIT,
 
-  ARM_TAKE_ATOMS = 20,
+  ARM_TAKE_CANS = 20,
 
-  ARM_RELEASE_ATOMS = 30,
+  ARM_RELEASE_CANS = 30,
 
-  ARM_CHECK_SUCKERS_DISABLE_PUMP = 40,
-  ARM_CHECK_SUCKERS_PRESSURE,
-  ARM_CHECK_LEFT_SUCKER_DISABLE_PUMP,
-  ARM_CHECK_LEFT_SUCKER_PRESSURE,
-  ARM_CHECK_CENTER_SUCKER_DISABLE_PUMP,
-  ARM_CHECK_CENTER_SUCKER_PRESSURE,
-  ARM_CHECK_RIGHT_SUCKER_DISABLE_PUMP,
-  ARM_CHECK_RIGHT_SUCKER_PRESSURE,
+  ARM_CAN_GRABBER_WAIT,
 
 } arm_state_t;
 
@@ -70,8 +63,10 @@ typedef struct {
 extern arm_t arm_l;
 extern arm_t arm_r;
 
-void arm_take_atoms(arm_t *arm);
-void arm_release_atoms(arm_t *arm);
+void arm_deploy_wings(arm_t *arm);
+void arm_fold_wings(arm_t *arm);
+void arm_take_cans(arm_t *arm);
+void arm_release_cans(arm_t *arm);
 void arm_elevator_move(arm_t *arm, uint16_t pos);
 void arm_elevator_up(arm_t *arm);
 void arm_elevator_shutdown(arm_t *arm);

@@ -48,16 +48,30 @@ void rome_strat_handler(const rome_frame_t *frame)
       rome_reply_ack(UART_STRAT, frame);
     } break;
 
-    case ROME_MID_MECA_TAKE_ATOMS: {
-      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s take atoms", SIDE_NAME(frame->meca_take_atoms.side));
-      arm_take_atoms(SIDE_ARM(frame->meca_take_atoms.side));
+    case ROME_MID_MECA_DEPLOY_WINGS: {
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s deploy wings", SIDE_NAME(frame->meca_deploy_wings.side));
+      arm_deploy_wings(SIDE_ARM(frame->meca_deploy_wings.side));
       rome_reply_ack(UART_STRAT, frame);
       break;
     }
 
-    case ROME_MID_MECA_RELEASE_ATOMS: {
-      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s release atoms", SIDE_NAME(frame->meca_release_atoms.side));
-      arm_release_atoms(SIDE_ARM(frame->meca_release_atoms.side));
+    case ROME_MID_MECA_FOLD_WINGS: {
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s fold wings", SIDE_NAME(frame->meca_fold_wings.side));
+      arm_fold_wings(SIDE_ARM(frame->meca_fold_wings.side));
+      rome_reply_ack(UART_STRAT, frame);
+      break;
+    }
+
+    case ROME_MID_MECA_TAKE_CANS: {
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s take cans", SIDE_NAME(frame->meca_take_cans.side));
+      arm_take_cans(SIDE_ARM(frame->meca_take_cans.side));
+      rome_reply_ack(UART_STRAT, frame);
+      break;
+    }
+
+    case ROME_MID_MECA_RELEASE_CANS: {
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: %s release cans", SIDE_NAME(frame->meca_release_cans.side));
+      arm_release_cans(SIDE_ARM(frame->meca_release_cans.side));
       rome_reply_ack(UART_STRAT, frame);
       break;
     }
@@ -184,9 +198,7 @@ void send_telemetry(void)
   ROME_SEND_MECA_TM_STATE(UART_STRAT, arms_get_tm_state());
   ROME_SEND_MECA_TM_ARMS_STATE(UART_STRAT,
     arm_l.elevator.pos_known ? (int16_t)ARM_STEPS_TO_MM(arm_l.side, arm_l.elevator.pos) : -1,
-    arm_r.elevator.pos_known ? (int16_t)ARM_STEPS_TO_MM(arm_l.side, arm_r.elevator.pos) : -1,
-    arm_l.atoms,
-    arm_r.atoms);
+    arm_r.elevator.pos_known ? (int16_t)ARM_STEPS_TO_MM(arm_l.side, arm_r.elevator.pos) : -1);
   ROME_SEND_TM_MATCH_TIMER(UART_STRAT, ROME_DEVICE, match_timer_ms/1000);
 }
 

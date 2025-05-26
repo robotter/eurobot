@@ -110,20 +110,20 @@ uint8_t arms_get_tm_state(void) {
   return arm_r.tm_state;
 }
 
-void arm_take_atoms(arm_t *arm) {
+void arm_take_cans(arm_t *arm) {
   if(arm->state != ARM_IDLE) {
     return;
   }
   arm->tm_state = ROME_ENUM_MECA_STATE_BUSY;
-  arm->state = ARM_TAKE_ATOMS;
+  arm->state = ARM_TAKE_CANS;
 }
 
-void arm_release_atoms(arm_t *arm) {
+void arm_release_cans(arm_t *arm) {
   if(arm->state != ARM_IDLE) {
     return;
   }
   arm->tm_state = ROME_ENUM_MECA_STATE_BUSY;
-  arm->state = ARM_RELEASE_ATOMS;
+  arm->state = ARM_RELEASE_CANS;
 }
 
 void arm_elevator_move(arm_t *arm, uint16_t pos) {
@@ -148,19 +148,9 @@ static void arm_set_idle(arm_t *arm) {
   arm->state = ARM_IDLE;
 }
 
-// Step measure of barometer value, filter the result
-static void arm_baro_measure_filter(arm_t *arm) {
-  arm->pressure = 0.1 * barometer_get_pressure(&arm->baro) + 0.9 * arm->pressure;
-}
-
-// Initialize a measure of barometer value
-static void arm_baro_measure_init(arm_t *arm) {
-  arm->pressure = 0;
-  arm->measure_end = uptime_us() + BARO_CHECK_TIME_US;
-  arm_baro_measure_filter(arm);
-}
-
 void arm_update(arm_t *arm) {
+
+  static uint32_t tend = 0;
 
   if (is_arm_up(arm))
     portpin_outset(&LED_AN_PP(arm->side));
@@ -243,153 +233,38 @@ void arm_update(arm_t *arm) {
       }
       break;
 
-    // Switch on all the suckers to take atoms
-    case ARM_TAKE_ATOMS:
-      suckers_enable(arm, 1, 1, 1);
-      ROME_LOGF(UART_STRAT, DEBUG, "MECA: pump on");
-      // disable pump to check if there are atoms
-      // note: this measure is only used for debug
-      arm_baro_measure_init(arm);
-      arm->state = ARM_CHECK_SUCKERS_DISABLE_PUMP;
+    // move on all the grabbers to take cans
+    case ARM_TAKE_CANS:
+      //TODO : move the servos
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: take cans");
+      arm->state = ARM_CAN_GRABBER_WAIT;
+      //wait 500ms for sevo to reach position
+      tend = uptime_us() + 500000;
       break;
 
-    // Wait for pump to be off, for 1st pressure measure
-    case ARM_CHECK_SUCKERS_DISABLE_PUMP:
-      if (uptime_us() < arm->measure_end) {
-        // measure not ready yet
-        arm_baro_measure_filter(arm);
-      } else {
-        // measure ready, check the suckers
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pump off");
-        pump_disable(arm);
-        arm_baro_measure_init(arm);
-        arm->state = ARM_CHECK_SUCKERS_PRESSURE;
-      }
+    // move on all the grabbers to release cans
+    case ARM_RELEASE_CANS:
+      //TODO : move the servos
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: release cans");
+      arm->state = ARM_CAN_GRABBER_WAIT;
+      //wait 500ms for sevo to reach position
+      tend = uptime_us() + 500000;
       break;
 
-    // Wait for pump to be off, for 1st pressure measure
-    case ARM_CHECK_SUCKERS_PRESSURE:
-      if (uptime_us() < arm->measure_end) {
-        // measure not ready yet
-        arm_baro_measure_filter(arm);
-      } else if (arm->pressure < BARO_VOID_PRESSURE) {
-        // all atoms have been grabbed
-        arm->atoms[0] = true;
-        arm->atoms[1] = true;
-        arm->atoms[2] = true;
-        // reactivate the pump
-        suckers_enable(arm, 1, 1, 1);
+    case ARM_CAN_GRABBER_WAIT:
+      if(tend <= uptime_us())
         arm_set_idle(arm);
-      } else {
-        // check suckers one by one, from left to right
-        arm->atoms[0] = false;
-        arm->atoms[1] = false;
-        arm->atoms[2] = false;
-        suckers_enable(arm, 1, 0, 0);
-        // note: this measure is only used for debug
-        arm_baro_measure_init(arm);
-        arm->state = ARM_CHECK_LEFT_SUCKER_DISABLE_PUMP;
-      }
-      break;
-
-    case ARM_CHECK_LEFT_SUCKER_DISABLE_PUMP:
-      if (uptime_us() < arm->measure_end) {
-        // measure not ready yet
-        arm_baro_measure_filter(arm);
-      } else {
-        // measure ready, check the suckers
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pump off");
-        pump_disable(arm);
-        arm_baro_measure_init(arm);
-        arm->state = ARM_CHECK_LEFT_SUCKER_PRESSURE;
-      }
-      break;
-
-    case ARM_CHECK_LEFT_SUCKER_PRESSURE:
-      if (uptime_us() < arm->measure_end) {
-        // measure not ready yet
-        arm_baro_measure_filter(arm);
-      } else {
-        // atom is grabbed if pressure is low
-        arm->atoms[0] = arm->pressure < BARO_VOID_PRESSURE;
-        // then, check center sucker
-        suckers_enable(arm, arm->atoms[0], 1, 0);
-        // note: this measure is only used for debug
-        arm_baro_measure_init(arm);
-        arm->state = ARM_CHECK_CENTER_SUCKER_DISABLE_PUMP;
-      }
-      break;
-
-    case ARM_CHECK_CENTER_SUCKER_DISABLE_PUMP:
-      if (uptime_us() < arm->measure_end) {
-        // measure not ready yet
-        arm_baro_measure_filter(arm);
-      } else {
-        // measure ready, check the suckers
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pump off");
-        pump_disable(arm);
-        arm_baro_measure_init(arm);
-        arm->state = ARM_CHECK_CENTER_SUCKER_PRESSURE;
-      }
-      break;
-
-    case ARM_CHECK_CENTER_SUCKER_PRESSURE:
-      if (uptime_us() < arm->measure_end) {
-        // measure not ready yet
-        arm_baro_measure_filter(arm);
-      } else {
-        // atom is grabbed if pressure is low
-        arm->atoms[1] = arm->pressure < BARO_VOID_PRESSURE;
-        // then, check right sucker
-        suckers_enable(arm, arm->atoms[0], arm->atoms[1], 1);
-        // note: this measure is only used for debug
-        arm_baro_measure_init(arm);
-        arm->state = ARM_CHECK_RIGHT_SUCKER_DISABLE_PUMP;
-      }
-      break;
-
-    case ARM_CHECK_RIGHT_SUCKER_DISABLE_PUMP:
-      if (uptime_us() < arm->measure_end) {
-        // measure not ready yet
-        arm_baro_measure_filter(arm);
-      } else {
-        // measure ready, check the suckers
-        ROME_LOGF(UART_STRAT, DEBUG, "MECA: pump off");
-        pump_disable(arm);
-        arm_baro_measure_init(arm);
-        arm->state = ARM_CHECK_RIGHT_SUCKER_PRESSURE;
-      }
-      break;
-
-    case ARM_CHECK_RIGHT_SUCKER_PRESSURE:
-      if (uptime_us() < arm->measure_end) {
-        // measure not ready yet
-        arm_baro_measure_filter(arm);
-      } else {
-        // atom is grabbed if pressure is low
-        arm->atoms[2] = arm->pressure < BARO_VOID_PRESSURE;
-        // it's over, re-enable the pump (only if there are atoms)
-        if (arm->atoms[0] || arm->atoms[1] || arm->atoms[2]) {
-          suckers_enable(arm, arm->atoms[0], arm->atoms[1], arm->atoms[2]);
-        } else {
-          suckers_disable(arm);
-        }
-        arm_set_idle(arm);
-      }
-      break;
-
-    // Switch off the suckers to release atoms
-    case ARM_RELEASE_ATOMS:
-      arm->atoms[0] = false;
-      arm->atoms[1] = false;
-      arm->atoms[2] = false;
-      suckers_disable(arm);
-      arm_set_idle(arm);
       break;
 
     default:
       break;
   }
+}
+
+void arm_deploy_wings(arm_t *arm){
+}
+
+void arm_fold_wings(arm_t *arm){
 }
 
 void arms_shutdown(void) {

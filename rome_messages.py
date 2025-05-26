@@ -166,8 +166,10 @@ register_messages(
       # meca commands
       (Order, 'meca_move_elevator', ['bool side', 'uint16 pos_mm']),
       (Order, 'meca_shutdown_elevator', ['bool side']),
-      (Order, 'meca_take_atoms', ['bool side']),
-      (Order, 'meca_release_atoms', ['bool side']),
+      (Order, 'meca_take_cans', ['bool side']),
+      (Order, 'meca_release_cans', ['bool side']),
+      (Order, 'meca_deploy_wings', ['bool side']),
+      (Order, 'meca_fold_wings'  , ['bool side']),
 
       # generic analog servo commands
       (Order, 'meca_set_servo', ['uint8 id', 'uint16 value']),
@@ -183,8 +185,6 @@ register_messages(
       ('meca_tm_arms_state', [
           'int16 l_pos',  # millimeters, -1 if unknown
           'int16 r_pos',  # millimeters, -1 if unknown
-          'bool[3] l_atoms',
-          'bool[3] r_atoms',
       ]),
     ]),
 
