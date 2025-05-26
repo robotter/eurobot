@@ -25,6 +25,7 @@
 #include "arms.h"
 #include "config.h"
 #include "stepper_motor.h"
+#include "servo_hat.h"
 
 arm_t arm_l;
 arm_t arm_r;
@@ -98,6 +99,20 @@ void arms_init(void) {
   PORTPIN_CTRL(&RIGHT_ARM_STOP_PIN) = PORT_OPC_PULLUP_gc;
 
   stepper_motor_init();
+
+  servo_hat_init();
+  servo_hat_configure_channel(15, 102, 512);
+  servo_hat_configure_channel(14, 102, 512);
+  servo_hat_configure_channel(13, 102, 512);
+  servo_hat_configure_channel(12, 102, 512);
+  servo_hat_configure_channel(11, 102, 512);
+  servo_hat_configure_channel(10, 102, 512);
+  servo_hat_set_pwm(15, 10);
+  servo_hat_set_pwm(14, 10);
+  servo_hat_set_pwm(13, 10);
+  servo_hat_set_pwm(12, 10);
+  servo_hat_set_pwm(11, 10);
+  servo_hat_set_pwm(10, 10);
 }
 
 static bool is_arm_up(const arm_t *arm) {
@@ -390,6 +405,26 @@ void arm_update(arm_t *arm) {
     default:
       break;
   }
+}
+
+void arms_deploy_arm(arm_t *arm)
+{
+    uint8_t left_servo_hat_chan = arm->side ? LEFT_ARM_LEFT_DEPLOY_SERVO_ID : RIGHT_ARM_LEFT_DEPLOY_SERVO_ID;
+    uint16_t left_servo_hat_value = arm->side ? LEFT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO : RIGHT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO;
+    uint8_t right_servo_hat_chan = arm->side ? LEFT_ARM_RIGHT_DEPLOY_SERVO_ID : RIGHT_ARM_RIGHT_DEPLOY_SERVO_ID;
+    uint16_t right_servo_hat_value = arm->side ? LEFT_ARM_RIGHT_SERVO_DEPLOY_PWM_RATIO : RIGHT_ARM_RIGHT_SERVO_DEPLOY_PWM_RATIO;
+    servo_hat_set_pwm(left_servo_hat_chan, left_servo_hat_value);
+    servo_hat_set_pwm(right_servo_hat_chan, right_servo_hat_value);
+}
+
+void arms_close_arm(arm_t *arm)
+{
+    uint8_t left_servo_hat_chan = arm->side ? LEFT_ARM_LEFT_DEPLOY_SERVO_ID : RIGHT_ARM_LEFT_DEPLOY_SERVO_ID;
+    uint16_t left_servo_hat_value = arm->side ? LEFT_ARM_LEFT_SERVO_CLOSE_PWM_RATIO : RIGHT_ARM_LEFT_SERVO_CLOSE_PWM_RATIO;
+    uint8_t right_servo_hat_chan = arm->side ? LEFT_ARM_RIGHT_DEPLOY_SERVO_ID : RIGHT_ARM_RIGHT_DEPLOY_SERVO_ID;
+    uint16_t right_servo_hat_value = arm->side ? LEFT_ARM_RIGHT_SERVO_CLOSE_PWM_RATIO : RIGHT_ARM_RIGHT_SERVO_CLOSE_PWM_RATIO;
+    servo_hat_set_pwm(left_servo_hat_chan, left_servo_hat_value);
+    servo_hat_set_pwm(right_servo_hat_chan, right_servo_hat_value);
 }
 
 void arms_shutdown(void) {
