@@ -2,7 +2,9 @@
 #define ARM_OFFSET TEAM_SIDE_VALUE(0,30)
 
 #define ARM_POS_TOP  0
-#define ARM_POS_BOTTOM  200
+#define ARM_POS_BOTTOM 200
+#define ARM_POS_BANNER 150
+#define ARM_POS_LIFT_CANS 100
 
 void wait_meca_ready(void){
   //force meca state busy
@@ -82,8 +84,8 @@ void strat_prepare(void)
   goto_xya(KX(1280), 300, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
 
   // go to central starting area
-  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MAIN_START, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
-  goto_xya(KX(280), 150, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MAIN_START, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
+  goto_xya(KX(290), 150, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
 
   // shutdown elevators to preserve battery
   ROME_SENDWAIT_MECA_SHUTDOWN_ELEVATOR(ROME_DST_MECA, true);
@@ -130,10 +132,10 @@ order_result_t push_bot_cm(void){
   if (or != ORDER_SUCCESS)
     return or;
 
+  ROME_SENDWAIT_MECA_DEPLOY_WINGS(ROME_DST_MECA, true);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BOTTOM);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
   wait_meca_ready();
-  //TODO deploy arms wings when they are ready
   goto_xya(KX(700) + ARM_OFFSET, 400, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
   //push construction material
   goto_xya(KX(700) + ARM_OFFSET, 250, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
@@ -143,8 +145,8 @@ order_result_t push_bot_cm(void){
 
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_TOP);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_TOP);
+  ROME_SENDWAIT_MECA_FOLD_WINGS(ROME_DST_MECA, true);
   wait_meca_ground_clear();
-  //TODO retract arms wings when they are ready
 
   //go out of the corner to be ready for next order
   goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BOT_STOCK, angle);
@@ -177,8 +179,8 @@ order_result_t push_main_central_cm(bool first){
   or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MAIN_CENTRAL_STOCK_TOP, angle);
   if (or != ORDER_SUCCESS)
     return or;
-  //TODO deploy arms wings when they are ready
   //push construction material
+  ROME_SENDWAIT_MECA_DEPLOY_WINGS(ROME_DST_MECA, true);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BOTTOM);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
   wait_meca_ready();
@@ -197,11 +199,11 @@ order_result_t push_main_central_cm(bool first){
   update_score(4);
   //clear new construction
   goto_xya(KX(280) + ARM_OFFSET, 550, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
-  //TODO retract arms wings when they are ready
 
   //go out of the start area to be ready for next order
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_TOP);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_TOP);
+  ROME_SENDWAIT_MECA_FOLD_WINGS(ROME_DST_MECA, true);
   wait_meca_ground_clear();
   goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MAIN_START, angle);
   return ORDER_SUCCESS;
@@ -213,26 +215,38 @@ order_result_t push_aux_central_cm(bool first){
   ROME_LOG(ROME_DST_PADDOCK, INFO, "Push aux central construction material in start area");
 
   // for now there is only an arm on the right side
-  float angle = arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN);
-  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_AUX_CENTRAL_STOCK_TOP, angle);
+  float angle = arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_UP);
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_AUX_CENTRAL_STOCK_BOT, angle);
   if (or != ORDER_SUCCESS)
     return or;
-  //TODO deploy arms wings when they are ready
   //push construction material
+  ROME_SENDWAIT_MECA_DEPLOY_WINGS(ROME_DST_MECA, true);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BOTTOM);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
   wait_meca_ready();
-  goto_xya(KX(-400) + ARM_OFFSET, 930, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
-  set_speed(RS_VERYSLOW);
-  goto_xya_synced(KX(-500), 700, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_AUX));
-  goto_xya_synced(0,        725, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_MAIN));
-  goto_xya_synced(KX(100),  650, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_AUX));
-  goto_xya_synced(KX(280) + ARM_OFFSET, 550, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
-  set_speed(RS_NORMAL);
+  goto_xya(KX(-400) + ARM_OFFSET, 970, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
+
+  //grab the cans
+  ROME_SENDWAIT_MECA_TAKE_CANS(ROME_DST_MECA, true);
+  wait_meca_ready();
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_LIFT_CANS);
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_LIFT_CANS);
+  wait_meca_ground_clear();
+
+  angle = arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN);
+  or = goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MAIN_START, angle);
+  if (or != ORDER_SUCCESS){
+    ROME_SENDWAIT_MECA_RELEASE_CANS(ROME_DST_MECA, true);
+    return or;
+  }
+
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BOTTOM);
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
   if(first)
     goto_xya(KX(280) + ARM_OFFSET, 250, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
   else
     goto_xya(KX(280) + ARM_OFFSET, 330, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
+  ROME_SENDWAIT_MECA_RELEASE_CANS(ROME_DST_MECA, true);
   update_score(4);
   //clear new construction
   goto_xya(KX(280) + ARM_OFFSET, 550, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
@@ -241,6 +255,7 @@ order_result_t push_aux_central_cm(bool first){
   //go out of the start area to be ready for next order
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_TOP);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_TOP);
+  ROME_SENDWAIT_MECA_FOLD_WINGS(ROME_DST_MECA, true);
   wait_meca_ground_clear();
   goto_pathfinding_node(PATHFINDING_GRAPH_NODE_MAIN_START, angle);
   return ORDER_SUCCESS;
@@ -251,15 +266,19 @@ void strat_run(void)
   ROME_LOG(ROME_DST_PADDOCK, INFO, "Go !!!");
   ROME_SENDWAIT_ASSERV_GYRO_INTEGRATION(ROME_DST_ASSERV, 1);
   ROME_SENDWAIT_ASSERV_ACTIVATE(ROME_DST_ASSERV, 1);
-  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_TOP);
-  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_TOP);
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, true, ARM_POS_BANNER);
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BANNER);
   wait_meca_ground_clear();
 
   order_result_t or_push_bot_cm           = ORDER_FAILURE;
   order_result_t or_push_main_central_cm  = ORDER_FAILURE;
   order_result_t or_push_aux_central_cm   = ORDER_FAILURE;
 
-  goto_xya(KX(280), 550, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_DOWN));
+  //place banner
+  goto_xya(KX(290), 150, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
+
+  //move in fornt of starting area
+  goto_xya(KX(280), 550, arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_DOWN));
 
 
   while (!( or_push_bot_cm          == ORDER_SUCCESS &&
