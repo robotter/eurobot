@@ -146,12 +146,12 @@ add_team_elements({
 ])
 
 # make sure the grid does not overlap the stage
-add_triangle_grid(1200, 450, 1300, 200, [
+add_triangle_grid(1200, 450, 1400, 300, [
     # central stocks
     ((520, 950), 200),
-    ((280, 950), 200),
+    ((300, 950), 200),
     ((-520, 950),200),
-    ((-280, 950),200),
+    ((-300, 950),200),
 ])
 
 add_graph('pathfinding_graph', nodes, vertices)
