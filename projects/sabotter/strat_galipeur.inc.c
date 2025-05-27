@@ -317,7 +317,7 @@ void strat_run(void)
 
   //wait for the superstar and the groupies to clear the area
   set_speed(RS_VERYSLOW);
-  while (robot_state.match_time < 95){
+  while (robot_state.match_time < 93){
     idle();
     goto_xya_synced(KX(1150),1350,arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_LEFT));
     ROME_SENDWAIT_MECA_FOLD_WINGS(ROME_DST_MECA, false);
@@ -325,6 +325,8 @@ void strat_run(void)
     ROME_SENDWAIT_MECA_DEPLOY_WINGS(ROME_DST_MECA, false);
   }
   set_speed(RS_FAST);
+  ROME_SENDWAIT_MECA_FOLD_WINGS(ROME_DST_MECA, false);
+  ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
   goto_xya(KX(1200), 1750, angle);
   update_score(10);
 
