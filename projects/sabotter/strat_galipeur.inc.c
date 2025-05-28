@@ -311,23 +311,26 @@ void strat_run(void)
 
   #if 1
   ROME_LOG(ROME_DST_PADDOCK, INFO, "Job done, go to backstage");
+  ROME_SENDWAIT_MECA_FOLD_WINGS(ROME_DST_MECA, false);
+  ROME_SENDWAIT_MECA_RELEASE_CANS(ROME_DST_MECA, false);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_TOP);
-  const float angle = arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP);
-  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BACKSTAGE, angle);
+  goto_pathfinding_node(PATHFINDING_GRAPH_NODE_BACKSTAGE, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_UP));
+  ROME_SENDWAIT_MECA_TAKE_CANS(ROME_DST_MECA, false);
 
   //wait for the superstar and the groupies to clear the area
-  set_speed(RS_VERYSLOW);
-  while (robot_state.match_time < 93){
+  while (robot_state.match_time < 95){
     idle();
-    goto_xya_synced(KX(1150),1350,arfast(ROBOT_SIDE_RIGHT, TABLE_SIDE_LEFT));
+    goto_xya_synced(KX(1150),1320,arfast(ROBOT_SIDE_MAIN, TABLE_SIDE_UP));
     ROME_SENDWAIT_MECA_FOLD_WINGS(ROME_DST_MECA, false);
-    goto_xya_synced(KX(1250),1350,arfast(ROBOT_SIDE_LEFT, TABLE_SIDE_RIGHT));
+    ROME_SENDWAIT_MECA_RELEASE_CANS(ROME_DST_MECA, false);
+    goto_xya_synced(KX(1250),1320,arfast(ROBOT_SIDE_AUX, TABLE_SIDE_DOWN));
     ROME_SENDWAIT_MECA_DEPLOY_WINGS(ROME_DST_MECA, false);
+    ROME_SENDWAIT_MECA_TAKE_CANS(ROME_DST_MECA, false);
   }
   set_speed(RS_FAST);
   ROME_SENDWAIT_MECA_FOLD_WINGS(ROME_DST_MECA, false);
   ROME_SENDWAIT_MECA_MOVE_ELEVATOR(ROME_DST_MECA, false, ARM_POS_BOTTOM);
-  goto_xya(KX(1200), 1750, angle);
+  goto_xya(KX(1250), 1410, arfast(ROBOT_SIDE_BACK, TABLE_SIDE_MAIN));
   update_score(10);
 
   #else
