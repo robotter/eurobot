@@ -102,18 +102,30 @@ void arms_init(void) {
 
   servo_hat_init();
   //TODO replace channels by defines
+  servo_hat_configure_channel(0, 102, 512);
+  servo_hat_configure_channel(1, 102, 512);
+  servo_hat_configure_channel(2, 102, 512);
+  servo_hat_configure_channel(3, 102, 512);
+  servo_hat_configure_channel(4, 102, 512);
+  servo_hat_configure_channel(5, 102, 512);
   servo_hat_configure_channel(6, 102, 512);
   servo_hat_configure_channel(7, 102, 512);
   servo_hat_configure_channel(8, 102, 512);
   servo_hat_configure_channel(9, 102, 512);
   servo_hat_configure_channel(10, 102, 512);
   servo_hat_configure_channel(11, 102, 512);
+  servo_hat_set_pwm(0, LEFT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO);
+  servo_hat_set_pwm(1, LEFT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO);
+  servo_hat_set_pwm(2, ARM_MAGNET_RELEASE_PWM_RATIO);
+  servo_hat_set_pwm(3, ARM_MAGNET_RELEASE_PWM_RATIO);
+  servo_hat_set_pwm(4, ARM_MAGNET_RELEASE_PWM_RATIO);
+  servo_hat_set_pwm(5, ARM_MAGNET_RELEASE_PWM_RATIO);
   servo_hat_set_pwm(6, RIGHT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO);
   servo_hat_set_pwm(7, RIGHT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO);
-  servo_hat_set_pwm(8, RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
-  servo_hat_set_pwm(9, RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
-  servo_hat_set_pwm(10,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
-  servo_hat_set_pwm(11,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
+  servo_hat_set_pwm(8, ARM_MAGNET_RELEASE_PWM_RATIO);
+  servo_hat_set_pwm(9, ARM_MAGNET_RELEASE_PWM_RATIO);
+  servo_hat_set_pwm(10,ARM_MAGNET_RELEASE_PWM_RATIO);
+  servo_hat_set_pwm(11,ARM_MAGNET_RELEASE_PWM_RATIO);
 }
 
 static bool is_arm_up(const arm_t *arm) {
@@ -124,22 +136,6 @@ uint8_t arms_get_tm_state(void) {
   //LEFT ARM doesn't work, so do not send its status.
   //return MIN(arm_l.tm_state, arm_r.tm_state);
   return arm_r.tm_state;
-}
-
-void arm_take_cans(arm_t *arm) {
-  if(arm->state != ARM_IDLE) {
-    return;
-  }
-  arm->tm_state = ROME_ENUM_MECA_STATE_BUSY;
-  arm->state = ARM_TAKE_CANS;
-}
-
-void arm_release_cans(arm_t *arm) {
-  if(arm->state != ARM_IDLE) {
-    return;
-  }
-  arm->tm_state = ROME_ENUM_MECA_STATE_BUSY;
-  arm->state = ARM_RELEASE_CANS;
 }
 
 void arm_elevator_move(arm_t *arm, uint16_t pos) {
@@ -165,8 +161,6 @@ static void arm_set_idle(arm_t *arm) {
 }
 
 void arm_update(arm_t *arm) {
-
-  static uint32_t tend = 0;
 
   if (is_arm_up(arm))
     portpin_outset(&LED_AN_PP(arm->side));
@@ -249,36 +243,6 @@ void arm_update(arm_t *arm) {
       }
       break;
 
-    // move on all the grabbers to take cans
-    case ARM_TAKE_CANS:
-      ROME_LOGF(UART_STRAT, DEBUG, "MECA: take cans");
-      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_0_ID,RIGHT_ARM_MAGNET_TAKE_PWM_RATIO);
-      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_1_ID,RIGHT_ARM_MAGNET_TAKE_PWM_RATIO);
-      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_2_ID,RIGHT_ARM_MAGNET_TAKE_PWM_RATIO);
-      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_3_ID,RIGHT_ARM_MAGNET_TAKE_PWM_RATIO);
-      arm->state = ARM_CAN_GRABBER_WAIT;
-      //wait 50ms for sevo to reach position
-      tend = uptime_us() + 50000;
-      break;
-
-    // move on all the grabbers to release cans
-    case ARM_RELEASE_CANS:
-      //TODO : move the servos
-      ROME_LOGF(UART_STRAT, DEBUG, "MECA: release cans");
-      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_0_ID,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
-      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_1_ID,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
-      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_2_ID,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
-      servo_hat_set_pwm(RIGHT_ARM_MAGNET_SERVO_3_ID,RIGHT_ARM_MAGNET_RELEASE_PWM_RATIO);
-      arm->state = ARM_CAN_GRABBER_WAIT;
-      //wait 50ms for sevo to reach position
-      tend = uptime_us() + 50000;
-      break;
-
-    case ARM_CAN_GRABBER_WAIT:
-      if(tend <= uptime_us())
-        arm_set_idle(arm);
-      break;
-
     default:
       break;
   }
@@ -296,6 +260,7 @@ void arm_grab_wings(arm_t *arm)
 
 void arm_deploy_wings(arm_t *arm)
 {
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: fold wings");
     uint8_t left_servo_hat_chan = arm->side ? LEFT_ARM_LEFT_SERVO_ID : RIGHT_ARM_LEFT_SERVO_ID;
     uint16_t left_servo_hat_value = arm->side ? LEFT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO : RIGHT_ARM_LEFT_SERVO_DEPLOY_PWM_RATIO;
     uint8_t right_servo_hat_chan = arm->side ? LEFT_ARM_RIGHT_SERVO_ID : RIGHT_ARM_RIGHT_SERVO_ID;
@@ -306,6 +271,7 @@ void arm_deploy_wings(arm_t *arm)
 
 void arm_fold_wings(arm_t *arm)
 {
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: deploy wings");
     uint8_t left_servo_hat_chan = arm->side ? LEFT_ARM_LEFT_SERVO_ID : RIGHT_ARM_LEFT_SERVO_ID;
     uint16_t left_servo_hat_value = arm->side ? LEFT_ARM_LEFT_SERVO_FOLD_PWM_RATIO : RIGHT_ARM_LEFT_SERVO_FOLD_PWM_RATIO;
     uint8_t right_servo_hat_chan = arm->side ? LEFT_ARM_RIGHT_SERVO_ID : RIGHT_ARM_RIGHT_SERVO_ID;
@@ -313,6 +279,23 @@ void arm_fold_wings(arm_t *arm)
     servo_hat_set_pwm(left_servo_hat_chan, left_servo_hat_value);
     servo_hat_set_pwm(right_servo_hat_chan, right_servo_hat_value);
 }
+
+void arm_take_cans(arm_t *arm) {
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: take cans");
+      servo_hat_set_pwm(arm->side ? LEFT_ARM_MAGNET_SERVO_0_ID : RIGHT_ARM_MAGNET_SERVO_0_ID, ARM_MAGNET_TAKE_PWM_RATIO);
+      servo_hat_set_pwm(arm->side ? LEFT_ARM_MAGNET_SERVO_1_ID : RIGHT_ARM_MAGNET_SERVO_1_ID, ARM_MAGNET_TAKE_PWM_RATIO);
+      servo_hat_set_pwm(arm->side ? LEFT_ARM_MAGNET_SERVO_2_ID : RIGHT_ARM_MAGNET_SERVO_2_ID, ARM_MAGNET_TAKE_PWM_RATIO);
+      servo_hat_set_pwm(arm->side ? LEFT_ARM_MAGNET_SERVO_3_ID : RIGHT_ARM_MAGNET_SERVO_3_ID, ARM_MAGNET_TAKE_PWM_RATIO);
+}
+
+void arm_release_cans(arm_t *arm) {
+      ROME_LOGF(UART_STRAT, DEBUG, "MECA: release cans");
+      servo_hat_set_pwm(arm->side ? LEFT_ARM_MAGNET_SERVO_0_ID : RIGHT_ARM_MAGNET_SERVO_0_ID, ARM_MAGNET_RELEASE_PWM_RATIO);
+      servo_hat_set_pwm(arm->side ? LEFT_ARM_MAGNET_SERVO_1_ID : RIGHT_ARM_MAGNET_SERVO_1_ID, ARM_MAGNET_RELEASE_PWM_RATIO);
+      servo_hat_set_pwm(arm->side ? LEFT_ARM_MAGNET_SERVO_2_ID : RIGHT_ARM_MAGNET_SERVO_2_ID, ARM_MAGNET_RELEASE_PWM_RATIO);
+      servo_hat_set_pwm(arm->side ? LEFT_ARM_MAGNET_SERVO_3_ID : RIGHT_ARM_MAGNET_SERVO_3_ID, ARM_MAGNET_RELEASE_PWM_RATIO);
+}
+
 
 void arms_shutdown(void) {
   // disable everything
